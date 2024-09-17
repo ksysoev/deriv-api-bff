@@ -1,0 +1,4 @@
+github.com/ksysoev/wasabi v0.5.0 h1:6cQWUZ5OiqgRxCDUA05W+SU1QKa0/v4Wv4PQUUu7ZTc=
+github.com/ksysoev/wasabi v0.5.0/go.mod h1:jT6h7llkiuPG6J4VH5/4cF+NAwYCvXPwFsvfwnCiIUc=
+nhooyr.io/websocket v1.8.11 h1:f/qXNc2/3DpoSZkHt1DQu6rj4zGC8JmkkLkWss0MgN0=
+nhooyr.io/websocket v1.8.11/go.mod h1:rN9OFWIUwuxg4fR5tELlYC04bXYowCP9GX47ivo2l+c=
