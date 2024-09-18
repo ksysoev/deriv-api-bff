@@ -7,6 +7,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/router"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/backend"
 	"github.com/ksysoev/wasabi/channel"
@@ -37,9 +38,7 @@ func main() {
 		},
 	)
 
-	dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
-		return dispatch.NewRawRequest(conn.Context(), msgType, data)
-	})
+	dispatcher := dispatch.NewRouterDispatcher(backend, router.Dispatch)
 	channel := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
 
 	server := server.NewServer(Addr, server.WithBaseContext(context.Background()))
