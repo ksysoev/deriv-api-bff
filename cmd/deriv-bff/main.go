@@ -7,6 +7,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/handlers"
 	"github.com/ksysoev/deriv-api-bff/pkg/router"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/backend"
@@ -38,7 +39,9 @@ func main() {
 		},
 	)
 
-	dispatcher := dispatch.NewRouterDispatcher(backend, router.Dispatch)
+	requestHandler := handlers.NewBackendForFE(backend)
+
+	dispatcher := dispatch.NewRouterDispatcher(requestHandler, router.Dispatch)
 	channel := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
 
 	server := server.NewServer(Addr, server.WithBaseContext(context.Background()))
