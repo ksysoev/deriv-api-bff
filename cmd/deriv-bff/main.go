@@ -24,6 +24,12 @@ func main() {
 
 	slog.LogAttrs(context.Background(), slog.LevelDebug, "")
 
+	_, err := handlers.LoadConfig("./config.yaml")
+	if err != nil {
+		slog.Error("Fail to load config", "error", err)
+		os.Exit(1)
+	}
+
 	backend := backend.NewWSBackend(
 		"wss://ws.derivws.com/websockets/v3?app_id=1089",
 		func(r wasabi.Request) (wasabi.MessageType, []byte, error) {
