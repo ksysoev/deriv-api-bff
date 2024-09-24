@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
+	"log/slog"
 	"sync"
 
 	"github.com/ksysoev/wasabi"
@@ -87,20 +89,24 @@ func (h *CallHandler) Process(req wasabi.Request) (*RequesIter, error) {
 	}
 
 	return &RequesIter{
-		reqs:   requests,
-		params: r.Params,
+		reqs:      requests,
+		params:    r.Params,
+		finalResp: make(map[string]any),
 	}, nil
 }
 
 type RequesIter struct {
-	pos    int
-	reqs   []*Request
-	params map[string]any
+	wg        sync.WaitGroup
+	pos       int
+	reqs      []*Request
+	params    map[string]any
+	finalResp map[string]any
+	mu        sync.Mutex
 }
 
-func (r *RequesIter) Next(id int) ([]byte, error) {
+func (r *RequesIter) Next(id int) ([]byte, chan []byte, error) {
 	if r.pos >= len(r.reqs) {
-		return nil, nil
+		return nil, nil, io.EOF
 	}
 
 	req := r.reqs[r.pos]
@@ -111,7 +117,50 @@ func (r *RequesIter) Next(id int) ([]byte, error) {
 		ReqID:  id,
 	}
 
-	return req.Render(data)
+	respChan := make(chan []byte, 1)
+
+	body, err := req.Render(data)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	r.wg.Add(1)
+	go func() {
+		defer r.wg.Done()
+
+		resp := <-respChan
+
+		if resp == nil {
+			slog.Info("Response is nil")
+			return
+		}
+
+		respBody, err := req.ParseResp(resp)
+		if err != nil {
+			slog.Info("Fail to parse response", "error", err, "req", body)
+			return
+		}
+
+		r.mu.Lock()
+		defer r.mu.Unlock()
+
+		for _, key := range req.allow {
+			if _, ok := respBody[key]; !ok {
+				slog.Info("Response body does not contain key", "key", key)
+				return
+			}
+
+			r.finalResp[key] = respBody[key]
+		}
+	}()
+
+	return body, respChan, nil
+}
+
+func (r *RequesIter) GetResp() map[string]any {
+	r.wg.Wait()
+
+	return r.finalResp
 }
 
 type Request struct {
@@ -132,4 +181,30 @@ func (r *Request) Render(data TemplateData) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func (r *Request) ParseResp(data []byte) (map[string]any, error) {
+	var rdata map[string]any
+
+	err := json.Unmarshal(data, &rdata)
+	if err != nil {
+		fmt.Println("Response data", string(data))
+		return nil, err
+	}
+
+	rb, ok := rdata[r.responseBody]
+	if !ok {
+		for _, v := range rdata {
+			slog.Info("Response body", "key", v)
+		}
+		return nil, fmt.Errorf("response body not found")
+	}
+	respBody, ok := rb.(map[string]any)
+
+	if !ok {
+		return nil, fmt.Errorf("response body is not an object")
+	}
+
+	return respBody, nil
+
 }

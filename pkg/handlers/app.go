@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"sync"
 	"time"
 
@@ -70,25 +71,30 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 			b.currentID++
 			id := b.currentID
 
-			data, err := iter.Next(id)
+			data, respChan, err := iter.Next(id)
+
+			if err == io.EOF {
+				break
+			}
 
 			if err != nil {
 				return err
 			}
 
-			if data == nil {
-				break
-			}
-
-			fmt.Println("data", string(data))
+			b.requests[id] = respChan
 
 			r := dispatch.NewRawRequest(req.Context(), wasabi.MsgTypeText, data)
+
 			if err = b.be.Handle(connWrap, r); err != nil {
 				return err
 			}
 		}
 
-		return nil
+		resp := iter.GetResp()
+
+		respBytes, err := json.Marshal(resp)
+
+		return conn.Send(wasabi.MsgTypeText, respBytes)
 	}
 }
 
@@ -117,6 +123,7 @@ func (b *BackendForFE) ResponseHandler(conn wasabi.Connection, msgType wasabi.Me
 	}
 
 	ch <- msg
+
 	return nil
 }
 
