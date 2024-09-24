@@ -9,8 +9,8 @@ calls:
           - gaming_company
         request_template: |
           {
-            landing_company: {{ index .Params "country" }}
-            req_id: {{ index .ReqID }}
+            "landing_company": "{{ index .Params "country" }}",
+            "req_id": {{ .ReqID }}
           }
       - response_body: "website_status"
         allow: 
@@ -18,7 +18,7 @@ calls:
           - clients_country
         request_template: |
           {
-            website_status: 1
-            req_id: {{ index .ReqID }}
+            "website_status": 1,
+            "req_id": {{ .ReqID }}
           }
       

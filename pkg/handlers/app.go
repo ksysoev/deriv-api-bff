@@ -22,13 +22,15 @@ type BackendForFE struct {
 	connection map[string]wasabi.Connection
 	currentID  int
 	requests   map[int]chan []byte
+	ch         *CallHandler
 }
 
-func NewBackendForFE(wsBackend wasabi.RequestHandler) *BackendForFE {
+func NewBackendForFE(wsBackend wasabi.RequestHandler, callHandler *CallHandler) *BackendForFE {
 	return &BackendForFE{
 		be:         wsBackend,
 		connection: make(map[string]wasabi.Connection),
 		requests:   make(map[int]chan []byte),
+		ch:         callHandler,
 	}
 }
 
@@ -55,7 +57,38 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 
 		return conn.Send(typ, resp)
 	default:
-		return fmt.Errorf("unsupported request type: -%s-", req.RoutingKey())
+		iter, err := b.ch.Process(req)
+		if err != nil {
+			return err
+		}
+
+		if iter == nil {
+			return fmt.Errorf("unsupported method: %s", req.RoutingKey())
+		}
+
+		for {
+			b.currentID++
+			id := b.currentID
+
+			data, err := iter.Next(id)
+
+			if err != nil {
+				return err
+			}
+
+			if data == nil {
+				break
+			}
+
+			fmt.Println("data", string(data))
+
+			r := dispatch.NewRawRequest(req.Context(), wasabi.MsgTypeText, data)
+			if err = b.be.Handle(connWrap, r); err != nil {
+				return err
+			}
+		}
+
+		return nil
 	}
 }
 

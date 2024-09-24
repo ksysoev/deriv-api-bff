@@ -24,9 +24,16 @@ func main() {
 
 	slog.LogAttrs(context.Background(), slog.LevelDebug, "")
 
-	_, err := handlers.LoadConfig("./config.yaml")
+	config, err := handlers.LoadConfig("./config.yaml")
 	if err != nil {
 		slog.Error("Fail to load config", "error", err)
+		os.Exit(1)
+	}
+
+	callhandler, err := handlers.NewCallHandler(config)
+
+	if err != nil {
+		slog.Error("Fail to create call handler", "error", err)
 		os.Exit(1)
 	}
 
@@ -45,7 +52,7 @@ func main() {
 		},
 	)
 
-	requestHandler := handlers.NewBackendForFE(backend)
+	requestHandler := handlers.NewBackendForFE(backend, callhandler)
 
 	dispatcher := dispatch.NewRouterDispatcher(requestHandler, router.Dispatch)
 	channel := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
