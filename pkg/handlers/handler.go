@@ -188,7 +188,6 @@ func (r *Request) ParseResp(data []byte) (map[string]any, error) {
 
 	err := json.Unmarshal(data, &rdata)
 	if err != nil {
-		fmt.Println("Response data", string(data))
 		return nil, err
 	}
 

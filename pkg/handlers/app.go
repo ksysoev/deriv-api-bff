@@ -122,7 +122,10 @@ func (b *BackendForFE) ResponseHandler(conn wasabi.Connection, msgType wasabi.Me
 		return conn.Send(msgType, msg)
 	}
 
-	ch <- msg
+	buffer := make([]byte, len(msg))
+	copy(buffer, msg)
+
+	ch <- buffer
 
 	return nil
 }
