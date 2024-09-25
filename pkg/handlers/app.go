@@ -62,7 +62,7 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 		for ctx.Err() == nil {
 			id := connState.NextID()
 
-			data, respChan, err := iter.Next(ctx, id)
+			data, respChan, err := iter.Next(id)
 			if err == ErrIterDone {
 				break
 			}

@@ -91,7 +91,11 @@ func (h *CallHandler) Process(req wasabi.Request) (*RequesIter, error) {
 		})
 	}
 
+	ctx, cancel := context.WithCancel(req.Context())
+
 	return &RequesIter{
+		ctx:       ctx,
+		cancel:    cancel,
 		reqs:      requests,
 		params:    r.Params,
 		finalResp: make(map[string]any),
@@ -100,6 +104,8 @@ func (h *CallHandler) Process(req wasabi.Request) (*RequesIter, error) {
 
 type RequesIter struct {
 	wg        sync.WaitGroup
+	ctx       context.Context
+	cancel    context.CancelFunc
 	pos       int
 	reqs      []*Request
 	params    map[string]any
@@ -108,7 +114,7 @@ type RequesIter struct {
 	mu        sync.Mutex
 }
 
-func (r *RequesIter) Next(ctx context.Context, id int64) ([]byte, chan []byte, error) {
+func (r *RequesIter) Next(id int64) ([]byte, chan []byte, error) {
 	if r.pos >= len(r.reqs) {
 		return nil, nil, ErrIterDone
 	}
@@ -133,11 +139,11 @@ func (r *RequesIter) Next(ctx context.Context, id int64) ([]byte, chan []byte, e
 		defer r.wg.Done()
 
 		select {
-		case <-ctx.Done():
+		case <-r.ctx.Done():
 			r.mu.Lock()
 			defer r.mu.Unlock()
 
-			r.err = ctx.Err()
+			r.err = r.ctx.Err()
 
 			return
 		case resp := <-respChan:
@@ -148,6 +154,8 @@ func (r *RequesIter) Next(ctx context.Context, id int64) ([]byte, chan []byte, e
 
 			if err != nil {
 				r.err = fmt.Errorf("fail to parse response %s: %w", req.responseBody, err)
+
+				r.cancel()
 
 				return
 			}
@@ -200,11 +208,12 @@ func (r *Request) ParseResp(data []byte) (map[string]any, error) {
 		return nil, err
 	}
 
+	if apiErr, ok := rdata["error"]; ok {
+		return nil, fmt.Errorf("api error: %v", apiErr)
+	}
+
 	rb, ok := rdata[r.responseBody]
 	if !ok {
-		for _, v := range rdata {
-			slog.Info("Response body", "key", v)
-		}
 		return nil, fmt.Errorf("response body not found")
 	}
 	respBody, ok := rb.(map[string]any)
