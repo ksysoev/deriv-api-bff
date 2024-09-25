@@ -32,7 +32,7 @@ type RequestRunConfig struct {
 
 type TemplateData struct {
 	Params map[string]any
-	ReqID  int
+	ReqID  int64
 }
 
 func NewCallHandler(config *HandlersConfig) (*CallHandler, error) {
@@ -108,7 +108,7 @@ type RequesIter struct {
 	mu        sync.Mutex
 }
 
-func (r *RequesIter) Next(ctx context.Context, id int) ([]byte, chan []byte, error) {
+func (r *RequesIter) Next(ctx context.Context, id int64) ([]byte, chan []byte, error) {
 	if r.pos >= len(r.reqs) {
 		return nil, nil, ErrIterDone
 	}
