@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"sync"
 
 	"github.com/coder/websocket"
@@ -62,9 +61,9 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 			b.currentID++
 			id := b.currentID
 
-			data, respChan, err := iter.Next(id)
+			data, respChan, err := iter.Next(req.Context(), id)
 
-			if err == io.EOF {
+			if err == ErrIterDone {
 				break
 			}
 
@@ -81,7 +80,10 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 			}
 		}
 
-		resp := iter.WaitResp()
+		resp, err := iter.WaitResp()
+		if err != nil {
+			return err
+		}
 
 		respBytes, err := json.Marshal(resp)
 

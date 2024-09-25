@@ -2,15 +2,18 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
-	"io"
 	"log/slog"
 	"sync"
 
 	"github.com/ksysoev/wasabi"
 )
+
+var ErrIterDone = errors.New("iteration done")
 
 type CallHandler struct {
 	calls map[string]*CallRunConfig
@@ -101,12 +104,13 @@ type RequesIter struct {
 	reqs      []*Request
 	params    map[string]any
 	finalResp map[string]any
+	err       error
 	mu        sync.Mutex
 }
 
-func (r *RequesIter) Next(id int) ([]byte, chan []byte, error) {
+func (r *RequesIter) Next(ctx context.Context, id int) ([]byte, chan []byte, error) {
 	if r.pos >= len(r.reqs) {
-		return nil, nil, io.EOF
+		return nil, nil, ErrIterDone
 	}
 
 	req := r.reqs[r.pos]
@@ -121,46 +125,51 @@ func (r *RequesIter) Next(id int) ([]byte, chan []byte, error) {
 
 	body, err := req.Render(data)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("fail to render request %s: %w", req.responseBody, err)
 	}
 
 	r.wg.Add(1)
 	go func() {
 		defer r.wg.Done()
 
-		resp := <-respChan
+		select {
+		case <-ctx.Done():
+			r.mu.Lock()
+			defer r.mu.Unlock()
 
-		if resp == nil {
-			slog.Info("Response is nil")
+			r.err = ctx.Err()
+
 			return
-		}
+		case resp := <-respChan:
+			respBody, err := req.ParseResp(resp)
 
-		respBody, err := req.ParseResp(resp)
-		if err != nil {
-			slog.Info("Fail to parse response", "error", err, "req", body)
-			return
-		}
+			r.mu.Lock()
+			defer r.mu.Unlock()
 
-		r.mu.Lock()
-		defer r.mu.Unlock()
+			if err != nil {
+				r.err = fmt.Errorf("fail to parse response %s: %w", req.responseBody, err)
 
-		for _, key := range req.allow {
-			if _, ok := respBody[key]; !ok {
-				slog.Info("Response body does not contain key", "key", key)
 				return
 			}
 
-			r.finalResp[key] = respBody[key]
+			for _, key := range req.allow {
+				if _, ok := respBody[key]; !ok {
+					slog.Warn("Response body does not contain key", "key", key)
+					return
+				}
+
+				r.finalResp[key] = respBody[key]
+			}
 		}
 	}()
 
 	return body, respChan, nil
 }
 
-func (r *RequesIter) GetResp() map[string]any {
+func (r *RequesIter) WaitResp() (map[string]any, error) {
 	r.wg.Wait()
 
-	return r.finalResp
+	return r.finalResp, r.err
 }
 
 type Request struct {
