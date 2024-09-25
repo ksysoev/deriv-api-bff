@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"io/ioutil"
+	"os"
 
 	"gopkg.in/yaml.v2"
 )
@@ -24,7 +24,7 @@ type BackendConfig struct {
 
 func LoadConfig(path string) (*HandlersConfig, error) {
 	// Read the YAML file
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

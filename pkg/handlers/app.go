@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"io"
 	"sync"
-	"time"
 
 	"github.com/coder/websocket"
-	"github.com/ksysoev/deriv-api/schema"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/channel"
 	"github.com/ksysoev/wasabi/dispatch"
@@ -50,13 +48,6 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 	switch req.RoutingKey() {
 	case "text", "binary":
 		return b.be.Handle(connWrap, req)
-	case "new_ping":
-		typ, resp, err := b.handleNewPingRequest(connWrap, req)
-		if err != nil {
-			return err
-		}
-
-		return conn.Send(typ, resp)
 	default:
 		iter, err := b.ch.Process(req)
 		if err != nil {
@@ -90,7 +81,7 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 			}
 		}
 
-		resp := iter.GetResp()
+		resp := iter.WaitResp()
 
 		respBytes, err := json.Marshal(resp)
 
@@ -136,67 +127,4 @@ func (b *BackendForFE) CloseHandler(conn wasabi.Connection, status websocket.Sta
 	b.mu.Unlock()
 
 	return conn.Close(status, reason, closingCtx...)
-}
-
-func (b *BackendForFE) handleNewPingRequest(conn wasabi.Connection, req wasabi.Request) (wasabi.MessageType, []byte, error) {
-
-	b.mu.Lock()
-	b.currentID++
-	id1 := b.currentID
-	b.currentID++
-	id2 := b.currentID
-	ch1 := make(chan []byte, 1)
-	ch2 := make(chan []byte, 1)
-	b.requests[id1] = ch1
-	b.requests[id2] = ch2
-	b.mu.Unlock()
-
-	timeReq := schema.Time{
-		Time:  1,
-		ReqId: &id1,
-	}
-
-	timeReqBytes, err := json.Marshal(timeReq)
-	if err != nil {
-		return wasabi.MsgTypeText, nil, err
-	}
-
-	r := dispatch.NewRawRequest(req.Context(), wasabi.MsgTypeText, timeReqBytes)
-	if err = b.be.Handle(conn, r); err != nil {
-		return wasabi.MsgTypeText, nil, err
-	}
-
-	pingReq := schema.Ping{
-		Ping:  1,
-		ReqId: &id2,
-	}
-
-	pingReqBytes, err := json.Marshal(pingReq)
-	if err != nil {
-		return wasabi.MsgTypeText, nil, err
-	}
-
-	r = dispatch.NewRawRequest(req.Context(), wasabi.MsgTypeText, pingReqBytes)
-	if err = b.be.Handle(conn, r); err != nil {
-		return wasabi.MsgTypeText, nil, err
-	}
-
-	respBytes := make([]byte, 0)
-
-	timeOutCh := time.After(5 * time.Second)
-
-	for i := 0; i < 2; i++ {
-		select {
-		case resp := <-ch1:
-			respBytes = append(respBytes, resp...)
-			ch1 = nil
-		case resp := <-ch2:
-			respBytes = append(respBytes, resp...)
-			ch2 = nil
-		case <-timeOutCh:
-			return wasabi.MsgTypeText, nil, fmt.Errorf("timeout")
-		}
-	}
-
-	return wasabi.MsgTypeText, respBytes, nil
 }
