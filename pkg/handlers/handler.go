@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"log/slog"
 	"sync"
 
 	"github.com/ksysoev/wasabi"
@@ -99,11 +98,11 @@ func (h *CallHandler) Process(req wasabi.Request) (*RequesIter, error) {
 		reqs:      requests,
 		params:    r.Params,
 		finalResp: make(map[string]any),
+		composer:  NewComposer(),
 	}, nil
 }
 
 type RequesIter struct {
-	wg        sync.WaitGroup
 	ctx       context.Context
 	cancel    context.CancelFunc
 	pos       int
@@ -112,6 +111,7 @@ type RequesIter struct {
 	finalResp map[string]any
 	err       error
 	mu        sync.Mutex
+	composer  *Composer
 }
 
 func (r *RequesIter) Next(id int64) ([]byte, chan []byte, error) {
@@ -134,50 +134,13 @@ func (r *RequesIter) Next(id int64) ([]byte, chan []byte, error) {
 		return nil, nil, fmt.Errorf("fail to render request %s: %w", req.responseBody, err)
 	}
 
-	r.wg.Add(1)
-	go func() {
-		defer r.wg.Done()
-
-		select {
-		case <-r.ctx.Done():
-			r.mu.Lock()
-			defer r.mu.Unlock()
-
-			r.err = r.ctx.Err()
-
-			return
-		case resp := <-respChan:
-			respBody, err := req.ParseResp(resp)
-
-			r.mu.Lock()
-			defer r.mu.Unlock()
-
-			if err != nil {
-				r.err = fmt.Errorf("fail to parse response %s: %w", req.responseBody, err)
-
-				r.cancel()
-
-				return
-			}
-
-			for _, key := range req.allow {
-				if _, ok := respBody[key]; !ok {
-					slog.Warn("Response body does not contain key", "key", key)
-					return
-				}
-
-				r.finalResp[key] = respBody[key]
-			}
-		}
-	}()
+	go r.composer.WaitResponse(r.ctx, req, respChan)
 
 	return body, respChan, nil
 }
 
-func (r *RequesIter) WaitResp() (map[string]any, error) {
-	r.wg.Wait()
-
-	return r.finalResp, r.err
+func (r *RequesIter) WaitResp(req_id *int) ([]byte, error) {
+	return r.composer.Response(req_id)
 }
 
 type Request struct {
@@ -208,20 +171,19 @@ func (r *Request) ParseResp(data []byte) (map[string]any, error) {
 		return nil, err
 	}
 
-	if apiErr, ok := rdata["error"]; ok {
-		return nil, fmt.Errorf("api error: %v", apiErr)
+	if _, ok := rdata["error"]; ok {
+		return nil, NewAPIError(r.responseBody, rdata)
 	}
 
 	rb, ok := rdata[r.responseBody]
 	if !ok {
 		return nil, fmt.Errorf("response body not found")
 	}
-	respBody, ok := rb.(map[string]any)
 
+	respBody, ok := rb.(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("response body is not an object")
 	}
 
 	return respBody, nil
-
 }

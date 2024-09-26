@@ -80,14 +80,12 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 			}
 		}
 
-		resp, err := iter.WaitResp()
+		resp, err := iter.WaitResp(nil)
 		if err != nil {
 			return err
 		}
 
-		respBytes, err := json.Marshal(resp)
-
-		return conn.Send(wasabi.MsgTypeText, respBytes)
+		return conn.Send(wasabi.MsgTypeText, resp)
 	}
 }
 
