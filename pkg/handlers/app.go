@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/coder/websocket"
+	"github.com/ksysoev/deriv-api-bff/pkg/router"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/channel"
 	"github.com/ksysoev/wasabi/dispatch"
@@ -48,7 +49,12 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 	case "text", "binary":
 		return b.be.Handle(connState.Conn, req)
 	default:
-		iter, err := b.ch.Process(req)
+		r, ok := req.(*router.Request)
+		if !ok {
+			return fmt.Errorf("unsupported request type: %T", req)
+		}
+
+		iter, err := b.ch.Process(r)
 		if err != nil {
 			return err
 		}
@@ -57,7 +63,7 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 			return fmt.Errorf("unsupported method: %s", req.RoutingKey())
 		}
 
-		ctx := req.Context()
+		ctx := r.Context()
 
 		for ctx.Err() == nil {
 			id := connState.NextID()
@@ -80,7 +86,7 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 			}
 		}
 
-		resp, err := iter.WaitResp(nil)
+		resp, err := iter.WaitResp(r.ID)
 		if err != nil {
 			return err
 		}

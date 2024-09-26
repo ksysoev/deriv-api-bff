@@ -9,11 +9,11 @@ import (
 )
 
 type Request struct {
-	ctx       context.Context
-	rawData   []byte
-	Method    string          `json:"method"`
-	Args      json.RawMessage `json:"data"`
-	RequestID string          `json:"req_id"`
+	ctx     context.Context
+	rawData []byte
+	Method  string         `json:"method"`
+	Params  map[string]any `json:"params"`
+	ID      *int           `json:"req_id"`
 }
 
 func (r *Request) Data() []byte {

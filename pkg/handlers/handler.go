@@ -1,15 +1,13 @@
 package handlers
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
 	"sync"
 
-	"github.com/ksysoev/wasabi"
+	"github.com/ksysoev/deriv-api-bff/pkg/router"
 )
 
 var ErrIterDone = errors.New("iteration done")
@@ -60,25 +58,13 @@ func NewCallHandler(config *HandlersConfig) (*CallHandler, error) {
 	return h, nil
 }
 
-func (h *CallHandler) Process(req wasabi.Request) (*RequesIter, error) {
+func (h *CallHandler) Process(req *router.Request) (*RequesIter, error) {
 	method := req.RoutingKey()
 
 	call, ok := h.calls[method]
 
 	if !ok {
 		return nil, fmt.Errorf("unsupported method: %s", method)
-	}
-
-	data := req.Data()
-
-	type D struct {
-		Params map[string]interface{} `json:"params"`
-	}
-	var r D
-
-	err := json.Unmarshal(data, &r)
-	if err != nil {
-		return nil, err
 	}
 
 	requests := make([]*Request, 0, len(call.requests))
@@ -96,7 +82,7 @@ func (h *CallHandler) Process(req wasabi.Request) (*RequesIter, error) {
 		ctx:       ctx,
 		cancel:    cancel,
 		reqs:      requests,
-		params:    r.Params,
+		params:    req.Params,
 		finalResp: make(map[string]any),
 		composer:  NewComposer(),
 	}, nil
@@ -141,49 +127,4 @@ func (r *RequesIter) Next(id int64) ([]byte, chan []byte, error) {
 
 func (r *RequesIter) WaitResp(req_id *int) ([]byte, error) {
 	return r.composer.Response(req_id)
-}
-
-type Request struct {
-	tempate      *template.Template
-	allow        []string
-	responseBody string
-	mu           sync.Mutex
-}
-
-func (r *Request) Render(data TemplateData) ([]byte, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	var buf bytes.Buffer
-	err := r.tempate.Execute(&buf, data)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-func (r *Request) ParseResp(data []byte) (map[string]any, error) {
-	var rdata map[string]any
-
-	err := json.Unmarshal(data, &rdata)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, ok := rdata["error"]; ok {
-		return nil, NewAPIError(r.responseBody, rdata)
-	}
-
-	rb, ok := rdata[r.responseBody]
-	if !ok {
-		return nil, fmt.Errorf("response body not found")
-	}
-
-	respBody, ok := rb.(map[string]any)
-	if !ok {
-		return nil, fmt.Errorf("response body is not an object")
-	}
-
-	return respBody, nil
 }
