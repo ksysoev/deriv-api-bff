@@ -12,5 +12,4 @@ require (
 require (
 	github.com/google/uuid v1.6.0 // indirect
 	golang.org/x/exp v0.0.0-20240110193028-0dcbfd608b1e // indirect
-	nhooyr.io/websocket v1.8.11 // indirect
 )
