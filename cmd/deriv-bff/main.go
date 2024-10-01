@@ -7,7 +7,9 @@ import (
 	_ "net/http/pprof"
 	"os"
 
+	"github.com/coder/websocket"
 	"github.com/ksysoev/deriv-api-bff/pkg/handlers"
+	"github.com/ksysoev/deriv-api-bff/pkg/middleware"
 	"github.com/ksysoev/deriv-api-bff/pkg/router"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/backend"
@@ -37,8 +39,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	backend := backend.NewWSBackend(
-		"wss://ws.derivws.com/websockets/v3?app_id=1089",
+	wsBackend := backend.NewWSBackend(
+		"wss://ws.derivws.com/websockets/v3",
 		func(r wasabi.Request) (wasabi.MessageType, []byte, error) {
 			switch r.RoutingKey() {
 			case "text":
@@ -50,15 +52,44 @@ func main() {
 				return t, nil, fmt.Errorf("unsupported request type: %s", r.RoutingKey())
 			}
 		},
+		backend.WithWSDialler(func(ctx context.Context, baseURL string) (*websocket.Conn, error) {
+			urlParams := middleware.QueryParamsFromContext(ctx)
+
+			if urlParams != nil {
+				if app_id := urlParams.Get("app_id"); app_id != "" {
+					baseURL = fmt.Sprintf("%s?app_id=%s", baseURL, app_id)
+				} else {
+					return nil, fmt.Errorf("app_id is required")
+				}
+
+				if lang := urlParams.Get("l"); lang != "" {
+					baseURL = fmt.Sprintf("%s&l=%s", baseURL, lang)
+				}
+			} else {
+				return nil, fmt.Errorf("url params are required")
+			}
+
+			c, resp, err := websocket.Dial(ctx, baseURL, nil)
+
+			if err != nil {
+				return nil, err
+			}
+
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+
+			return c, nil
+		}),
 	)
 
-	requestHandler := handlers.NewBackendForFE(backend, callhandler)
+	requestHandler := handlers.NewBackendForFE(wsBackend, callhandler)
 
 	dispatcher := dispatch.NewRouterDispatcher(requestHandler, router.Dispatch)
-	channel := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
-
+	endpoint := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
+	endpoint.Use(middleware.NewQueryParamsMiddlewarefunc())
 	server := server.NewServer(Addr, server.WithBaseContext(context.Background()))
-	server.AddChannel(channel)
+	server.AddChannel(endpoint)
 
 	if err := server.Run(); err != nil {
 		slog.Error("Fail to start app server", "error", err)

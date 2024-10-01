@@ -6,14 +6,16 @@ import (
 	"net/url"
 )
 
-type queryParamsKey struct{}
+type contextKey int
+
+var keyQuery contextKey = 1
 
 func NewQueryParamsMiddlewarefunc() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			query := r.URL.Query()
 			ctx := r.Context()
-			ctx = context.WithValue(ctx, queryParamsKey{}, query)
+			ctx = context.WithValue(ctx, keyQuery, query)
 			r = r.WithContext(ctx)
 			next.ServeHTTP(w, r)
 		})
@@ -25,7 +27,7 @@ func QueryParamsFromContext(ctx context.Context) url.Values {
 		return nil
 	}
 
-	if query, ok := ctx.Value(queryParamsKey{}).(map[string][]string); ok {
+	if query, ok := ctx.Value(keyQuery).(url.Values); ok {
 		return query
 	}
 
