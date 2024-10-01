@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	_ "net/http/pprof"
 	"os"
 
@@ -68,8 +69,14 @@ func main() {
 			} else {
 				return nil, fmt.Errorf("url params are required")
 			}
+			header := http.Header{}
+			if h := middleware.HeadersFromContext(ctx); h != nil {
+				header = h
+			}
 
-			c, resp, err := websocket.Dial(ctx, baseURL, nil)
+			c, resp, err := websocket.Dial(ctx, baseURL, &websocket.DialOptions{
+				HTTPHeader: header,
+			})
 
 			if err != nil {
 				return nil, err
@@ -87,7 +94,8 @@ func main() {
 
 	dispatcher := dispatch.NewRouterDispatcher(requestHandler, router.Dispatch)
 	endpoint := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
-	endpoint.Use(middleware.NewQueryParamsMiddlewarefunc())
+	endpoint.Use(middleware.NewQueryParamsMiddleware())
+	endpoint.Use(middleware.NewHeadersMiddleware())
 	server := server.NewServer(Addr, server.WithBaseContext(context.Background()))
 	server.AddChannel(endpoint)
 
