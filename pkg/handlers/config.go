@@ -6,7 +6,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type HandlersConfig struct {
+type Config struct {
 	Calls []CallConfig `yaml:"calls"`
 }
 
@@ -22,7 +22,7 @@ type BackendConfig struct {
 	RequestTemplate string   `yaml:"request_template"`
 }
 
-func LoadConfig(path string) (*HandlersConfig, error) {
+func LoadConfig(path string) (*Config, error) {
 	// Read the YAML file
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -30,7 +30,7 @@ func LoadConfig(path string) (*HandlersConfig, error) {
 	}
 
 	// Unmarshal the YAML data into HandlersConfig
-	var config HandlersConfig
+	var config Config
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
 		return nil, err

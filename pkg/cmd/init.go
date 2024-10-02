@@ -26,7 +26,16 @@ func ServerCommand(cfgPath *string) *cobra.Command {
 		Short: "Start BFF server",
 		Long:  "Start BFF server for Deriv API",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runServer()
+			if err := initLogger(); err != nil {
+				return err
+			}
+
+			cfg, err := initConfig(*cfgPath)
+			if err != nil {
+				return err
+			}
+
+			return runServer(cfg)
 		},
 	}
 }

@@ -32,7 +32,7 @@ type TemplateData struct {
 	ReqID  int64
 }
 
-func NewCallHandler(config *HandlersConfig) (*CallHandler, error) {
+func NewCallHandler(config *Config) (*CallHandler, error) {
 	h := &CallHandler{
 		calls: make(map[string]*CallRunConfig),
 	}
