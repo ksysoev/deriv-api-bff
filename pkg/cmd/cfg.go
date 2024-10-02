@@ -1,17 +1,17 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"log/slog"
 	"strings"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/api"
 	"github.com/ksysoev/deriv-api-bff/pkg/handlers"
 	"github.com/spf13/viper"
 )
 
 type config struct {
-	API handlers.Config `mapstructure:"api"`
+	Server api.Config      `mapstructure:"server"`
+	API    handlers.Config `mapstructure:"api"`
 }
 
 func initConfig(configPath string) (*config, error) {
@@ -28,9 +28,6 @@ func initConfig(configPath string) (*config, error) {
 	if err := viper.Unmarshal(cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
-
-	encdedCfg, _ := json.MarshalIndent(cfg, "", "  ")
-	slog.Debug("config:\n" + string(encdedCfg))
 
 	return cfg, nil
 }

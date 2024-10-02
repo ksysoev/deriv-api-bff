@@ -35,7 +35,7 @@ func ServerCommand(cfgPath *string) *cobra.Command {
 				return err
 			}
 
-			return runServer(cfg)
+			return runServer(cmd.Context(), cfg)
 		},
 	}
 }
