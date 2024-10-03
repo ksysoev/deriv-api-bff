@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/middleware"
-	"github.com/ksysoev/deriv-api-bff/pkg/router"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/channel"
 	"github.com/ksysoev/wasabi/dispatch"
@@ -30,7 +29,7 @@ func NewSevice(cfg *Config, handler wasabi.RequestHandler) *Service {
 }
 
 func (s *Service) Run(ctx context.Context) error {
-	dispatcher := dispatch.NewRouterDispatcher(s.handler, router.Dispatch)
+	dispatcher := dispatch.NewRouterDispatcher(s.handler, parser)
 	endpoint := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
 	endpoint.Use(middleware.NewQueryParamsMiddleware())
 	endpoint.Use(middleware.NewHeadersMiddleware())
