@@ -1,4 +1,4 @@
-package handlers
+package core
 
 import (
 	"context"
@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"html/template"
 	"sync"
-
-	"github.com/ksysoev/deriv-api-bff/pkg/router"
 )
 
 var ErrIterDone = errors.New("iteration done")
@@ -58,7 +56,7 @@ func NewCallHandler(config *Config) (*CallHandler, error) {
 	return h, nil
 }
 
-func (h *CallHandler) Process(req *router.Request) (*RequesIter, error) {
+func (h *CallHandler) Process(req *Request) (*RequesIter, error) {
 	method := req.RoutingKey()
 
 	call, ok := h.calls[method]
@@ -67,9 +65,9 @@ func (h *CallHandler) Process(req *router.Request) (*RequesIter, error) {
 		return nil, fmt.Errorf("unsupported method: %s", method)
 	}
 
-	requests := make([]*Request, 0, len(call.requests))
+	requests := make([]*RequestProcessor, 0, len(call.requests))
 	for _, req := range call.requests {
-		requests = append(requests, &Request{
+		requests = append(requests, &RequestProcessor{
 			tempate:      req.tmplt,
 			allow:        req.allow,
 			responseBody: req.responseBody,
@@ -92,7 +90,7 @@ type RequesIter struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
 	pos       int
-	reqs      []*Request
+	reqs      []*RequestProcessor
 	params    map[string]any
 	finalResp map[string]any
 	err       error

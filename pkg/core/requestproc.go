@@ -1,4 +1,4 @@
-package handlers
+package core
 
 import (
 	"bytes"
@@ -8,14 +8,14 @@ import (
 	"sync"
 )
 
-type Request struct {
+type RequestProcessor struct {
 	tempate      *template.Template
 	allow        []string
 	responseBody string
 	mu           sync.Mutex
 }
 
-func (r *Request) Render(data TemplateData) ([]byte, error) {
+func (r *RequestProcessor) Render(data TemplateData) ([]byte, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -28,7 +28,7 @@ func (r *Request) Render(data TemplateData) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (r *Request) ParseResp(data []byte) (map[string]any, error) {
+func (r *RequestProcessor) ParseResp(data []byte) (map[string]any, error) {
 	var rdata map[string]any
 
 	err := json.Unmarshal(data, &rdata)

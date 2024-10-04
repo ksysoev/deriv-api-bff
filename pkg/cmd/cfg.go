@@ -5,15 +5,15 @@ import (
 	"strings"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/api"
-	"github.com/ksysoev/deriv-api-bff/pkg/handlers"
+	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/prov/deriv"
 	"github.com/spf13/viper"
 )
 
 type config struct {
-	Server api.Config      `mapstructure:"server"`
-	API    handlers.Config `mapstructure:"api"`
-	Deriv  deriv.Config    `mapstructure:"deriv"`
+	Server api.Config   `mapstructure:"server"`
+	API    core.Config  `mapstructure:"api"`
+	Deriv  deriv.Config `mapstructure:"deriv"`
 }
 
 func initConfig(configPath string) (*config, error) {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/ksysoev/deriv-api-bff/pkg/router"
+	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/dispatch"
 )
@@ -14,7 +14,7 @@ func parser(conn wasabi.Connection, ctx context.Context, msgType wasabi.MessageT
 		return dispatch.NewRawRequest(ctx, msgType, data)
 	}
 
-	var req router.Request
+	var req core.Request
 
 	if err := json.Unmarshal(data, &req); err != nil {
 		return dispatch.NewRawRequest(ctx, msgType, data)

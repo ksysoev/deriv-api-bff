@@ -1,4 +1,4 @@
-package handlers
+package core
 
 import (
 	"context"
@@ -22,7 +22,7 @@ func NewComposer() *Composer {
 	}
 }
 
-func (c *Composer) WaitResponse(ctx context.Context, req *Request, respChan <-chan []byte) {
+func (c *Composer) WaitResponse(ctx context.Context, req *RequestProcessor, respChan <-chan []byte) {
 	c.wg.Add(1)
 	defer c.wg.Done()
 

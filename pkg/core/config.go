@@ -1,4 +1,4 @@
-package handlers
+package core
 
 type Config struct {
 	Calls []CallConfig `mapstructure:"calls"`
