@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/middleware"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/channel"
@@ -29,7 +30,7 @@ func NewSevice(cfg *Config, handler wasabi.RequestHandler) *Service {
 }
 
 func (s *Service) Run(ctx context.Context) error {
-	dispatcher := dispatch.NewRouterDispatcher(s.handler, parser)
+	dispatcher := dispatch.NewRouterDispatcher(s.handler, parse)
 	endpoint := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
 	endpoint.Use(middleware.NewQueryParamsMiddleware())
 	endpoint.Use(middleware.NewHeadersMiddleware())
@@ -49,4 +50,8 @@ func (s *Service) Run(ctx context.Context) error {
 		os.Exit(1)
 	}
 	return nil
+}
+
+func parse(conn wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
+	return core.NewRequest(conn, ctx, msgType, data)
 }

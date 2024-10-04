@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/coder/websocket"
+	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/middleware"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/backend"
@@ -37,9 +38,9 @@ func (s *Service) Handle(conn wasabi.Connection, req wasabi.Request) error {
 
 func (s *Service) createMessage(r wasabi.Request) (wasabi.MessageType, []byte, error) {
 	switch r.RoutingKey() {
-	case "text":
+	case core.RawTextRequest:
 		return wasabi.MsgTypeText, r.Data(), nil
-	case "binary":
+	case core.RawBinaryRequest:
 		return wasabi.MsgTypeBinary, r.Data(), nil
 	default:
 		var t wasabi.MessageType
