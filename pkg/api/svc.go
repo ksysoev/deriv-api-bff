@@ -53,5 +53,16 @@ func (s *Service) Run(ctx context.Context) error {
 }
 
 func parse(conn wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
-	return core.NewRequest(conn, ctx, msgType, data)
+	var msgT string
+	switch msgType {
+	case wasabi.MsgTypeText:
+		msgT = core.TextMessage
+	case wasabi.MsgTypeBinary:
+		msgT = core.BinaryMessage
+	default:
+		slog.Error("unsupported message type", "type", msgType)
+		return nil
+	}
+
+	return core.NewRequest(ctx, msgT, data)
 }

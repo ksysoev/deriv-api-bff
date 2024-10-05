@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	RawBinaryRequest = "binary"
-	RawTextRequest   = "text"
+	BinaryMessage string = "binary"
+	TextMessage   string = "text"
 )
 
 type Request struct {
@@ -20,12 +20,12 @@ type Request struct {
 	ID     *int           `json:"req_id"`
 }
 
-func NewRequest(_ wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) *Request {
-	if msgType == wasabi.MsgTypeBinary {
+func NewRequest(ctx context.Context, msgType string, data []byte) *Request {
+	if msgType == BinaryMessage {
 		return &Request{
 			ctx:    ctx,
 			data:   data,
-			Method: RawBinaryRequest,
+			Method: string(msgType),
 		}
 	}
 
@@ -36,7 +36,7 @@ func NewRequest(_ wasabi.Connection, ctx context.Context, msgType wasabi.Message
 		return &Request{
 			ctx:    ctx,
 			data:   data,
-			Method: RawTextRequest,
+			Method: string(msgType),
 		}
 	}
 

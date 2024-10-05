@@ -38,9 +38,9 @@ func (s *Service) Handle(conn wasabi.Connection, req wasabi.Request) error {
 
 func (s *Service) createMessage(r wasabi.Request) (wasabi.MessageType, []byte, error) {
 	switch r.RoutingKey() {
-	case core.RawTextRequest:
+	case core.TextMessage:
 		return wasabi.MsgTypeText, r.Data(), nil
-	case core.RawBinaryRequest:
+	case core.BinaryMessage:
 		return wasabi.MsgTypeBinary, r.Data(), nil
 	default:
 		var t wasabi.MessageType

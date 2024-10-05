@@ -44,7 +44,7 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 	b.mu.Unlock()
 
 	switch req.RoutingKey() {
-	case RawBinaryRequest, RawTextRequest:
+	case TextMessage, BinaryMessage:
 		return b.be.Handle(connState.Conn, req)
 	default:
 		r, ok := req.(*Request)
@@ -77,7 +77,7 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 
 			b.requests[id] = respChan
 
-			r := &Request{data: data, Method: RawTextRequest, ctx: ctx}
+			r := &Request{data: data, Method: TextMessage, ctx: ctx}
 
 			if err = b.be.Handle(connState.Conn, r); err != nil {
 				return err
