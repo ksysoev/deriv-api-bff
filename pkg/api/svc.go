@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 
@@ -13,16 +14,21 @@ import (
 	"github.com/ksysoev/wasabi/server"
 )
 
+type BFFService interface {
+	PassThrough(clientConn wasabi.Connection, req *core.Request) error
+	ProcessReuest(clientConn wasabi.Connection, req *core.Request) error
+}
+
 type Config struct {
 	Listen string `mapstructure:"listen"`
 }
 
 type Service struct {
 	cfg     *Config
-	handler wasabi.RequestHandler
+	handler BFFService
 }
 
-func NewSevice(cfg *Config, handler wasabi.RequestHandler) *Service {
+func NewSevice(cfg *Config, handler BFFService) *Service {
 	return &Service{
 		cfg:     cfg,
 		handler: handler,
@@ -30,7 +36,7 @@ func NewSevice(cfg *Config, handler wasabi.RequestHandler) *Service {
 }
 
 func (s *Service) Run(ctx context.Context) error {
-	dispatcher := dispatch.NewRouterDispatcher(s.handler, parse)
+	dispatcher := dispatch.NewRouterDispatcher(s, parse)
 	endpoint := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
 	endpoint.Use(middleware.NewQueryParamsMiddleware())
 	endpoint.Use(middleware.NewHeadersMiddleware())
@@ -52,17 +58,33 @@ func (s *Service) Run(ctx context.Context) error {
 	return nil
 }
 
+func (s *Service) Handle(conn wasabi.Connection, r wasabi.Request) error {
+	req, ok := r.(*core.Request)
+	if !ok {
+		return fmt.Errorf("unsupported request type: %T", req)
+	}
+
+	switch req.RoutingKey() {
+	case core.TextMessage, core.BinaryMessage:
+		return s.handler.PassThrough(conn, req)
+	case "":
+		return fmt.Errorf("Empty request type: %v", req)
+	default:
+		return s.handler.ProcessReuest(conn, req)
+	}
+}
+
 func parse(conn wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
-	var msgT string
+	var coreMsgType string
 	switch msgType {
 	case wasabi.MsgTypeText:
-		msgT = core.TextMessage
+		coreMsgType = core.TextMessage
 	case wasabi.MsgTypeBinary:
-		msgT = core.BinaryMessage
+		coreMsgType = core.BinaryMessage
 	default:
 		slog.Error("unsupported message type", "type", msgType)
 		return nil
 	}
 
-	return core.NewRequest(ctx, msgT, data)
+	return core.NewRequest(ctx, coreMsgType, data)
 }

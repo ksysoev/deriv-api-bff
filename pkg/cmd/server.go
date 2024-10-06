@@ -11,16 +11,14 @@ import (
 )
 
 func runServer(ctx context.Context, cfg *config) error {
-	callhandler, err := core.NewCallHandler(&cfg.API)
-	if err != nil {
-		return fmt.Errorf("failed to create call handler: %w", err)
-	}
-
 	derivAPI := deriv.NewService(&cfg.Deriv)
 
 	connRegistry := repo.NewConnectionRegistry()
 
-	requestHandler := core.NewBackendForFE(derivAPI, callhandler, connRegistry)
+	requestHandler, err := core.NewService(&cfg.API, derivAPI, connRegistry)
+	if err != nil {
+		return fmt.Errorf("failed to create request handler: %w", err)
+	}
 
 	server := api.NewSevice(&cfg.Server, requestHandler)
 
