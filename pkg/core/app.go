@@ -1,14 +1,10 @@
 package core
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 
-	"github.com/coder/websocket"
 	"github.com/ksysoev/wasabi"
-	"github.com/ksysoev/wasabi/channel"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -16,7 +12,7 @@ type BackendForFE struct {
 	mu         sync.Mutex
 	be         wasabi.RequestHandler
 	group      singleflight.Group
-	connection map[string]*ConnState
+	connection map[string]*Conn
 	requests   map[int64]chan []byte
 	ch         *CallHandler
 }
@@ -24,7 +20,7 @@ type BackendForFE struct {
 func NewBackendForFE(wsBackend wasabi.RequestHandler, callHandler *CallHandler) *BackendForFE {
 	return &BackendForFE{
 		be:         wsBackend,
-		connection: make(map[string]*ConnState),
+		connection: make(map[string]*Conn),
 		requests:   make(map[int64]chan []byte),
 		ch:         callHandler,
 	}
@@ -32,20 +28,23 @@ func NewBackendForFE(wsBackend wasabi.RequestHandler, callHandler *CallHandler) 
 
 func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error {
 	b.mu.Lock()
-	connState, ok := b.connection[conn.ID()]
+	id := conn.ID()
+	coreConn, ok := b.connection[id]
 	if !ok {
-		wrap := channel.NewConnectionWrapper(conn,
-			channel.WithSendWrapper(b.ResponseHandler),
-			channel.WithCloseWrapper(b.CloseHandler),
-		)
-		connState = NewConnState(wrap)
-		b.connection[conn.ID()] = connState
+		onClose := func() {
+			b.mu.Lock()
+			defer b.mu.Unlock()
+			delete(b.connection, id)
+		}
+
+		coreConn = NewConnection(conn, onClose)
+		b.connection[conn.ID()] = coreConn
 	}
 	b.mu.Unlock()
 
 	switch req.RoutingKey() {
 	case TextMessage, BinaryMessage:
-		return b.be.Handle(connState.Conn, req)
+		return b.be.Handle(coreConn, req)
 	default:
 		r, ok := req.(*Request)
 		if !ok {
@@ -63,10 +62,8 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 
 		ctx := r.Context()
 
-		for ctx.Err() == nil {
-			id := connState.NextID()
-
-			data, respChan, err := iter.Next(id)
+		for ctx.Err() == nil && iter.HasNext() {
+			data, err := iter.Next(coreConn.WaitResponse())
 			if err == ErrIterDone {
 				break
 			}
@@ -75,11 +72,9 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 				return err
 			}
 
-			b.requests[id] = respChan
-
 			r := &Request{data: data, Method: TextMessage, ctx: ctx}
 
-			if err = b.be.Handle(connState.Conn, r); err != nil {
+			if err = b.be.Handle(coreConn, r); err != nil {
 				return err
 			}
 		}
@@ -91,44 +86,4 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 
 		return conn.Send(wasabi.MsgTypeText, resp)
 	}
-}
-
-func (b *BackendForFE) ResponseHandler(conn wasabi.Connection, msgType wasabi.MessageType, msg []byte) error {
-	if msgType == wasabi.MsgTypeBinary {
-		return conn.Send(msgType, msg)
-	}
-
-	var respID struct {
-		ReqID int64 `json:"req_id"`
-	}
-
-	if err := json.Unmarshal(msg, &respID); err != nil {
-		return conn.Send(msgType, msg)
-	}
-
-	if respID.ReqID == 0 {
-		return conn.Send(msgType, msg)
-	}
-
-	b.mu.Lock()
-	ch, ok := b.requests[respID.ReqID]
-	b.mu.Unlock()
-	if !ok {
-		return conn.Send(msgType, msg)
-	}
-
-	buffer := make([]byte, len(msg))
-	copy(buffer, msg)
-
-	ch <- buffer
-
-	return nil
-}
-
-func (b *BackendForFE) CloseHandler(conn wasabi.Connection, status websocket.StatusCode, reason string, closingCtx ...context.Context) error {
-	b.mu.Lock()
-	delete(b.connection, conn.ID())
-	b.mu.Unlock()
-
-	return conn.Close(status, reason, closingCtx...)
 }

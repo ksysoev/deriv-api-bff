@@ -1,8 +1,12 @@
 package core
 
 import (
+	"context"
+	"encoding/json"
+	"sync"
 	"sync/atomic"
 
+	"github.com/coder/websocket"
 	"github.com/ksysoev/wasabi"
 )
 
@@ -13,19 +17,84 @@ const (
 	initID = 1_000_000
 )
 
-type ConnState struct {
-	Conn   wasabi.Connection
-	currID int64
+type Conn struct {
+	clientConn wasabi.Connection
+	currID     int64
+	requests   map[int64]chan []byte
+	onClose    func()
+	mu         sync.Mutex
 }
 
-func NewConnState(conn wasabi.Connection) *ConnState {
+func NewConnection(conn wasabi.Connection, onClose func()) *Conn {
+	if conn == nil {
+		panic("conn is nil")
+	}
 
-	return &ConnState{
-		Conn:   conn,
-		currID: initID,
+	return &Conn{
+		clientConn: conn,
+		currID:     initID,
+		requests:   make(map[int64]chan []byte),
+		onClose:    onClose,
 	}
 }
 
-func (c *ConnState) NextID() int64 {
+func (c *Conn) ID() string {
+	return c.clientConn.ID()
+}
+
+func (c *Conn) Context() context.Context {
+	return c.clientConn.Context()
+}
+
+func (c *Conn) WaitResponse() (int64, <-chan []byte) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	reqID := c.nextID()
+	ch := make(chan []byte, 1)
+	c.requests[reqID] = ch
+
+	return reqID, ch
+}
+
+func (c *Conn) nextID() int64 {
 	return atomic.AddInt64(&c.currID, 1)
+}
+
+func (c *Conn) Send(msgType wasabi.MessageType, msg []byte) error {
+	if msgType == wasabi.MsgTypeBinary {
+		return c.clientConn.Send(msgType, msg)
+	}
+
+	var respID struct {
+		ReqID int64 `json:"req_id"`
+	}
+
+	if err := json.Unmarshal(msg, &respID); err != nil {
+		return c.clientConn.Send(msgType, msg)
+	}
+
+	if respID.ReqID == 0 {
+		return c.clientConn.Send(msgType, msg)
+	}
+
+	c.mu.Lock()
+	ch, ok := c.requests[respID.ReqID]
+	delete(c.requests, respID.ReqID)
+	c.mu.Unlock()
+	if !ok {
+		return c.clientConn.Send(msgType, msg)
+	}
+
+	buffer := make([]byte, len(msg))
+	copy(buffer, msg)
+
+	ch <- buffer
+
+	return nil
+}
+
+func (c *Conn) Close(status websocket.StatusCode, reason string, closingCtx ...context.Context) error {
+	c.onClose()
+	return c.clientConn.Close(status, reason, closingCtx...)
 }

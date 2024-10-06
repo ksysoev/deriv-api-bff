@@ -98,9 +98,13 @@ type RequesIter struct {
 	composer  *Composer
 }
 
-func (r *RequesIter) Next(id int64) ([]byte, chan []byte, error) {
+func (r *RequesIter) HasNext() bool {
+	return r.pos < len(r.reqs)
+}
+
+func (r *RequesIter) Next(id int64, respChan <-chan []byte) ([]byte, error) {
 	if r.pos >= len(r.reqs) {
-		return nil, nil, ErrIterDone
+		return nil, ErrIterDone
 	}
 
 	req := r.reqs[r.pos]
@@ -111,16 +115,14 @@ func (r *RequesIter) Next(id int64) ([]byte, chan []byte, error) {
 		ReqID:  id,
 	}
 
-	respChan := make(chan []byte, 1)
-
 	body, err := req.Render(data)
 	if err != nil {
-		return nil, nil, fmt.Errorf("fail to render request %s: %w", req.responseBody, err)
+		return nil, fmt.Errorf("fail to render request %s: %w", req.responseBody, err)
 	}
 
 	go r.composer.WaitResponse(r.ctx, req, respChan)
 
-	return body, respChan, nil
+	return body, nil
 }
 
 func (r *RequesIter) WaitResp(req_id *int) ([]byte, error) {
