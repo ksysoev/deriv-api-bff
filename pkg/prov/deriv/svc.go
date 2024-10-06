@@ -32,7 +32,7 @@ func NewService(cfg *Config) *Service {
 	return s
 }
 
-func (s *Service) Handle(conn wasabi.Connection, req wasabi.Request) error {
+func (s *Service) Handle(conn *core.Conn, req *core.Request) error {
 	return s.handler.Handle(conn, req)
 }
 

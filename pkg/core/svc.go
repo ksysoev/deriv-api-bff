@@ -10,13 +10,17 @@ type ConnRegistry interface {
 	GetConnection(wasabi.Connection) *Conn
 }
 
+type DerivAPI interface {
+	Handle(*Conn, *Request) error
+}
+
 type Service struct {
-	be       wasabi.RequestHandler
+	be       DerivAPI
 	ch       *CallHandler
 	registry ConnRegistry
 }
 
-func NewService(cfg *Config, wsBackend wasabi.RequestHandler, connRegistry ConnRegistry) (*Service, error) {
+func NewService(cfg *Config, wsBackend DerivAPI, connRegistry ConnRegistry) (*Service, error) {
 	callHandler, err := NewCallHandler(cfg)
 
 	if err != nil {
