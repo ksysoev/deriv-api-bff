@@ -7,6 +7,7 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/api"
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/prov/deriv"
+	"github.com/ksysoev/deriv-api-bff/pkg/repo"
 )
 
 func runServer(ctx context.Context, cfg *config) error {
@@ -17,7 +18,9 @@ func runServer(ctx context.Context, cfg *config) error {
 
 	derivAPI := deriv.NewService(&cfg.Deriv)
 
-	requestHandler := core.NewBackendForFE(derivAPI, callhandler)
+	connRegistry := repo.NewConnectionRegistry()
+
+	requestHandler := core.NewBackendForFE(derivAPI, callhandler, connRegistry)
 
 	server := api.NewSevice(&cfg.Server, requestHandler)
 

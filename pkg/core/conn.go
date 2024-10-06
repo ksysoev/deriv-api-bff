@@ -21,11 +21,11 @@ type Conn struct {
 	clientConn wasabi.Connection
 	currID     int64
 	requests   map[int64]chan []byte
-	onClose    func()
+	onClose    func(string)
 	mu         sync.Mutex
 }
 
-func NewConnection(conn wasabi.Connection, onClose func()) *Conn {
+func NewConnection(conn wasabi.Connection, onClose func(id string)) *Conn {
 	if conn == nil {
 		panic("conn is nil")
 	}
@@ -95,6 +95,6 @@ func (c *Conn) Send(msgType wasabi.MessageType, msg []byte) error {
 }
 
 func (c *Conn) Close(status websocket.StatusCode, reason string, closingCtx ...context.Context) error {
-	c.onClose()
+	c.onClose(c.ID())
 	return c.clientConn.Close(status, reason, closingCtx...)
 }

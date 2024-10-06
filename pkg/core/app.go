@@ -8,6 +8,10 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+type ConnRegistry interface {
+	GetConnection(wasabi.Connection) *Conn
+}
+
 type BackendForFE struct {
 	mu         sync.Mutex
 	be         wasabi.RequestHandler
@@ -15,36 +19,24 @@ type BackendForFE struct {
 	connection map[string]*Conn
 	requests   map[int64]chan []byte
 	ch         *CallHandler
+	registry   ConnRegistry
 }
 
-func NewBackendForFE(wsBackend wasabi.RequestHandler, callHandler *CallHandler) *BackendForFE {
+func NewBackendForFE(wsBackend wasabi.RequestHandler, callHandler *CallHandler, connRegistry ConnRegistry) *BackendForFE {
 	return &BackendForFE{
-		be:         wsBackend,
-		connection: make(map[string]*Conn),
-		requests:   make(map[int64]chan []byte),
-		ch:         callHandler,
+		be:       wsBackend,
+		requests: make(map[int64]chan []byte),
+		ch:       callHandler,
+		registry: connRegistry,
 	}
 }
 
-func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error {
-	b.mu.Lock()
-	id := conn.ID()
-	coreConn, ok := b.connection[id]
-	if !ok {
-		onClose := func() {
-			b.mu.Lock()
-			defer b.mu.Unlock()
-			delete(b.connection, id)
-		}
-
-		coreConn = NewConnection(conn, onClose)
-		b.connection[conn.ID()] = coreConn
-	}
-	b.mu.Unlock()
+func (b *BackendForFE) Handle(clientConn wasabi.Connection, req wasabi.Request) error {
+	conn := b.registry.GetConnection(clientConn)
 
 	switch req.RoutingKey() {
 	case TextMessage, BinaryMessage:
-		return b.be.Handle(coreConn, req)
+		return b.be.Handle(conn, req)
 	default:
 		r, ok := req.(*Request)
 		if !ok {
@@ -63,7 +55,7 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 		ctx := r.Context()
 
 		for ctx.Err() == nil && iter.HasNext() {
-			data, err := iter.Next(coreConn.WaitResponse())
+			data, err := iter.Next(conn.WaitResponse())
 			if err == ErrIterDone {
 				break
 			}
@@ -74,7 +66,7 @@ func (b *BackendForFE) Handle(conn wasabi.Connection, req wasabi.Request) error 
 
 			r := &Request{data: data, Method: TextMessage, ctx: ctx}
 
-			if err = b.be.Handle(coreConn, r); err != nil {
+			if err = b.be.Handle(conn, r); err != nil {
 				return err
 			}
 		}
