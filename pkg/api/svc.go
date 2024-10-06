@@ -14,6 +14,10 @@ import (
 	"github.com/ksysoev/wasabi/server"
 )
 
+const (
+	maxMessageSize = 600 * 1024
+)
+
 type BFFService interface {
 	PassThrough(clientConn wasabi.Connection, req *core.Request) error
 	ProcessReuest(clientConn wasabi.Connection, req *core.Request) error
@@ -37,7 +41,10 @@ func NewSevice(cfg *Config, handler BFFService) *Service {
 
 func (s *Service) Run(ctx context.Context) error {
 	dispatcher := dispatch.NewRouterDispatcher(s, parse)
-	endpoint := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
+	registry := channel.NewConnectionRegistry(
+		channel.WithMaxFrameLimit(maxMessageSize),
+	)
+	endpoint := channel.NewChannel("/", dispatcher, registry, channel.WithOriginPatterns("*"))
 	endpoint.Use(middleware.NewQueryParamsMiddleware())
 	endpoint.Use(middleware.NewHeadersMiddleware())
 	server := server.NewServer(s.cfg.Listen)

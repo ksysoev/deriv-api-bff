@@ -12,6 +12,10 @@ import (
 	"github.com/ksysoev/wasabi/backend"
 )
 
+const (
+	maxMessageSize = 600 * 1024
+)
+
 type Config struct {
 	Endpoint string `mapstructure:"endpoint"`
 }
@@ -80,6 +84,8 @@ func (s *Service) dial(ctx context.Context, baseURL string) (*websocket.Conn, er
 	if resp.Body != nil {
 		defer resp.Body.Close()
 	}
+
+	c.SetReadLimit(maxMessageSize)
 
 	return c, nil
 }
