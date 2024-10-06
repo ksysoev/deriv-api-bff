@@ -44,7 +44,14 @@ func (c *Composer) WaitResponse(ctx context.Context, req *RequestProcessor, resp
 				continue
 			}
 
-			c.resp[key] = respBody[key]
+			destKey := key
+			if req.fieldsMap != nil {
+				if mappedKey, ok := req.fieldsMap[key]; ok {
+					destKey = mappedKey
+				}
+			}
+
+			c.resp[destKey] = respBody[key]
 		}
 	}
 }

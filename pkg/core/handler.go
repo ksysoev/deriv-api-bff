@@ -22,6 +22,7 @@ type CallRunConfig struct {
 type RequestRunConfig struct {
 	tmplt        *template.Template
 	allow        []string
+	fieldMap     map[string]string
 	responseBody string
 }
 
@@ -47,6 +48,7 @@ func NewCallHandler(config *Config) (*CallHandler, error) {
 			c.requests[req.ResponseBody] = &RequestRunConfig{
 				tmplt:        tmplt,
 				allow:        req.Allow,
+				fieldMap:     req.FieldsMap,
 				responseBody: req.ResponseBody,
 			}
 		}
@@ -70,6 +72,7 @@ func (h *CallHandler) Process(req *Request) (*RequesIter, error) {
 		requests = append(requests, &RequestProcessor{
 			tempate:      req.tmplt,
 			allow:        req.allow,
+			fieldsMap:    req.fieldMap,
 			responseBody: req.responseBody,
 		})
 	}

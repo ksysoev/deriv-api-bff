@@ -11,6 +11,7 @@ import (
 type RequestProcessor struct {
 	tempate      *template.Template
 	allow        []string
+	fieldsMap    map[string]string
 	responseBody string
 	mu           sync.Mutex
 }

@@ -12,6 +12,9 @@ api:
           allow: 
             - financial_company
             - gaming_company
+          fields_map:
+            financial_company: "financial"
+            gaming_company: "gaming"
           request_template: |
             {
               "landing_company": "{{ index .Params "country" }}",

@@ -11,7 +11,8 @@ type CallConfig struct {
 }
 
 type BackendConfig struct {
-	ResponseBody    string   `mapstructure:"response_body"`
-	Allow           []string `mapstructure:"allow"`
-	RequestTemplate string   `mapstructure:"request_template"`
+	ResponseBody    string            `mapstructure:"response_body"`
+	Allow           []string          `mapstructure:"allow"`
+	FieldsMap       map[string]string `mapstructure:"fields_map"`
+	RequestTemplate string            `mapstructure:"request_template"`
 }
