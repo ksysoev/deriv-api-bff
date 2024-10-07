@@ -6,9 +6,9 @@ import (
 	"net/url"
 )
 
-type contextKey int
+type ContextKey int
 
-var keyQuery contextKey = 1
+var keyQuery ContextKey = 1
 
 func NewQueryParamsMiddleware() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {

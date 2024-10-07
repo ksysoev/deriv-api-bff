@@ -18,10 +18,13 @@ type Config struct {
 
 type Service struct {
 	handler wasabi.RequestHandler
+	dialer Dialer
 }
 
-func NewService(cfg *Config) *Service {
-	s := &Service{}
+func NewService(cfg *Config, dialer Dialer) *Service {
+	s := &Service{
+		dialer: dialer,
+	}
 
 	s.handler = backend.NewWSBackend(
 		cfg.Endpoint,
@@ -69,7 +72,7 @@ func (s *Service) dial(ctx context.Context, baseURL string) (*websocket.Conn, er
 		header = h
 	}
 
-	c, resp, err := websocket.Dial(ctx, baseURL, &websocket.DialOptions{
+	c, resp, err := s.dialer.Dial(ctx, baseURL, &websocket.DialOptions{
 		HTTPHeader: header,
 	})
 

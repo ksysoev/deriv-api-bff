@@ -16,7 +16,7 @@ func runServer(ctx context.Context, cfg *config) error {
 		return fmt.Errorf("failed to create call handler: %w", err)
 	}
 
-	derivAPI := deriv.NewService(&cfg.Deriv)
+	derivAPI := deriv.NewService(&cfg.Deriv, &deriv.WebSocketDialer{})
 
 	connRegistry := repo.NewConnectionRegistry()
 

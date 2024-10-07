@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-var keyHeaders contextKey = 2
+var keyHeaders ContextKey = 2
 
 func NewHeadersMiddleware() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {

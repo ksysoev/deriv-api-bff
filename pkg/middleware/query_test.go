@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
@@ -50,5 +51,26 @@ func TestQueryParamsFromContext_NoQueryParams(t *testing.T) {
 	queryParams := QueryParamsFromContext(ctx)
 	if queryParams != nil {
 		t.Error("Expected nil query parameters from context without query params, got non-nil")
+	}
+}
+
+
+func TestQueryParamsFromContext_WithQueryParams(t *testing.T) {
+	// Create a context with query parameters
+	queryParams := url.Values{}
+	queryParams.Set("key", "value")
+	ctx := context.WithValue(context.Background(), keyQuery, queryParams)
+
+	// Retrieve query parameters from context
+	retrievedQueryParams := QueryParamsFromContext(ctx)
+
+	// Check if the retrieved query parameters match the expected values
+	if retrievedQueryParams == nil {
+		t.Fatal("Expected non-nil query parameters, got nil")
+	}
+
+	expected := "value"
+	if retrievedQueryParams.Get("key") != expected {
+		t.Errorf("Expected query parameter 'key' to be '%s', got '%s'", expected, retrievedQueryParams.Get("key"))
 	}
 }
