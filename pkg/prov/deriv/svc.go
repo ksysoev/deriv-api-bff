@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/coder/websocket"
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
@@ -30,7 +31,7 @@ func NewService(cfg *Config) *Service {
 	s.handler = backend.NewWSBackend(
 		cfg.Endpoint,
 		s.createMessage,
-		backend.WithWSDialler(s.dial),
+		backend.WithWSDialler(s.dialer),
 	)
 
 	return s
@@ -52,9 +53,14 @@ func (s *Service) createMessage(r wasabi.Request) (wasabi.MessageType, []byte, e
 	}
 }
 
-func (s *Service) dial(ctx context.Context, baseURL string) (*websocket.Conn, error) {
+func (s *Service) dialer(ctx context.Context, baseURL string) (*websocket.Conn, error) {
 	urlParams := middleware.QueryParamsFromContext(ctx)
+	headers := middleware.HeadersFromContext(ctx)
 
+	return s.dial(ctx, baseURL, urlParams, headers)
+}
+
+func (s *Service) dial(ctx context.Context, baseURL string, urlParams url.Values, headers http.Header) (*websocket.Conn, error) {
 	if urlParams != nil {
 		if app_id := urlParams.Get("app_id"); app_id != "" {
 			baseURL = fmt.Sprintf("%s?app_id=%s", baseURL, app_id)
@@ -66,15 +72,11 @@ func (s *Service) dial(ctx context.Context, baseURL string) (*websocket.Conn, er
 			baseURL = fmt.Sprintf("%s&l=%s", baseURL, lang)
 		}
 	} else {
-		return nil, fmt.Errorf("url params are required")
-	}
-	header := http.Header{}
-	if h := middleware.HeadersFromContext(ctx); h != nil {
-		header = h
+		return nil, fmt.Errorf("app_id is required")
 	}
 
 	c, resp, err := websocket.Dial(ctx, baseURL, &websocket.DialOptions{
-		HTTPHeader: header,
+		HTTPHeader: headers,
 	})
 
 	if err != nil {
