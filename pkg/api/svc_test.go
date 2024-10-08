@@ -11,7 +11,7 @@ func TestSvc_Run(t *testing.T) {
 		Listen: ":8080",
 	}
 
-	service := NewSevice(config, mockRequestHandler)
+	service := NewSevice(config, nil)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 
 	defer cancel()

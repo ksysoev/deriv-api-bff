@@ -14,12 +14,7 @@ import (
 // It takes ctx of type context.Context and cfg of type *config.
 // It returns an error if the request handler creation fails or if the server fails to run.
 func runServer(ctx context.Context, cfg *config) error {
-	callhandler, err := core.NewCallHandler(&cfg.API)
-	if err != nil {
-		return fmt.Errorf("failed to create call handler: %w", err)
-	}
-
-	derivAPI := deriv.NewService(&cfg.Deriv, &deriv.WebSocketDialer{})
+	derivAPI := deriv.NewService(&cfg.Deriv)
 
 	connRegistry := repo.NewConnectionRegistry()
 

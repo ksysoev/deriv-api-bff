@@ -12,3 +12,9 @@ mocks:
 
 fmt-all:
 	gofmt -w .
+
+build:
+	go build
+
+mod-tidy:
+	go mod tidy
