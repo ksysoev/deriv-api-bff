@@ -10,6 +10,9 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/repo"
 )
 
+// runServer initializes and runs the server with the provided configuration.
+// It takes ctx of type context.Context and cfg of type *config.
+// It returns an error if the request handler creation fails or if the server fails to run.
 func runServer(ctx context.Context, cfg *config) error {
 	callhandler, err := core.NewCallHandler(&cfg.API)
 	if err != nil {
@@ -20,7 +23,10 @@ func runServer(ctx context.Context, cfg *config) error {
 
 	connRegistry := repo.NewConnectionRegistry()
 
-	requestHandler := core.NewBackendForFE(derivAPI, callhandler, connRegistry)
+	requestHandler, err := core.NewService(&cfg.API, derivAPI, connRegistry)
+	if err != nil {
+		return fmt.Errorf("failed to create request handler: %w", err)
+	}
 
 	server := api.NewSevice(&cfg.Server, requestHandler)
 

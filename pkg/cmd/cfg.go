@@ -16,6 +16,10 @@ type config struct {
 	Deriv  deriv.Config `mapstructure:"deriv"`
 }
 
+// initConfig initializes the configuration by reading from the specified config file.
+// It takes configPath of type string which is the path to the configuration file.
+// It returns a pointer to a config struct and an error.
+// It returns an error if the configuration file cannot be read or if the configuration cannot be unmarshaled.
 func initConfig(configPath string) (*config, error) {
 	viper.SetConfigFile(configPath)
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 
@@ -13,25 +14,45 @@ import (
 	"github.com/ksysoev/wasabi/server"
 )
 
+const (
+	maxMessageSize = 600 * 1024
+)
+
+type BFFService interface {
+	PassThrough(clientConn wasabi.Connection, req *core.Request) error
+	ProcessRequest(clientConn wasabi.Connection, req *core.Request) error
+}
+
 type Config struct {
 	Listen string `mapstructure:"listen"`
 }
 
 type Service struct {
 	cfg     *Config
-	handler wasabi.RequestHandler
+	handler BFFService
 }
 
-func NewSevice(cfg *Config, handler wasabi.RequestHandler) *Service {
+// NewSevice creates a new instance of Service with the provided configuration and handler.
+// It takes cfg of type *Config and handler of type BFFService.
+// It returns a pointer to a Service struct.
+func NewSevice(cfg *Config, handler BFFService) *Service {
 	return &Service{
 		cfg:     cfg,
 		handler: handler,
 	}
 }
 
+// Run starts the service and listens for incoming connections.
+// It takes a context.Context parameter which is used to manage the lifecycle of the service.
+// It returns an error if the server fails to start or close properly.
+// The function sets up a dispatcher, a connection registry, and a channel endpoint with middleware.
+// It also handles graceful shutdown when the context is done.
 func (s *Service) Run(ctx context.Context) error {
-	dispatcher := dispatch.NewRouterDispatcher(s.handler, parse)
-	endpoint := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
+	dispatcher := dispatch.NewRouterDispatcher(s, parse)
+	registry := channel.NewConnectionRegistry(
+		channel.WithMaxFrameLimit(maxMessageSize),
+	)
+	endpoint := channel.NewChannel("/", dispatcher, registry, channel.WithOriginPatterns("*"))
 	endpoint.Use(middleware.NewQueryParamsMiddleware())
 	endpoint.Use(middleware.NewHeadersMiddleware())
 	server := server.NewServer(s.cfg.Listen)
@@ -52,17 +73,42 @@ func (s *Service) Run(ctx context.Context) error {
 	return nil
 }
 
+// Handle processes a request received on a connection and routes it based on the request type.
+// It takes conn of type wasabi.Connection and r of type wasabi.Request.
+// It returns an error if the request type is unsupported or if the request type is empty.
+// If the request type is core.TextMessage or core.BinaryMessage, it passes the request through to the handler.
+// For other request types, it processes the request using the handler.
+func (s *Service) Handle(conn wasabi.Connection, r wasabi.Request) error {
+	req, ok := r.(*core.Request)
+	if !ok {
+		return fmt.Errorf("unsupported request type: %T", req)
+	}
+
+	switch req.RoutingKey() {
+	case core.TextMessage, core.BinaryMessage:
+		return s.handler.PassThrough(conn, req)
+	case "":
+		return fmt.Errorf("Empty request type: %v", req)
+	default:
+		return s.handler.ProcessRequest(conn, req)
+	}
+}
+
+// parse processes a message received over a Wasabi connection and converts it into a core request.
+// It takes conn of type wasabi.Connection, ctx of type context.Context, msgType of type wasabi.MessageType, and data of type []byte.
+// It returns a wasabi.Request which represents the parsed message.
+// If the msgType is unsupported, it logs an error and returns nil.
 func parse(conn wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
-	var msgT string
+	var coreMsgType string
 	switch msgType {
 	case wasabi.MsgTypeText:
-		msgT = core.TextMessage
+		coreMsgType = core.TextMessage
 	case wasabi.MsgTypeBinary:
-		msgT = core.BinaryMessage
+		coreMsgType = core.BinaryMessage
 	default:
 		slog.Error("unsupported message type", "type", msgType)
 		return nil
 	}
 
-	return core.NewRequest(ctx, msgT, data)
+	return core.NewRequest(ctx, coreMsgType, data)
 }

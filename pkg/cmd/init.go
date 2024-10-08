@@ -4,6 +4,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// InitCommands initializes and returns the root command for the Backend for Frontend (BFF) service.
+// It sets up the command structure and adds subcommands, including setting up persistent flags.
+// It returns a pointer to a cobra.Command which represents the root command.
 func InitCommands() *cobra.Command {
 	var configPath string
 
@@ -20,6 +23,10 @@ func InitCommands() *cobra.Command {
 	return cmd
 }
 
+// ServerCommand creates a new cobra.Command to start the BFF server for Deriv API.
+// It takes cfgPath of type *string which is the path to the configuration file.
+// It returns a pointer to a cobra.Command which can be executed to start the server.
+// It returns an error if the logger initialization fails, the configuration cannot be loaded, or the server fails to run.
 func ServerCommand(cfgPath *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "server",
