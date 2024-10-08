@@ -10,6 +10,9 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/repo"
 )
 
+// runServer initializes and runs the server with the provided configuration.
+// It takes ctx of type context.Context and cfg of type *config.
+// It returns an error if the request handler creation fails or if the server fails to run.
 func runServer(ctx context.Context, cfg *config) error {
 	derivAPI := deriv.NewService(&cfg.Deriv)
 

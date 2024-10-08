@@ -20,6 +20,11 @@ type Request struct {
 	ID     *int           `json:"req_id"`
 }
 
+// NewRequest creates a new Request object based on the provided message type and data.
+// It takes ctx of type context.Context, msgType of type string, and data of type []byte.
+// It returns a pointer to a Request object. If the msgType is BinaryMessage or if the data
+// cannot be unmarshaled into a Request object, it initializes the Request with the provided
+// msgType and data. Otherwise, it unmarshals the data into a Request object and sets the context and data fields.
 func NewRequest(ctx context.Context, msgType string, data []byte) *Request {
 	if msgType == BinaryMessage {
 		return &Request{
@@ -46,18 +51,27 @@ func NewRequest(ctx context.Context, msgType string, data []byte) *Request {
 	return &req
 }
 
+// Data returns the data stored in the Request as a byte slice.
+// It returns a byte slice containing the data.
 func (r *Request) Data() []byte {
 	return r.data
 }
 
+// RoutingKey returns the routing key for the request.
+// It returns a string which is the method of the request.
 func (r *Request) RoutingKey() string {
 	return r.Method
 }
 
+// Context returns the context associated with the Request.
+// It returns a context.Context which is the context stored in the Request.
 func (r *Request) Context() context.Context {
 	return r.ctx
 }
 
+// WithContext sets the context for the Request and returns the updated Request.
+// It takes ctx of type context.Context.
+// It returns the updated Request with the new context.
 func (r *Request) WithContext(ctx context.Context) wasabi.Request {
 	r.ctx = ctx
 	return r
