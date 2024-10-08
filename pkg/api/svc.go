@@ -20,7 +20,7 @@ const (
 
 type BFFService interface {
 	PassThrough(clientConn wasabi.Connection, req *core.Request) error
-	ProcessReuest(clientConn wasabi.Connection, req *core.Request) error
+	ProcessRequest(clientConn wasabi.Connection, req *core.Request) error
 }
 
 type Config struct {
@@ -77,7 +77,7 @@ func (s *Service) Handle(conn wasabi.Connection, r wasabi.Request) error {
 	case "":
 		return fmt.Errorf("Empty request type: %v", req)
 	default:
-		return s.handler.ProcessReuest(conn, req)
+		return s.handler.ProcessRequest(conn, req)
 	}
 }
 
