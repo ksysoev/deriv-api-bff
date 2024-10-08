@@ -4,12 +4,9 @@ import (
 	"context"
 	"testing"
 	"time"
-
-	wasabi_mocks "github.com/ksysoev/wasabi/mocks"
 )
 
 func TestSvc_Run(t *testing.T) {
-	mockRequestHandler := wasabi_mocks.NewMockRequestHandler(t)
 	config := &Config{
 		Listen: ":8080",
 	}

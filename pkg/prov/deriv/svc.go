@@ -23,16 +23,13 @@ type Config struct {
 
 type Service struct {
 	handler wasabi.RequestHandler
-	dialer Dialer
 }
 
 // NewService initializes and returns a new Service instance.
 // It takes cfg of type *Config which contains configuration settings.
 // It returns a pointer to a Service struct.
-func NewService(cfg *Config, dialer Dialer) *Service {
-	s := &Service{
-		dialer: dialer,
-	}
+func NewService(cfg *Config) *Service {
+	s := &Service{}
 
 	s.handler = backend.NewWSBackend(
 		cfg.Endpoint,
@@ -95,7 +92,7 @@ func (s *Service) dial(ctx context.Context, baseURL string, urlParams url.Values
 		return nil, fmt.Errorf("app_id is required")
 	}
 
-	c, resp, err := s.dialer.Dial(ctx, baseURL, &websocket.DialOptions{
+	c, resp, err := websocket.Dial(ctx, baseURL, &websocket.DialOptions{
 		HTTPHeader: headers,
 	})
 

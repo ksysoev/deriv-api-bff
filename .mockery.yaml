@@ -4,6 +4,6 @@ dir: ./mocks
 outpkg: mocks
 mock-build-tags: "!compile"
 packages:
-  github.com/coder/websocket:
+   github.com/ksysoev/deriv-api-bff:
     interfaces:
-      Conn:
+      BFFService:
