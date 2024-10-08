@@ -20,6 +20,10 @@ type Service struct {
 	registry ConnRegistry
 }
 
+// NewService creates a new instance of Service.
+// It takes cfg of type *Config, wsBackend of type DerivAPI, and connRegistry of type ConnRegistry.
+// It returns a pointer to Service and an error.
+// It returns an error if the call handler creation fails.
 func NewService(cfg *Config, wsBackend DerivAPI, connRegistry ConnRegistry) (*Service, error) {
 	callHandler, err := NewCallHandler(cfg)
 
@@ -34,13 +38,19 @@ func NewService(cfg *Config, wsBackend DerivAPI, connRegistry ConnRegistry) (*Se
 	}, nil
 }
 
+// PassThrough forwards a request to the backend service using the provided client connection.
+// It takes clientConn of type wasabi.Connection and req of type *Request.
+// It returns an error if the backend service fails to handle the request.
 func (s *Service) PassThrough(clientConn wasabi.Connection, req *Request) error {
 	conn := s.registry.GetConnection(clientConn)
 
 	return s.be.Handle(conn, req)
 }
 
-func (s *Service) ProcessReuest(clientConn wasabi.Connection, req *Request) error {
+// ProcessRequest processes a request by iterating over responses and handling them.
+// It takes clientConn of type wasabi.Connection and req of type *Request.
+// It returns an error if processing the request fails or if the method is unsupported.
+func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *Request) error {
 	conn := s.registry.GetConnection(clientConn)
 
 	iter, err := s.ch.Process(req)
