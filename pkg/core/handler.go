@@ -7,21 +7,25 @@ import (
 	"html/template"
 )
 
+type CallsRepo interface {
+	GetCall(method string) (*CallRunConfig, bool)
+}
+
 var ErrIterDone = errors.New("iteration done")
 
 type CallHandler struct {
-	calls map[string]*CallRunConfig
+	repo CallsRepo
 }
 
 type CallRunConfig struct {
-	requests map[string]*RequestRunConfig
+	Requests map[string]*RequestRunConfig
 }
 
 type RequestRunConfig struct {
-	tmplt        *template.Template
-	fieldMap     map[string]string
-	responseBody string
-	allow        []string
+	Tmplt        *template.Template
+	FieldMap     map[string]string
+	ResponseBody string
+	Allow        []string
 }
 
 type TemplateData struct {
@@ -33,34 +37,10 @@ type TemplateData struct {
 // It takes a config parameter of type *Config which contains the necessary setup for calls and requests.
 // It returns a pointer to CallHandler and an error if there is an issue parsing the request templates.
 // It returns an error if any request template in the configuration cannot be parsed.
-func NewCallHandler(config *Config) (*CallHandler, error) {
-	h := &CallHandler{
-		calls: make(map[string]*CallRunConfig),
+func NewCallHandler(repo CallsRepo) *CallHandler {
+	return &CallHandler{
+		repo: repo,
 	}
-
-	for _, call := range config.Calls {
-		c := &CallRunConfig{
-			requests: make(map[string]*RequestRunConfig),
-		}
-
-		for _, req := range call.Backend {
-			tmplt, err := template.New("request").Parse(req.RequestTemplate)
-			if err != nil {
-				return nil, err
-			}
-
-			c.requests[req.ResponseBody] = &RequestRunConfig{
-				tmplt:        tmplt,
-				allow:        req.Allow,
-				fieldMap:     req.FieldsMap,
-				responseBody: req.ResponseBody,
-			}
-		}
-
-		h.calls[call.Method] = c
-	}
-
-	return h, nil
 }
 
 // Process handles the processing of a request based on its routing key.
@@ -70,19 +50,19 @@ func NewCallHandler(config *Config) (*CallHandler, error) {
 func (h *CallHandler) Process(req *Request) (*RequesIter, error) {
 	method := req.RoutingKey()
 
-	call, ok := h.calls[method]
+	call, ok := h.repo.GetCall(method)
 
 	if !ok {
 		return nil, fmt.Errorf("unsupported method: %s", method)
 	}
 
-	requests := make([]*RequestProcessor, 0, len(call.requests))
-	for _, req := range call.requests {
+	requests := make([]*RequestProcessor, 0, len(call.Requests))
+	for _, req := range call.Requests {
 		requests = append(requests, &RequestProcessor{
-			tempate:      req.tmplt,
-			allow:        req.allow,
-			fieldsMap:    req.fieldMap,
-			responseBody: req.responseBody,
+			tempate:      req.Tmplt,
+			allow:        req.Allow,
+			fieldsMap:    req.FieldMap,
+			responseBody: req.ResponseBody,
 		})
 	}
 

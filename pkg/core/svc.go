@@ -24,18 +24,14 @@ type Service struct {
 // It takes cfg of type *Config, wsBackend of type DerivAPI, and connRegistry of type ConnRegistry.
 // It returns a pointer to Service and an error.
 // It returns an error if the call handler creation fails.
-func NewService(cfg *Config, wsBackend DerivAPI, connRegistry ConnRegistry) (*Service, error) {
-	callHandler, err := NewCallHandler(cfg)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to create call handler: %w", err)
-	}
+func NewService(calls CallsRepo, wsBackend DerivAPI, connRegistry ConnRegistry) *Service {
+	callHandler := NewCallHandler(calls)
 
 	return &Service{
 		be:       wsBackend,
 		ch:       callHandler,
 		registry: connRegistry,
-	}, nil
+	}
 }
 
 // PassThrough forwards a request to the backend service using the provided client connection.
