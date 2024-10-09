@@ -17,8 +17,9 @@ func initRequestProcessor() *RequestProcessor {
 
 	rp := &RequestProcessor{
 		tempate: tmpl,
-		allow: []string{"Params", "ReqID"},
+		allow:   []string{"Params", "ReqID"},
 	}
+
 	return rp
 }
 
@@ -29,11 +30,11 @@ func TestComposer_WaitResponse_Success(t *testing.T) {
 	respChan <- []byte(`{"Params":"param1,param2","ReqID":1234}`)
 
 	ctx := context.Background()
-	var reqId int = 1234
+	reqID := 1234
 
 	go composer.WaitResponse(ctx, req, respChan)
 
-	resp, err := composer.Response(&reqId)
+	resp, err := composer.Response(&reqID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -67,14 +68,14 @@ func TestComposer_WaitResponse_ContextCancelled(t *testing.T) {
 	respChan := make(chan []byte, 1)
 	respChan <- []byte(`{"Params":"param1,param2","ReqID":1234}`)
 
-	var reqId int = 1234
+	var reqID = 1234
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
 	composer.WaitResponse(ctx, req, respChan)
 
-	res, err := composer.Response(&reqId)
+	res, err := composer.Response(&reqID)
 	if err == nil {
 		t.Fatalf("expected error, got nil. While response was: %s", res)
 	}

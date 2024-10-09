@@ -9,7 +9,7 @@ import (
 
 func TestNewHeadersMiddleware(t *testing.T) {
 	// Create a test handler that will check the context for headers
-	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	testHandler := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		headers := HeadersFromContext(r.Context())
 		if headers == nil {
 			t.Error("Expected headers in context, got nil")
@@ -26,30 +26,26 @@ func TestNewHeadersMiddleware(t *testing.T) {
 	handler := middleware(testHandler)
 
 	// Create a test request with headers
-	req := httptest.NewRequest("GET", "http://example.com", nil)
+	req := httptest.NewRequest("GET", "http://example.com", http.NoBody)
 	req.Header.Set("Content-Type", "application/json")
+
 	w := httptest.NewRecorder()
 
 	// Serve the request
 	handler.ServeHTTP(w, req)
 
-	// Check the response
-	if w.Result().StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d, got %d", http.StatusOK, w.Result().StatusCode)
-	}
-}
+	res := w.Result()
 
-func TestHeadersFromContext_NilContext(t *testing.T) {
-	headers := HeadersFromContext(context.TODO())
-	if headers != nil {
-		t.Error("Expected nil headers from nil context, got non-nil")
+	defer res.Body.Close()
+
+	// Check the response
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, res.StatusCode)
 	}
 }
 
 func TestHeadersFromContext_NoHeaders(t *testing.T) {
-	ctx := context.Background()
-	headers := HeadersFromContext(ctx)
-	if headers != nil {
+	if HeadersFromContext(context.Background()) != nil {
 		t.Error("Expected nil headers from context without headers, got non-nil")
 	}
 }

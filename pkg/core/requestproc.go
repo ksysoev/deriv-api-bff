@@ -10,9 +10,9 @@ import (
 
 type RequestProcessor struct {
 	tempate      *template.Template
-	allow        []string
 	fieldsMap    map[string]string
 	responseBody string
+	allow        []string
 	mu           sync.Mutex
 }
 
@@ -25,8 +25,7 @@ func (r *RequestProcessor) Render(data TemplateData) ([]byte, error) {
 	defer r.mu.Unlock()
 
 	var buf bytes.Buffer
-	err := r.tempate.Execute(&buf, data)
-	if err != nil {
+	if err := r.tempate.Execute(&buf, data); err != nil {
 		return nil, err
 	}
 

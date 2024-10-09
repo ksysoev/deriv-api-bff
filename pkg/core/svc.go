@@ -76,7 +76,7 @@ func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *Request) err
 
 		r := &Request{data: data, Method: TextMessage, ctx: ctx}
 
-		if err = s.be.Handle(conn, r); err != nil {
+		if err := s.be.Handle(conn, r); err != nil {
 			return err
 		}
 	}

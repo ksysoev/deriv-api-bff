@@ -79,8 +79,8 @@ func (s *Service) dialer(ctx context.Context, baseURL string) (*websocket.Conn, 
 // It returns an error if the app_id parameter is missing or if the WebSocket connection fails.
 func (s *Service) dial(ctx context.Context, baseURL string, urlParams url.Values, headers http.Header) (*websocket.Conn, error) {
 	if urlParams != nil {
-		if app_id := urlParams.Get("app_id"); app_id != "" {
-			baseURL = fmt.Sprintf("%s?app_id=%s", baseURL, app_id)
+		if appID := urlParams.Get("app_id"); appID != "" {
+			baseURL = fmt.Sprintf("%s?app_id=%s", baseURL, appID)
 		} else {
 			return nil, fmt.Errorf("app_id is required")
 		}

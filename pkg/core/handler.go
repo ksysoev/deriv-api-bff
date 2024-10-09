@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"sync"
 )
 
 var ErrIterDone = errors.New("iteration done")
@@ -15,15 +14,14 @@ type CallHandler struct {
 }
 
 type CallRunConfig struct {
-	params   map[string]string
 	requests map[string]*RequestRunConfig
 }
 
 type RequestRunConfig struct {
 	tmplt        *template.Template
-	allow        []string
 	fieldMap     map[string]string
 	responseBody string
+	allow        []string
 }
 
 type TemplateData struct {
@@ -44,11 +42,13 @@ func NewCallHandler(config *Config) (*CallHandler, error) {
 		c := &CallRunConfig{
 			requests: make(map[string]*RequestRunConfig),
 		}
+
 		for _, req := range call.Backend {
 			tmplt, err := template.New("request").Parse(req.RequestTemplate)
 			if err != nil {
 				return nil, err
 			}
+
 			c.requests[req.ResponseBody] = &RequestRunConfig{
 				tmplt:        tmplt,
 				allow:        req.Allow,
@@ -56,6 +56,7 @@ func NewCallHandler(config *Config) (*CallHandler, error) {
 				responseBody: req.ResponseBody,
 			}
 		}
+
 		h.calls[call.Method] = c
 	}
 
@@ -100,13 +101,11 @@ func (h *CallHandler) Process(req *Request) (*RequesIter, error) {
 type RequesIter struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
-	pos       int
-	reqs      []*RequestProcessor
 	params    map[string]any
 	finalResp map[string]any
-	err       error
-	mu        sync.Mutex
 	composer  *Composer
+	reqs      []*RequestProcessor
+	pos       int
 }
 
 // HasNext checks if there are more requests to process in the RequesIter.
@@ -146,6 +145,6 @@ func (r *RequesIter) Next(id int64, respChan <-chan []byte) ([]byte, error) {
 // It takes req_id of type *int, which is a pointer to the request ID.
 // It returns a byte slice containing the response data and an error if the response cannot be retrieved.
 // It returns an error if the request ID is invalid or if there is a failure in the response retrieval process.
-func (r *RequesIter) WaitResp(req_id *int) ([]byte, error) {
-	return r.composer.Response(req_id)
+func (r *RequesIter) WaitResp(reqID *int) ([]byte, error) {
+	return r.composer.Response(reqID)
 }

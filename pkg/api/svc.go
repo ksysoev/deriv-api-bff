@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/middleware"
@@ -55,21 +54,22 @@ func (s *Service) Run(ctx context.Context) error {
 	endpoint := channel.NewChannel("/", dispatcher, registry, channel.WithOriginPatterns("*"))
 	endpoint.Use(middleware.NewQueryParamsMiddleware())
 	endpoint.Use(middleware.NewHeadersMiddleware())
-	server := server.NewServer(s.cfg.Listen)
-	server.AddChannel(endpoint)
+
+	srv := server.NewServer(s.cfg.Listen)
+	srv.AddChannel(endpoint)
 
 	go func() {
 		<-ctx.Done()
 
-		if err := server.Close(); err != nil {
+		if err := srv.Close(); err != nil {
 			slog.Error("Fail to close app server", "error", err)
 		}
 	}()
 
-	if err := server.Run(); err != nil {
-		slog.Error("Fail to start app server", "error", err)
-		os.Exit(1)
+	if err := srv.Run(); err != nil {
+		return fmt.Errorf("failed to start server: %w", err)
 	}
+
 	return nil
 }
 
@@ -88,7 +88,7 @@ func (s *Service) Handle(conn wasabi.Connection, r wasabi.Request) error {
 	case core.TextMessage, core.BinaryMessage:
 		return s.handler.PassThrough(conn, req)
 	case "":
-		return fmt.Errorf("Empty request type: %v", req)
+		return fmt.Errorf("empty request type: %v", req)
 	default:
 		return s.handler.ProcessRequest(conn, req)
 	}
@@ -98,8 +98,9 @@ func (s *Service) Handle(conn wasabi.Connection, r wasabi.Request) error {
 // It takes conn of type wasabi.Connection, ctx of type context.Context, msgType of type wasabi.MessageType, and data of type []byte.
 // It returns a wasabi.Request which represents the parsed message.
 // If the msgType is unsupported, it logs an error and returns nil.
-func parse(conn wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
+func parse(_ wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request { //nolint:revive //Defined by Wasabi
 	var coreMsgType string
+
 	switch msgType {
 	case wasabi.MsgTypeText:
 		coreMsgType = core.TextMessage

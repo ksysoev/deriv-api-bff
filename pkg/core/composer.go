@@ -10,10 +10,10 @@ import (
 )
 
 type Composer struct {
+	err  error
+	resp map[string]any
 	wg   sync.WaitGroup
 	mu   sync.Mutex
-	resp map[string]any
-	err  error
 }
 
 // NewComposer creates and returns a new instance of Composer.
@@ -53,6 +53,7 @@ func (c *Composer) WaitResponse(ctx context.Context, req *RequestProcessor, resp
 			}
 
 			destKey := key
+
 			if req.fieldsMap != nil {
 				if mappedKey, ok := req.fieldsMap[key]; ok {
 					destKey = mappedKey
@@ -69,14 +70,14 @@ func (c *Composer) WaitResponse(ctx context.Context, req *RequestProcessor, resp
 // It returns a byte slice containing the JSON response and an error if any occurs.
 // It returns an error if the response cannot be marshaled into JSON or if there is an existing error in the Composer.
 // If the Composer has an APIError, it delegates the response generation to the APIError's Response method.
-func (c *Composer) Response(req_id *int) ([]byte, error) {
+func (c *Composer) Response(reqID *int) ([]byte, error) {
 	c.wg.Wait()
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if c.err == nil {
-		if req_id != nil {
-			c.resp["req_id"] = *req_id
+		if reqID != nil {
+			c.resp["req_id"] = *reqID
 		}
 
 		data, err := json.Marshal(c.resp)
@@ -89,7 +90,7 @@ func (c *Composer) Response(req_id *int) ([]byte, error) {
 
 	var err *APIError
 	if errors.As(c.err, &err) {
-		return err.Response(req_id)
+		return err.Response(reqID)
 	}
 
 	return nil, c.err

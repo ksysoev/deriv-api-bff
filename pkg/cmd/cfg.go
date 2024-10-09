@@ -12,8 +12,8 @@ import (
 
 type config struct {
 	Server api.Config   `mapstructure:"server"`
-	API    core.Config  `mapstructure:"api"`
 	Deriv  deriv.Config `mapstructure:"deriv"`
+	API    core.Config  `mapstructure:"api"`
 }
 
 // initConfig initializes the configuration by reading from the specified config file.

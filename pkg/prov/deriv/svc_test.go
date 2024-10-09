@@ -86,10 +86,10 @@ func TestService_createMessage(t *testing.T) {
 	tests := []struct {
 		name          string
 		requestType   string
-		requestData   []byte
-		expectedType  wasabi.MessageType
-		expectedData  []byte
 		expectedError string
+		requestData   []byte
+		expectedData  []byte
+		expectedType  wasabi.MessageType
 	}{
 		{
 			name:         "TextMessage",

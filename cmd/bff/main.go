@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log/slog"
-	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,7 +13,6 @@ import (
 func main() {
 	ctx := context.Background()
 	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
-	defer cancel()
 
 	rootCmd := cmd.InitCommands()
 
@@ -23,4 +21,6 @@ func main() {
 		cancel()
 		os.Exit(1)
 	}
+
+	cancel()
 }

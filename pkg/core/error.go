@@ -6,8 +6,8 @@ import (
 )
 
 type APIError struct {
-	call string
 	resp map[string]any
+	call string
 }
 
 // NewAPIError creates a new instance of APIError with the provided call string and response data.
@@ -32,16 +32,16 @@ func (e *APIError) Error() string {
 // It returns an error if there is no response data available in the APIError instance.
 // If req_id is nil, it returns the response without a request identifier.
 // If req_id is provided, it includes the request identifier in the response.
-func (e *APIError) Response(req_id *int) ([]byte, error) {
+func (e *APIError) Response(reqID *int) ([]byte, error) {
 	if e.resp == nil {
 		return nil, fmt.Errorf("no response data")
 	}
 
-	if req_id == nil {
+	if reqID == nil {
 		return json.Marshal(e.resp)
 	}
 
-	e.resp["req_id"] = *req_id
+	e.resp["req_id"] = *reqID
 
 	return json.Marshal(e.resp)
 }

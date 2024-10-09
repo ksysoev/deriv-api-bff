@@ -19,9 +19,9 @@ const (
 
 type Conn struct {
 	clientConn wasabi.Connection
-	currID     int64
 	requests   map[int64]chan []byte
 	onClose    func(string)
+	currID     int64
 	mu         sync.Mutex
 }
 
@@ -56,11 +56,11 @@ func (c *Conn) Context() context.Context {
 
 // WaitResponse waits for a response from the connection and returns a request ID and a channel to receive the response.
 // It returns an int64 representing the request ID and a receive-only channel of type []byte for the response.
-func (c *Conn) WaitResponse() (int64, <-chan []byte) {
+func (c *Conn) WaitResponse() (reqID int64, respChan <-chan []byte) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	reqID := c.nextID()
+	reqID = c.nextID()
 	ch := make(chan []byte, 1)
 	c.requests[reqID] = ch
 
@@ -100,6 +100,7 @@ func (c *Conn) Send(msgType wasabi.MessageType, msg []byte) error {
 	ch, ok := c.requests[respID.ReqID]
 	delete(c.requests, respID.ReqID)
 	c.mu.Unlock()
+
 	if !ok {
 		return c.clientConn.Send(msgType, msg)
 	}

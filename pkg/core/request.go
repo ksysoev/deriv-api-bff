@@ -14,10 +14,10 @@ const (
 
 type Request struct {
 	ctx    context.Context
-	data   []byte
-	Method string         `json:"method"`
 	Params map[string]any `json:"params"`
 	ID     *int           `json:"req_id"`
+	Method string         `json:"method"`
+	data   []byte
 }
 
 // NewRequest creates a new Request object based on the provided message type and data.
@@ -30,7 +30,7 @@ func NewRequest(ctx context.Context, msgType string, data []byte) *Request {
 		return &Request{
 			ctx:    ctx,
 			data:   data,
-			Method: string(msgType),
+			Method: msgType,
 		}
 	}
 
@@ -41,7 +41,7 @@ func NewRequest(ctx context.Context, msgType string, data []byte) *Request {
 		return &Request{
 			ctx:    ctx,
 			data:   data,
-			Method: string(msgType),
+			Method: msgType,
 		}
 	}
 

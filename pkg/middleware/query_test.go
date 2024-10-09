@@ -10,7 +10,7 @@ import (
 
 func TestNewQueryParamsMiddleware(t *testing.T) {
 	// Create a test handler that will check the context for query parameters
-	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	testHandler := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		queryParams := QueryParamsFromContext(r.Context())
 		if queryParams == nil {
 			t.Error("Expected query parameters in context, got nil")
@@ -27,15 +27,19 @@ func TestNewQueryParamsMiddleware(t *testing.T) {
 	handler := middleware(testHandler)
 
 	// Create a test request with query parameters
-	req := httptest.NewRequest("GET", "http://example.com/?key=value", nil)
+	req := httptest.NewRequest("GET", "http://example.com/?key=value", http.NoBody)
 	w := httptest.NewRecorder()
 
 	// Serve the request
 	handler.ServeHTTP(w, req)
 
+	res := w.Result()
+
+	defer res.Body.Close()
+
 	// Check the response
-	if w.Result().StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d, got %d", http.StatusOK, w.Result().StatusCode)
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, res.StatusCode)
 	}
 }
 
@@ -47,13 +51,10 @@ func TestQueryParamsFromContext_NilContext(t *testing.T) {
 }
 
 func TestQueryParamsFromContext_NoQueryParams(t *testing.T) {
-	ctx := context.Background()
-	queryParams := QueryParamsFromContext(ctx)
-	if queryParams != nil {
+	if QueryParamsFromContext(context.Background()) != nil {
 		t.Error("Expected nil query parameters from context without query params, got non-nil")
 	}
 }
-
 
 func TestQueryParamsFromContext_WithQueryParams(t *testing.T) {
 	// Create a context with query parameters
