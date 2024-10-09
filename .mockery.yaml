@@ -1,0 +1,9 @@
+with-expecter: true
+inpackage: false
+dir: ./mocks
+outpkg: mocks
+mock-build-tags: "!compile"
+packages:
+   github.com/ksysoev/deriv-api-bff:
+    interfaces:
+      BFFService:

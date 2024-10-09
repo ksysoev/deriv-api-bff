@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-var keyHeaders contextKey = 2
+var keyHeaders ContextKey = 2
 
 // NewHeadersMiddleware creates a middleware that injects request headers into the request context.
 // It returns a function that takes an http.Handler and returns an http.Handler.
