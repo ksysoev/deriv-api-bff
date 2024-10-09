@@ -6,9 +6,9 @@ import (
 	"net/url"
 )
 
-type ContextKey int
+type contextKey int
 
-var keyQuery ContextKey = 1
+var keyQuery contextKey = 1
 
 // NewQueryParamsMiddleware creates a middleware that extracts query parameters from the URL
 // and stores them in the request context.
