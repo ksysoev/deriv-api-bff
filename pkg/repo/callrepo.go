@@ -57,7 +57,6 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 	return r, nil
 }
 
-func (r *CallsRepository) GetCall(method string) (*core.CallRunConfig, bool) {
-	c, ok := r.calls[method]
-	return c, ok
+func (r *CallsRepository) GetCall(method string) *core.CallRunConfig {
+	return r.calls[method]
 }
