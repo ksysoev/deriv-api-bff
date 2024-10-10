@@ -9,8 +9,8 @@ import (
 
 func TestNewCallsRepository(t *testing.T) {
 	tests := []struct {
-		name    string
 		cfg     *CallsConfig
+		name    string
 		wantErr bool
 	}{
 		{

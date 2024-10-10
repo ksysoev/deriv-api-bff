@@ -8,7 +8,7 @@ import (
 )
 
 type CallsRepo interface {
-	GetCall(method string) (*CallRunConfig, bool)
+	GetCall(method string) *CallRunConfig
 }
 
 var ErrIterDone = errors.New("iteration done")
@@ -50,9 +50,8 @@ func NewCallHandler(repo CallsRepo) *CallHandler {
 func (h *CallHandler) Process(req *Request) (*RequesIter, error) {
 	method := req.RoutingKey()
 
-	call, ok := h.repo.GetCall(method)
-
-	if !ok {
+	call := h.repo.GetCall(method)
+	if call == nil {
 		return nil, fmt.Errorf("unsupported method: %s", method)
 	}
 
