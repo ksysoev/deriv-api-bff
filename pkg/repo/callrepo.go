@@ -27,6 +27,11 @@ type CallsRepository struct {
 	calls map[string]*core.CallRunConfig
 }
 
+// NewCallsRepository initializes a new CallsRepository based on the provided CallsConfig.
+// It takes cfg of type *CallsConfig which contains the configuration for the calls.
+// It returns a pointer to CallsRepository and an error.
+// It returns an error if there is an issue parsing the request templates.
+// Edge cases include handling empty or nil CallsConfig, which will result in an empty CallsRepository.
 func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 	r := &CallsRepository{
 		calls: make(map[string]*core.CallRunConfig),
