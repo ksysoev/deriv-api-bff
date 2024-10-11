@@ -5,15 +5,15 @@ import (
 	"strings"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/api"
-	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/prov/deriv"
+	"github.com/ksysoev/deriv-api-bff/pkg/repo"
 	"github.com/spf13/viper"
 )
 
 type config struct {
-	Server api.Config   `mapstructure:"server"`
-	Deriv  deriv.Config `mapstructure:"deriv"`
-	API    core.Config  `mapstructure:"api"`
+	Server api.Config       `mapstructure:"server"`
+	Deriv  deriv.Config     `mapstructure:"deriv"`
+	API    repo.CallsConfig `mapstructure:"api"`
 }
 
 // initConfig initializes the configuration by reading from the specified config file.

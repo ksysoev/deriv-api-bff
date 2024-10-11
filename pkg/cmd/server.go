@@ -18,10 +18,12 @@ func runServer(ctx context.Context, cfg *config) error {
 
 	connRegistry := repo.NewConnectionRegistry()
 
-	requestHandler, err := core.NewService(&cfg.API, derivAPI, connRegistry)
+	calls, err := repo.NewCallsRepository(&cfg.API)
 	if err != nil {
-		return fmt.Errorf("failed to create request handler: %w", err)
+		return fmt.Errorf("failed to create calls repo: %w", err)
 	}
+
+	requestHandler := core.NewService(calls, derivAPI, connRegistry)
 
 	server := api.NewSevice(&cfg.Server, requestHandler)
 
