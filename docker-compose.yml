@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  deriv-api-bff:
+    image: ${IMAGE_NAME}:${IMAGE_TAG}
+    container_name: ${CONTAINER_NAME}
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT}:${HOST_PORT}"
+    environment:
+      - GLOBAL_DEBUG_ON=${GLOBAL_DEBUG_ON}
