@@ -55,6 +55,7 @@ func TestAPIError_Response_WithReqID(t *testing.T) {
 
 	reqID := 123
 	response, err := apiError.Response(&reqID)
+
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
