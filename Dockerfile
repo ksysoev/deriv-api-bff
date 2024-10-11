@@ -8,10 +8,10 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o /app/cmd/bff ./cmd
+RUN go build -o /app/cmd/bff/cmd ./cmd/bff
 
 FROM scratch
 
-COPY --from=builder /app/cmd/bff /cmd
+COPY --from=builder /app/cmd/bff/cmd /cmd
 
 CMD ["/cmd"]
