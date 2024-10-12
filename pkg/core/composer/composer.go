@@ -2,13 +2,10 @@ package composer
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"sync"
 )
-
-type Parser func([]byte) (map[string]any, error)
 
 type Composer struct {
 	err  error
@@ -31,7 +28,7 @@ func New() *Composer {
 // It does not return any values.
 // It sets an error if the context is done before a response is received or if there is a failure in parsing the response.
 // If the response body does not contain expected keys, it logs a warning and continues processing other keys.
-func (c *Composer) WaitResponse(ctx context.Context, parser Parser, respChan <-chan []byte) {
+func (c *Composer) WaitResponse(ctx context.Context, parser func([]byte) (map[string]any, error), respChan <-chan []byte) {
 	c.wg.Add(1)
 	defer c.wg.Done()
 
@@ -63,22 +60,13 @@ func (c *Composer) WaitResponse(ctx context.Context, parser Parser, respChan <-c
 // It returns a byte slice containing the JSON response and an error if any occurs.
 // It returns an error if the response cannot be marshaled into JSON or if there is an existing error in the Composer.
 // If the Composer has an APIError, it delegates the response generation to the APIError's Response method.
-func (c *Composer) Response(reqID *int) ([]byte, error) {
+func (c *Composer) Response() (map[string]any, error) {
 	c.wg.Wait()
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if c.err == nil {
-		if reqID != nil {
-			c.resp["req_id"] = *reqID
-		}
-
-		data, err := json.Marshal(c.resp)
-		if err != nil {
-			return nil, fmt.Errorf("fail to marshal response: %w", err)
-		}
-
-		return data, nil
+		return c.resp, nil
 	}
 
 	return nil, c.err

@@ -13,7 +13,7 @@ type Validator interface {
 }
 
 type Processor interface {
-	Render(w io.Writer, data *TemplateData) error
+	Render(w io.Writer, reqID int64, params map[string]any) error
 	Parse(data []byte) (map[string]any, error)
 }
 
@@ -22,18 +22,10 @@ type Composer interface {
 	Response() (map[string]any, error)
 }
 
-type ResponseWatcher func() (reqID int64, respChan <-chan []byte)
-type Sender func([]byte) error
-
 type Handler struct {
 	validator   Validator
 	processors  []Processor
 	newComposer func() Composer
-}
-
-type TemplateData struct {
-	Params map[string]any
-	ReqID  int64
 }
 
 type request struct {
@@ -43,7 +35,7 @@ type request struct {
 	data     []byte
 }
 
-func NewHandler(val Validator, proc []Processor, composeFactory func() Composer) *Handler {
+func New(val Validator, proc []Processor, composeFactory func() Composer) *Handler {
 	return &Handler{
 		validator:   val,
 		processors:  proc,
@@ -51,7 +43,7 @@ func NewHandler(val Validator, proc []Processor, composeFactory func() Composer)
 	}
 }
 
-func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher ResponseWatcher, send Sender) (map[string]any, error) {
+func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher func() (reqID int64, respChan <-chan []byte), send func([]byte) error) (map[string]any, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -73,7 +65,7 @@ func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher Res
 	return comp.Response()
 }
 
-func (h *Handler) requests(ctx context.Context, params map[string]any, watcher ResponseWatcher) (iter.Seq[request], error) {
+func (h *Handler) requests(ctx context.Context, params map[string]any, watcher func() (reqID int64, respChan <-chan []byte)) (iter.Seq[request], error) {
 	var buf bytes.Buffer
 
 	if err := h.validator.Validate(params); err != nil {
@@ -87,15 +79,10 @@ func (h *Handler) requests(ctx context.Context, params map[string]any, watcher R
 			}
 			reqID, respChan := watcher()
 
-			d := TemplateData{
-				Params: params,
-				ReqID:  reqID,
-			}
-
 			// TODO: check for race conditions here that iterator blocks until the previous request is sent
 			buf.Reset()
 
-			if err := proc.Render(&buf, &d); err != nil {
+			if err := proc.Render(&buf, reqID, params); err != nil {
 				// TODO: add prevalidating template on startup to avoid this error in runtime
 				panic(fmt.Sprintf("template execution failed: %v", err))
 			}

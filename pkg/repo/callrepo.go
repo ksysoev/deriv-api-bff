@@ -1,9 +1,14 @@
 package repo
 
 import (
+	"fmt"
 	"html/template"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/core"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/composer"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handler"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/processor"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/validator"
 )
 
 type CallsConfig struct {
@@ -11,9 +16,9 @@ type CallsConfig struct {
 }
 
 type CallConfig struct {
-	Method  string            `mapstructure:"method"`
-	Params  map[string]string `mapstructure:"params"`
-	Backend []BackendConfig   `mapstructure:"backend"`
+	Method  string                    `mapstructure:"method"`
+	Params  validator.ValidatorConfig `mapstructure:"params"`
+	Backend []BackendConfig           `mapstructure:"backend"`
 }
 
 type BackendConfig struct {
@@ -24,7 +29,7 @@ type BackendConfig struct {
 }
 
 type CallsRepository struct {
-	calls map[string]*handler.Handler
+	calls map[string]core.Handler
 }
 
 // NewCallsRepository initializes a new CallsRepository based on the provided CallsConfig.
@@ -34,29 +39,37 @@ type CallsRepository struct {
 // Edge cases include handling empty or nil CallsConfig, which will result in an empty CallsRepository.
 func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 	r := &CallsRepository{
-		calls: make(map[string]*handler.Handler),
+		calls: make(map[string]core.Handler),
+	}
+
+	composerFactory := func() handler.Composer {
+		return composer.New()
 	}
 
 	for _, call := range cfg.Calls {
-		c := &handler.Handler{
-			Requests: make(map[string]*handler.RequestRunConfig),
+		validator, err := validator.New(&call.Params)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create validator: %w", err)
 		}
 
+		processors := make([]handler.Processor, 0, len(call.Backend))
 		for _, req := range call.Backend {
 			tmplt, err := template.New("request").Parse(req.RequestTemplate)
 			if err != nil {
 				return nil, err
 			}
 
-			c.Requests[req.ResponseBody] = &handler.RequestRunConfig{
+			p := processor.New(&processor.Config{
 				Tmplt:        tmplt,
-				Allow:        req.Allow,
 				FieldMap:     req.FieldsMap,
 				ResponseBody: req.ResponseBody,
-			}
+				Allow:        req.Allow,
+			})
+
+			processors = append(processors, p)
 		}
 
-		r.calls[call.Method] = c
+		r.calls[call.Method] = handler.New(validator, processors, composerFactory)
 	}
 
 	return r, nil
@@ -65,6 +78,6 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 // GetCall retrieves a CallRunConfig based on the provided method name.
 // It takes a single parameter method of type string, which specifies the method name.
 // It returns a pointer to a CallRunConfig if the method exists in the repository, otherwise it returns nil.
-func (r *CallsRepository) GetCall(method string) *handler.Handler {
+func (r *CallsRepository) GetCall(method string) core.Handler {
 	return r.calls[method]
 }

@@ -6,8 +6,6 @@ import (
 	"html/template"
 	"io"
 	"log/slog"
-
-	"github.com/ksysoev/deriv-api-bff/pkg/core/handler"
 )
 
 type Config struct {
@@ -24,6 +22,11 @@ type Processor struct {
 	allow        []string
 }
 
+type templateData struct {
+	Params map[string]any
+	ReqID  int64
+}
+
 func New(cfg *Config) *Processor {
 	return &Processor{
 		tmpl:         cfg.Tmplt,
@@ -37,7 +40,12 @@ func New(cfg *Config) *Processor {
 // It takes data of type TemplateData.
 // It returns a byte slice containing the rendered template and an error if the template execution fails.
 // It returns an error if the template execution encounters an issue.
-func (p *Processor) Render(w io.Writer, data handler.TemplateData) error {
+func (p *Processor) Render(w io.Writer, reqID int64, params map[string]any) error {
+	data := templateData{
+		Params: params,
+		ReqID:  reqID,
+	}
+
 	return p.tmpl.Execute(w, data)
 }
 

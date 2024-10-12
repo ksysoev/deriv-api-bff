@@ -1,4 +1,4 @@
-package handler
+package validator
 
 import "fmt"
 
@@ -14,7 +14,7 @@ type validator struct {
 	config *ValidatorConfig
 }
 
-func NewValidator(config *ValidatorConfig) (*validator, error) {
+func New(config *ValidatorConfig) (*validator, error) {
 	for field, fieldConfig := range config.fields {
 		if fieldConfig.Type != "string" && fieldConfig.Type != "number" && fieldConfig.Type != "bool" {
 			return nil, fmt.Errorf("unknown type %s for field %s", fieldConfig.Type, field)
