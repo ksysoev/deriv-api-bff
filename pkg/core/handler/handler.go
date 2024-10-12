@@ -1,13 +1,16 @@
 package handler
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"html/template"
+	"iter"
 )
 
 type Handler struct {
 	validator *validator
-	Requests  map[string]*RequestRunConfig
+	reqs      map[string]*RequestRunConfig
 }
 
 type HandlerConfig struct {
@@ -39,6 +42,37 @@ func NewHandler(cfg *HandlerConfig) (*Handler, error) {
 
 	return &Handler{
 		validator: v,
-		Requests:  cfg.Requets,
+		reqs:      cfg.Requets,
+	}, nil
+}
+
+func (h *Handler) Requests(ctx context.Context, params map[string]any, getID func() int64) (iter.Seq[[]byte], error) {
+	var buf bytes.Buffer
+
+	if err := h.validator.Validate(params); err != nil {
+		return nil, err
+	}
+
+	return func(yield func([]byte) bool) {
+		for _, req := range h.reqs {
+			if ctx.Err() != nil {
+				return
+			}
+
+			d := TemplateData{
+				Params: params,
+				ReqID:  getID(),
+			}
+
+			// TODO: check for race conditions here that iterator blocks until the previous request is sent
+			buf.Reset()
+
+			if err := req.Tmplt.Execute(&buf, d); err != nil {
+				// TODO: add prevalidating template on startup to avoid this error in runtime
+				panic(fmt.Sprintf("template execution failed: %v", err))
+			}
+
+			yield(buf.Bytes())
+		}
 	}, nil
 }
