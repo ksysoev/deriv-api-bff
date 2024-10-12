@@ -1,9 +1,18 @@
 package handler
 
-import "html/template"
+import (
+	"fmt"
+	"html/template"
+)
 
 type Handler struct {
-	Requests map[string]*RequestRunConfig
+	validator *validator
+	Requests  map[string]*RequestRunConfig
+}
+
+type HandlerConfig struct {
+	Params  ValidatorConfig
+	Requets map[string]*RequestRunConfig
 }
 
 type RequestRunConfig struct {
@@ -16,4 +25,20 @@ type RequestRunConfig struct {
 type TemplateData struct {
 	Params map[string]any
 	ReqID  int64
+}
+
+func NewHandler(cfg *HandlerConfig) (*Handler, error) {
+	v, err := NewValidator(&cfg.Params)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(cfg.Requets) == 0 {
+		return nil, fmt.Errorf("no requests provided")
+	}
+
+	return &Handler{
+		validator: v,
+		Requests:  cfg.Requets,
+	}, nil
 }
