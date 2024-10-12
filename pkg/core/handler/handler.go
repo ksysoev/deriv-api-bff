@@ -17,9 +17,17 @@ type Processor interface {
 	Parse(data []byte) (map[string]any, error)
 }
 
+type Composer interface {
+	WaitResponse(ctx context.Context, parser func([]byte) (map[string]any, error), respChan <-chan []byte)
+	Response(reqID *int) ([]byte, error)
+}
+
+type ResponseWatcher func () reqID int64, respChan <-chan []byte
+
 type Handler struct {
-	validator  Validator
-	processors []Processor
+	validator   Validator
+	processors  []Processor
+	newComposer func() Composer
 }
 
 type TemplateData struct {
@@ -27,14 +35,46 @@ type TemplateData struct {
 	ReqID  int64
 }
 
-func NewHandler(val Validator, proc []Processor) *Handler {
+func NewHandler(val Validator, proc []Processor, composeFactory func() Composer) *Handler {
 	return &Handler{
-		validator:  val,
-		processors: proc,
+		validator:   val,
+		processors:  proc,
+		newComposer: composeFactory,
 	}
 }
 
-func (h *Handler) Requests(ctx context.Context, params map[string]any, getID func() int64) (iter.Seq[[]byte], error) {
+
+func (h *Handler) Handle(ctx context.Context, params map[string]any) (map[string]any, error) {
+	composer := h.newComposer()
+	respChan := make(chan []byte, 1)
+
+	reqs, err := h.requests(ctx, params, composer)
+	if err != nil {
+		return nil, err
+	}
+
+	go composer.WaitResponse(ctx, h.parse, respChan)
+
+	for reqs.HasNext() {
+		req, err := reqs.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		respChan <- req
+	}
+
+	resp, err := composer.Response(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return h.parse(resp)
+
+}
+
+
+func (h *Handler) requests(ctx context.Context, params map[string]any, getID func() int64) (iter.Seq[[]byte], error) {
 	var buf bytes.Buffer
 
 	if err := h.validator.Validate(params); err != nil {

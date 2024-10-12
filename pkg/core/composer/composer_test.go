@@ -1,38 +1,43 @@
-package core
+package composer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"html/template"
 	"strings"
 	"testing"
 	"time"
 )
 
-func initRequestProcessor() *RequestProcessor {
-	tmpl, err := template.New("test").Parse("Params: {{.Params}}, ReqID: {{.ReqID}}")
-	if err != nil {
-		panic(fmt.Sprintf("failed to parse template: %v", err))
-	}
+func makeParser() func([]byte) (map[string]any, error) {
+	return func(data []byte) (map[string]any, error) {
+		var res map[string]any
+		err := json.Unmarshal(data, &res)
+		if err != nil {
+			return nil, err
+		}
 
-	rp := &RequestProcessor{
-		tempate: tmpl,
-		allow:   []string{"Params", "ReqID"},
+		return res, nil
 	}
-
-	return rp
 }
 
 func TestComposer_WaitResponse_Success(t *testing.T) {
-	composer := NewComposer()
-	req := initRequestProcessor()
+	expectedData := `{"Params":"param1,param2","ReqID":1234}`
+	composer := New()
 	respChan := make(chan []byte, 1)
-	respChan <- []byte(`{"Params":"param1,param2","ReqID":1234}`)
+	respChan <- []byte(expectedData)
+	parser := func(data []byte) (map[string]any, error) {
+		if string(data) != expectedData {
+			return nil, fmt.Errorf("unexpected data: %s", data)
+		}
+
+		return map[string]any{}, nil
+	}
 
 	ctx := context.Background()
 	reqID := 1234
 
-	go composer.WaitResponse(ctx, req, respChan)
+	go composer.WaitResponse(ctx, parser, respChan)
 
 	resp, err := composer.Response(&reqID)
 	if err != nil {
@@ -46,25 +51,23 @@ func TestComposer_WaitResponse_Success(t *testing.T) {
 }
 
 func TestComposer_WaitResponse_ParseError(t *testing.T) {
-	composer := NewComposer()
-	req := initRequestProcessor()
+	composer := New()
 	respChan := make(chan []byte, 1)
 	respChan <- []byte("invalid json")
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	composer.WaitResponse(ctx, req, respChan)
+	composer.WaitResponse(ctx, makeParser(), respChan)
 
 	_, err := composer.Response(nil)
-	if !strings.HasPrefix(err.Error(), "fail to parse response : invalid character") {
+	if !strings.HasPrefix(err.Error(), "fail to parse response: invalid character") {
 		t.Fatalf("expected error: %s, got something else: %s", err.Error(), err)
 	}
 }
 
 func TestComposer_WaitResponse_ContextCancelled(t *testing.T) {
-	composer := NewComposer()
-	req := initRequestProcessor()
+	composer := New()
 	respChan := make(chan []byte, 1)
 	respChan <- []byte(`{"Params":"param1,param2","ReqID":1234}`)
 
@@ -73,7 +76,7 @@ func TestComposer_WaitResponse_ContextCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	composer.WaitResponse(ctx, req, respChan)
+	composer.WaitResponse(ctx, makeParser(), respChan)
 
 	res, err := composer.Response(&reqID)
 	if err == nil {

@@ -1,13 +1,14 @@
-package core
+package composer
 
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"sync"
 )
+
+type Parser func([]byte) (map[string]any, error)
 
 type Composer struct {
 	err  error
@@ -19,7 +20,7 @@ type Composer struct {
 // NewComposer creates and returns a new instance of Composer.
 // It initializes the Composer with an empty response map.
 // It returns a pointer to the newly created Composer instance.
-func NewComposer() *Composer {
+func New() *Composer {
 	return &Composer{
 		resp: make(map[string]any),
 	}
@@ -30,7 +31,7 @@ func NewComposer() *Composer {
 // It does not return any values.
 // It sets an error if the context is done before a response is received or if there is a failure in parsing the response.
 // If the response body does not contain expected keys, it logs a warning and continues processing other keys.
-func (c *Composer) WaitResponse(ctx context.Context, req *RequestProcessor, respChan <-chan []byte) {
+func (c *Composer) WaitResponse(ctx context.Context, parser Parser, respChan <-chan []byte) {
 	c.wg.Add(1)
 	defer c.wg.Done()
 
@@ -38,29 +39,21 @@ func (c *Composer) WaitResponse(ctx context.Context, req *RequestProcessor, resp
 	case <-ctx.Done():
 		c.setError(ctx.Err())
 	case resp := <-respChan:
-		respBody, err := req.ParseResp(resp)
-
+		data, err := parser(resp)
 		if err != nil {
-			c.setError(fmt.Errorf("fail to parse response %s: %w", req.responseBody, err))
-
+			c.setError(fmt.Errorf("fail to parse response: %w", err))
 			return
 		}
 
-		for _, key := range req.allow {
-			if _, ok := respBody[key]; !ok {
-				slog.Warn("Response body does not contain expeted key", slog.String("key", key), slog.String("response_body", req.responseBody))
-				continue
+		c.mu.Lock()
+		defer c.mu.Unlock()
+
+		for key, value := range data {
+			if _, ok := c.resp[key]; ok {
+				slog.Warn("duplicate key", slog.String("key", key))
 			}
 
-			destKey := key
-
-			if req.fieldsMap != nil {
-				if mappedKey, ok := req.fieldsMap[key]; ok {
-					destKey = mappedKey
-				}
-			}
-
-			c.resp[destKey] = respBody[key]
+			c.resp[key] = value
 		}
 	}
 }
@@ -86,11 +79,6 @@ func (c *Composer) Response(reqID *int) ([]byte, error) {
 		}
 
 		return data, nil
-	}
-
-	var err *APIError
-	if errors.As(c.err, &err) {
-		return err.Response(reqID)
 	}
 
 	return nil, c.err
