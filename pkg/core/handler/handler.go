@@ -19,10 +19,11 @@ type Processor interface {
 
 type Composer interface {
 	WaitResponse(ctx context.Context, parser func([]byte) (map[string]any, error), respChan <-chan []byte)
-	Response(reqID *int) ([]byte, error)
+	Response() (map[string]any, error)
 }
 
-type ResponseWatcher func () reqID int64, respChan <-chan []byte
+type ResponseWatcher func() (reqID int64, respChan <-chan []byte)
+type Sender func([]byte) error
 
 type Handler struct {
 	validator   Validator
@@ -35,6 +36,13 @@ type TemplateData struct {
 	ReqID  int64
 }
 
+type request struct {
+	id       int64
+	respChan <-chan []byte
+	parser   func([]byte) (map[string]any, error)
+	data     []byte
+}
+
 func NewHandler(val Validator, proc []Processor, composeFactory func() Composer) *Handler {
 	return &Handler{
 		validator:   val,
@@ -43,53 +51,45 @@ func NewHandler(val Validator, proc []Processor, composeFactory func() Composer)
 	}
 }
 
+func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher ResponseWatcher, send Sender) (map[string]any, error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-func (h *Handler) Handle(ctx context.Context, params map[string]any) (map[string]any, error) {
-	composer := h.newComposer()
-	respChan := make(chan []byte, 1)
-
-	reqs, err := h.requests(ctx, params, composer)
+	iter, err := h.requests(ctx, params, watcher)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create request iterator: %w", err)
 	}
 
-	go composer.WaitResponse(ctx, h.parse, respChan)
+	comp := h.newComposer()
 
-	for reqs.HasNext() {
-		req, err := reqs.Next()
-		if err != nil {
-			return nil, err
+	for req := range iter {
+		comp.WaitResponse(ctx, req.parser, req.respChan)
+
+		if err := send(req.data); err != nil {
+			return nil, fmt.Errorf("failed to send request: %w", err)
 		}
-
-		respChan <- req
 	}
 
-	resp, err := composer.Response(nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return h.parse(resp)
-
+	return comp.Response()
 }
 
-
-func (h *Handler) requests(ctx context.Context, params map[string]any, getID func() int64) (iter.Seq[[]byte], error) {
+func (h *Handler) requests(ctx context.Context, params map[string]any, watcher ResponseWatcher) (iter.Seq[request], error) {
 	var buf bytes.Buffer
 
 	if err := h.validator.Validate(params); err != nil {
 		return nil, err
 	}
 
-	return func(yield func([]byte) bool) {
+	return func(yield func(request) bool) {
 		for _, proc := range h.processors {
 			if ctx.Err() != nil {
 				return
 			}
+			reqID, respChan := watcher()
 
 			d := TemplateData{
 				Params: params,
-				ReqID:  getID(),
+				ReqID:  reqID,
 			}
 
 			// TODO: check for race conditions here that iterator blocks until the previous request is sent
@@ -100,7 +100,14 @@ func (h *Handler) requests(ctx context.Context, params map[string]any, getID fun
 				panic(fmt.Sprintf("template execution failed: %v", err))
 			}
 
-			yield(buf.Bytes())
+			request := request{
+				id:       reqID,
+				respChan: respChan,
+				parser:   proc.Parse,
+				data:     buf.Bytes(),
+			}
+
+			yield(request)
 		}
 	}, nil
 }

@@ -1,10 +1,20 @@
 package core
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/ksysoev/wasabi"
 )
+
+type CallsRepo interface {
+	GetCall(method string) Handler
+}
+
+type Handler interface {
+	Handle(ctx context.Context, params map[string]any, watcher func() (reqID int64, respChan <-chan []byte), send func([]byte) error) (map[string]any, error)
+}
 
 type ConnRegistry interface {
 	GetConnection(wasabi.Connection) *Conn
@@ -16,7 +26,7 @@ type DerivAPI interface {
 
 type Service struct {
 	be       DerivAPI
-	ch       *CallHandler
+	ch       CallsRepo
 	registry ConnRegistry
 }
 
@@ -24,12 +34,11 @@ type Service struct {
 // It takes cfg of type *Config, wsBackend of type DerivAPI, and connRegistry of type ConnRegistry.
 // It returns a pointer to Service and an error.
 // It returns an error if the call handler creation fails.
-func NewService(calls CallsRepo, wsBackend DerivAPI, connRegistry ConnRegistry) *Service {
-	callHandler := NewCallHandler(calls)
+func NewService(callRepo CallsRepo, wsBackend DerivAPI, connRegistry ConnRegistry) *Service {
 
 	return &Service{
 		be:       wsBackend,
-		ch:       callHandler,
+		ch:       callRepo,
 		registry: connRegistry,
 	}
 }
@@ -49,28 +58,34 @@ func (s *Service) PassThrough(clientConn wasabi.Connection, req *Request) error 
 func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *Request) error {
 	conn := s.registry.GetConnection(clientConn)
 
-	iter, err := s.ch.Process(req)
+	handler := s.ch.GetCall(req.Method)
+
+	if handler == nil {
+		return fmt.Errorf("unsupported method: %s", req.Method)
+	}
+
+	resp, err := handler.Handle(
+		req.Context(),
+		req.Params,
+		conn.WaitResponse,
+		func(data []byte) error {
+			return s.be.Handle(conn, &Request{
+				Method: TextMessage,
+				data:   data,
+			})
+		},
+	)
+
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to handle request: %w", err)
 	}
 
-	if iter == nil {
-		return fmt.Errorf("unsupported method: %s", req.RoutingKey())
-	}
+	resp["req_id"] = req.ID
 
-	ctx := req.Context()
-
-	for reqData := range iter {
-		r := &Request{data: reqData, Method: TextMessage, ctx: ctx}
-		if err := s.be.Handle(conn, r); err != nil {
-			return err
-		}
-	}
-
-	resp, err := iter.WaitResp(req.ID)
+	data, err := json.Marshal(resp)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal response: %w", err)
 	}
 
-	return clientConn.Send(wasabi.MsgTypeText, resp)
+	return clientConn.Send(wasabi.MsgTypeText, data)
 }
