@@ -4,25 +4,22 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"html/template"
+	"io"
 	"iter"
 )
 
+type Validator interface {
+	Validate(data map[string]any) error
+}
+
+type Processor interface {
+	Render(w io.Writer, data *TemplateData) error
+	Parse(data []byte) (map[string]any, error)
+}
+
 type Handler struct {
-	validator *validator
-	reqs      map[string]*RequestRunConfig
-}
-
-type HandlerConfig struct {
-	Params  ValidatorConfig
-	Requets map[string]*RequestRunConfig
-}
-
-type RequestRunConfig struct {
-	Tmplt        *template.Template
-	FieldMap     map[string]string
-	ResponseBody string
-	Allow        []string
+	validator  Validator
+	processors []Processor
 }
 
 type TemplateData struct {
@@ -30,20 +27,11 @@ type TemplateData struct {
 	ReqID  int64
 }
 
-func NewHandler(cfg *HandlerConfig) (*Handler, error) {
-	v, err := NewValidator(&cfg.Params)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(cfg.Requets) == 0 {
-		return nil, fmt.Errorf("no requests provided")
-	}
-
+func NewHandler(val Validator, proc []Processor) *Handler {
 	return &Handler{
-		validator: v,
-		reqs:      cfg.Requets,
-	}, nil
+		validator:  val,
+		processors: proc,
+	}
 }
 
 func (h *Handler) Requests(ctx context.Context, params map[string]any, getID func() int64) (iter.Seq[[]byte], error) {
@@ -54,7 +42,7 @@ func (h *Handler) Requests(ctx context.Context, params map[string]any, getID fun
 	}
 
 	return func(yield func([]byte) bool) {
-		for _, req := range h.reqs {
+		for _, proc := range h.processors {
 			if ctx.Err() != nil {
 				return
 			}
@@ -67,7 +55,7 @@ func (h *Handler) Requests(ctx context.Context, params map[string]any, getID fun
 			// TODO: check for race conditions here that iterator blocks until the previous request is sent
 			buf.Reset()
 
-			if err := req.Tmplt.Execute(&buf, d); err != nil {
+			if err := proc.Render(&buf, &d); err != nil {
 				// TODO: add prevalidating template on startup to avoid this error in runtime
 				panic(fmt.Sprintf("template execution failed: %v", err))
 			}

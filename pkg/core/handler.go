@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handler"
 )
@@ -32,7 +33,7 @@ func NewCallHandler(repo CallsRepo) *CallHandler {
 // It takes a req of type *Request and returns a *RequesIter and an error.
 // It returns an error if the method specified in the request's routing key is unsupported.
 // The function initializes a context with cancellation and prepares a list of request processors.
-func (h *CallHandler) Process(req *Request) (*RequesIter, error) {
+func (h *CallHandler) Process(req *Request) (iter.Seq[[]byte], error) {
 	method := req.RoutingKey()
 
 	call := h.repo.GetCall(method)
@@ -40,26 +41,9 @@ func (h *CallHandler) Process(req *Request) (*RequesIter, error) {
 		return nil, fmt.Errorf("unsupported method: %s", method)
 	}
 
-	requests := make([]*RequestProcessor, 0, len(call.Requests))
-	for _, req := range call.Requests {
-		requests = append(requests, &RequestProcessor{
-			tempate:      req.Tmplt,
-			allow:        req.Allow,
-			fieldsMap:    req.FieldMap,
-			responseBody: req.ResponseBody,
-		})
-	}
-
-	ctx, cancel := context.WithCancel(req.Context())
-
-	return &RequesIter{
-		ctx:       ctx,
-		cancel:    cancel,
-		reqs:      requests,
-		params:    req.Params,
-		finalResp: make(map[string]any),
-		composer:  NewComposer(),
-	}, nil
+	return call.Requests(req.ctx, req.Params, func() int64 {
+		return 1
+	})
 }
 
 type RequesIter struct {

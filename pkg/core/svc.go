@@ -60,18 +60,8 @@ func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *Request) err
 
 	ctx := req.Context()
 
-	for ctx.Err() == nil && iter.HasNext() {
-		data, err := iter.Next(conn.WaitResponse())
-		if err == ErrIterDone {
-			break
-		}
-
-		if err != nil {
-			return err
-		}
-
-		r := &Request{data: data, Method: TextMessage, ctx: ctx}
-
+	for reqData := range iter {
+		r := &Request{data: reqData, Method: TextMessage, ctx: ctx}
 		if err := s.be.Handle(conn, r); err != nil {
 			return err
 		}
