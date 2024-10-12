@@ -15,6 +15,7 @@ fmt-all:
 
 build:
 	go build ./...
+	go install ./...
 
 mod-tidy:
 	go mod tidy
