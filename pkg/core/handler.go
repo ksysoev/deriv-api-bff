@@ -4,33 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"html/template"
+
+	"github.com/ksysoev/deriv-api-bff/pkg/core/handler"
 )
 
 type CallsRepo interface {
-	GetCall(method string) *CallRunConfig
+	GetCall(method string) *handler.Handler
 }
 
 var ErrIterDone = errors.New("iteration done")
 
 type CallHandler struct {
 	repo CallsRepo
-}
-
-type CallRunConfig struct {
-	Requests map[string]*RequestRunConfig
-}
-
-type RequestRunConfig struct {
-	Tmplt        *template.Template
-	FieldMap     map[string]string
-	ResponseBody string
-	Allow        []string
-}
-
-type TemplateData struct {
-	Params map[string]any
-	ReqID  int64
 }
 
 // NewCallHandler initializes a new CallHandler based on the provided configuration.
@@ -105,7 +90,7 @@ func (r *RequesIter) Next(id int64, respChan <-chan []byte) ([]byte, error) {
 	req := r.reqs[r.pos]
 	r.pos++
 
-	data := TemplateData{
+	data := handler.TemplateData{
 		Params: r.params,
 		ReqID:  id,
 	}

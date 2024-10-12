@@ -4,6 +4,8 @@ import (
 	"html/template"
 	"reflect"
 	"testing"
+
+	"github.com/ksysoev/deriv-api-bff/pkg/core/handler"
 )
 
 func TestRequestProcessor_Render(t *testing.T) {
@@ -16,7 +18,7 @@ func TestRequestProcessor_Render(t *testing.T) {
 		tempate: tmpl,
 	}
 
-	data := TemplateData{
+	data := handler.TemplateData{
 		Params: map[string]any{"key1": "value1", "key2": "value2"},
 		ReqID:  12345,
 	}

@@ -3,7 +3,7 @@ package repo
 import (
 	"html/template"
 
-	"github.com/ksysoev/deriv-api-bff/pkg/core"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/handler"
 )
 
 type CallsConfig struct {
@@ -24,7 +24,7 @@ type BackendConfig struct {
 }
 
 type CallsRepository struct {
-	calls map[string]*core.CallRunConfig
+	calls map[string]*handler.Handler
 }
 
 // NewCallsRepository initializes a new CallsRepository based on the provided CallsConfig.
@@ -34,12 +34,12 @@ type CallsRepository struct {
 // Edge cases include handling empty or nil CallsConfig, which will result in an empty CallsRepository.
 func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 	r := &CallsRepository{
-		calls: make(map[string]*core.CallRunConfig),
+		calls: make(map[string]*handler.Handler),
 	}
 
 	for _, call := range cfg.Calls {
-		c := &core.CallRunConfig{
-			Requests: make(map[string]*core.RequestRunConfig),
+		c := &handler.Handler{
+			Requests: make(map[string]*handler.RequestRunConfig),
 		}
 
 		for _, req := range call.Backend {
@@ -48,7 +48,7 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 				return nil, err
 			}
 
-			c.Requests[req.ResponseBody] = &core.RequestRunConfig{
+			c.Requests[req.ResponseBody] = &handler.RequestRunConfig{
 				Tmplt:        tmplt,
 				Allow:        req.Allow,
 				FieldMap:     req.FieldsMap,
@@ -62,6 +62,9 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 	return r, nil
 }
 
-func (r *CallsRepository) GetCall(method string) *core.CallRunConfig {
+// GetCall retrieves a CallRunConfig based on the provided method name.
+// It takes a single parameter method of type string, which specifies the method name.
+// It returns a pointer to a CallRunConfig if the method exists in the repository, otherwise it returns nil.
+func (r *CallsRepository) GetCall(method string) *handler.Handler {
 	return r.calls[method]
 }

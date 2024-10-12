@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"html/template"
 	"sync"
+
+	"github.com/ksysoev/deriv-api-bff/pkg/core/handler"
 )
 
 type RequestProcessor struct {
@@ -20,7 +22,7 @@ type RequestProcessor struct {
 // It takes data of type TemplateData.
 // It returns a byte slice containing the rendered template and an error if the template execution fails.
 // It returns an error if the template execution encounters an issue.
-func (r *RequestProcessor) Render(data TemplateData) ([]byte, error) {
+func (r *RequestProcessor) Render(data handler.TemplateData) ([]byte, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
