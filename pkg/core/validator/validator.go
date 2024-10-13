@@ -5,9 +5,9 @@ import (
 	"log/slog"
 )
 
-type ValidatorConfig map[string]*FielConfig
+type ValidatorConfig map[string]*FieldSchema
 
-type FielConfig struct {
+type FieldSchema struct {
 	Type string `mapstructure:"type"`
 }
 
@@ -53,7 +53,7 @@ func (v *validator) Validate(data map[string]any) error {
 	return nil
 }
 
-func (v *validator) validateField(config *FielConfig, value any) error {
+func (v *validator) validateField(config *FieldSchema, value any) error {
 	switch config.Type {
 	case "string":
 		if _, ok := value.(string); !ok {
