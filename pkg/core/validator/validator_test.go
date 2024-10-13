@@ -6,8 +6,8 @@ import (
 
 func TestNewFieldValidator(t *testing.T) {
 	tests := []struct {
-		name    string
 		config  Config
+		name    string
 		wantErr bool
 	}{
 		{
@@ -51,8 +51,8 @@ func TestFieldValidator_Validate(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
 		data    map[string]any
+		name    string
 		wantErr bool
 	}{
 		{

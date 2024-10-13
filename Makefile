@@ -15,7 +15,10 @@ fmt-all:
 
 build:
 	go build ./...
+
+install:
 	go install ./...
+	cp ./scripts/pre-commit ./.git/hooks/pre-commit
 
 mod-tidy:
 	go mod tidy
