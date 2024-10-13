@@ -58,8 +58,7 @@ func TestComposer_WaitResponse_ParseError(t *testing.T) {
 
 func TestComposer_WaitResponse_ContextCancelled(t *testing.T) {
 	composer := New()
-	respChan := make(chan []byte, 1)
-	respChan <- []byte(`{"Params":"param1,param2","ReqID":1234}`)
+	respChan := make(chan []byte)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
