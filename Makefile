@@ -19,3 +19,6 @@ build:
 
 mod-tidy:
 	go mod tidy
+
+coverage:
+	go test ./... -coverprofile=cover.out
