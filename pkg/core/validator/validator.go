@@ -1,33 +1,36 @@
 package validator
 
-import "fmt"
+import (
+	"fmt"
+	"log/slog"
+)
 
-type ValidatorConfig struct {
-	fields map[string]*FielConfig
-}
+type ValidatorConfig map[string]*FielConfig
 
 type FielConfig struct {
 	Type string `mapstructure:"type"`
 }
 
 type validator struct {
-	config *ValidatorConfig
+	fields ValidatorConfig
 }
 
-func New(config *ValidatorConfig) (*validator, error) {
-	for field, fieldConfig := range config.fields {
+func New(cfg ValidatorConfig) (*validator, error) {
+	slog.Info("creating new validator", slog.Any("config", cfg))
+
+	for field, fieldConfig := range cfg {
 		if fieldConfig.Type != "string" && fieldConfig.Type != "number" && fieldConfig.Type != "bool" {
 			return nil, fmt.Errorf("unknown type %s for field %s", fieldConfig.Type, field)
 		}
 	}
 
-	return &validator{config: config}, nil
+	return &validator{fields: cfg}, nil
 }
 
 func (v *validator) Validate(data map[string]any) error {
 	errValidation := NewValidationError()
 
-	for field, config := range v.config.fields {
+	for field, config := range v.fields {
 		if value, ok := data[field]; ok {
 			if err := v.validateField(config, value); err != nil {
 				errValidation.AddError(field, err)
@@ -38,7 +41,7 @@ func (v *validator) Validate(data map[string]any) error {
 	}
 
 	for field := range data {
-		if _, ok := v.config.fields[field]; !ok {
+		if _, ok := v.fields[field]; !ok {
 			errValidation.AddError(field, fmt.Errorf("field %s is not allowed", field))
 		}
 	}

@@ -44,17 +44,16 @@ func New(val Validator, proc []Processor, composeFactory func() Composer) *Handl
 }
 
 func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher func() (reqID int64, respChan <-chan []byte), send func([]byte) error) (map[string]any, error) {
+	if err := h.validator.Validate(params); err != nil {
+		return nil, err
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	iter, err := h.requests(ctx, params, watcher)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request iterator: %w", err)
-	}
-
 	comp := h.newComposer()
 
-	for req := range iter {
+	for req := range h.requests(ctx, params, watcher) {
 		comp.WaitResponse(ctx, req.parser, req.respChan)
 
 		if err := send(req.data); err != nil {
@@ -65,12 +64,8 @@ func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher fun
 	return comp.Response()
 }
 
-func (h *Handler) requests(ctx context.Context, params map[string]any, watcher func() (reqID int64, respChan <-chan []byte)) (iter.Seq[request], error) {
+func (h *Handler) requests(ctx context.Context, params map[string]any, watcher func() (reqID int64, respChan <-chan []byte)) iter.Seq[request] {
 	var buf bytes.Buffer
-
-	if err := h.validator.Validate(params); err != nil {
-		return nil, err
-	}
 
 	return func(yield func(request) bool) {
 		for _, proc := range h.processors {
@@ -96,5 +91,5 @@ func (h *Handler) requests(ctx context.Context, params map[string]any, watcher f
 
 			yield(request)
 		}
-	}, nil
+	}
 }

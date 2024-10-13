@@ -47,7 +47,7 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 	}
 
 	for _, call := range cfg.Calls {
-		validator, err := validator.New(&call.Params)
+		validator, err := validator.New(call.Params)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create validator: %w", err)
 		}
