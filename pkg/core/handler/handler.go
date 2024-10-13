@@ -43,7 +43,7 @@ func New(val Validator, proc []Processor, composeFactory func() Composer) *Handl
 	}
 }
 
-func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher func() (reqID int64, respChan <-chan []byte), send func([]byte) error) (map[string]any, error) {
+func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher func() (reqID int64, respChan <-chan []byte), send func(context.Context, []byte) error) (map[string]any, error) {
 	if err := h.validator.Validate(params); err != nil {
 		return nil, err
 	}
@@ -54,9 +54,9 @@ func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher fun
 	comp := h.newComposer()
 
 	for req := range h.requests(ctx, params, watcher) {
-		comp.WaitResponse(ctx, req.parser, req.respChan)
+		go comp.WaitResponse(ctx, req.parser, req.respChan)
 
-		if err := send(req.data); err != nil {
+		if err := send(ctx, req.data); err != nil {
 			return nil, fmt.Errorf("failed to send request: %w", err)
 		}
 	}

@@ -2,7 +2,6 @@ package validator
 
 import (
 	"fmt"
-	"log/slog"
 )
 
 type ValidatorConfig map[string]*FieldSchema
@@ -16,8 +15,6 @@ type validator struct {
 }
 
 func New(cfg ValidatorConfig) (*validator, error) {
-	slog.Info("creating new validator", slog.Any("config", cfg))
-
 	for field, fieldConfig := range cfg {
 		if fieldConfig.Type != "string" && fieldConfig.Type != "number" && fieldConfig.Type != "bool" {
 			return nil, fmt.Errorf("unknown type %s for field %s", fieldConfig.Type, field)

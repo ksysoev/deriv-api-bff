@@ -13,7 +13,7 @@ type CallsRepo interface {
 }
 
 type Handler interface {
-	Handle(ctx context.Context, params map[string]any, watcher func() (reqID int64, respChan <-chan []byte), send func([]byte) error) (map[string]any, error)
+	Handle(ctx context.Context, params map[string]any, watcher func() (reqID int64, respChan <-chan []byte), send func(context.Context, []byte) error) (map[string]any, error)
 }
 
 type ConnRegistry interface {
@@ -68,10 +68,11 @@ func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *Request) err
 		req.Context(),
 		req.Params,
 		conn.WaitResponse,
-		func(data []byte) error {
+		func(ctx context.Context, data []byte) error {
 			return s.be.Handle(conn, &Request{
 				Method: TextMessage,
 				data:   data,
+				ctx:    ctx,
 			})
 		},
 	)
