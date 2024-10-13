@@ -3,6 +3,8 @@ package validator
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/ksysoev/deriv-api-bff/pkg/core"
 )
 
 type respError struct {
@@ -38,20 +40,17 @@ func (e *ValidationError) HasErrors() bool {
 	return len(e.errors) > 0
 }
 
-func (e *ValidationError) ErrorResponse(method string) (json.RawMessage, error) {
-	if !e.HasErrors() {
-		return nil, fmt.Errorf("no errors to generate response")
-	}
-
-	respError := respError{
-		Code:    "InputValidationFailed",
-		Message: fmt.Sprintf("Input validation failed: %s", method),
-		Details: make(map[string]string, len(e.errors)),
-	}
+func (e *ValidationError) ApiError() error {
+	details := make(map[string]string, len(e.errors))
 
 	for field, err := range e.errors {
-		respError.Details[field] = err.Error()
+		details[field] = err.Error()
 	}
 
-	return json.Marshal(respError)
+	detailsData, err := json.Marshal(details)
+	if err != nil {
+		panic("failed to marshal APIError details: " + err.Error())
+	}
+
+	return core.NewAPIError("InputValidationFailed", "Input validation failed", detailsData)
 }

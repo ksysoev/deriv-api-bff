@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/ksysoev/wasabi"
@@ -79,7 +80,12 @@ func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *Request) err
 		},
 	)
 
-	if err != nil {
+	var apiErr *APIError
+
+	if errors.As(err, &apiErr) {
+		resp = make(map[string]any)
+		resp["error"] = apiErr.ApiError()
+	} else if err != nil {
 		return fmt.Errorf("failed to handle request: %w", err)
 	}
 

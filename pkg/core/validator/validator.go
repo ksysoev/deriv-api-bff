@@ -44,7 +44,7 @@ func (v *FieldValidator) Validate(data map[string]any) error {
 	}
 
 	if errValidation.HasErrors() {
-		return errValidation
+		return errValidation.ApiError()
 	}
 
 	return nil

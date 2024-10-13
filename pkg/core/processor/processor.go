@@ -99,8 +99,8 @@ func (p *Processor) parse(data []byte) (map[string]any, error) {
 		return nil, err
 	}
 
-	if _, ok := rdata["error"]; ok {
-		return nil, NewAPIError(p.responseBody, rdata)
+	if errData, ok := rdata["error"]; ok {
+		return nil, NewAPIError(errData)
 	}
 
 	rb, ok := rdata[p.responseBody]
