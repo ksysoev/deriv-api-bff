@@ -20,7 +20,7 @@ func (e *APIError) Error() string {
 	return e.Message
 }
 
-func (e *APIError) ApiError() json.RawMessage {
+func (e *APIError) Encode() json.RawMessage {
 	bytes, err := json.Marshal(e)
 	if err != nil {
 		panic("failed to marshal APIError: " + err.Error())

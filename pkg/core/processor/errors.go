@@ -27,8 +27,8 @@ func NewAPIError(data any) error {
 	}
 
 	var detailsData json.RawMessage
-	details, ok := err["details"]
-	if ok {
+
+	if details, ok := err["details"]; ok {
 		var err error
 
 		detailsData, err = json.Marshal(details)

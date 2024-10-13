@@ -84,7 +84,7 @@ func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *Request) err
 
 	if errors.As(err, &apiErr) {
 		resp = make(map[string]any)
-		resp["error"] = apiErr.ApiError()
+		resp["error"] = apiErr.Encode()
 	} else if err != nil {
 		return fmt.Errorf("failed to handle request: %w", err)
 	}

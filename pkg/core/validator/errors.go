@@ -7,12 +7,6 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 )
 
-type respError struct {
-	Details map[string]string `json:"details"`
-	Code    string            `json:"code"`
-	Message string            `json:"message"`
-}
-
 type ValidationError struct {
 	errors map[string]error
 }
@@ -40,7 +34,7 @@ func (e *ValidationError) HasErrors() bool {
 	return len(e.errors) > 0
 }
 
-func (e *ValidationError) ApiError() error {
+func (e *ValidationError) APIError() error {
 	details := make(map[string]string, len(e.errors))
 
 	for field, err := range e.errors {
