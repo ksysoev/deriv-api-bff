@@ -29,9 +29,9 @@ func TestComposer_WaitResponse_Success(t *testing.T) {
 
 	ctx := context.Background()
 
-	go composer.WaitResponse(ctx, parser, respChan)
+	go composer.Wait(ctx, parser, respChan)
 
-	resp, err := composer.Response()
+	resp, err := composer.Compose()
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -49,9 +49,9 @@ func TestComposer_WaitResponse_ParseError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	composer.WaitResponse(ctx, makeParser(), respChan)
+	composer.Wait(ctx, makeParser(), respChan)
 
-	_, err := composer.Response()
+	_, err := composer.Compose()
 	if !strings.HasPrefix(err.Error(), "fail to parse response: invalid character") {
 		t.Fatalf("expected error: %s, got something else: %s", err.Error(), err)
 	}
@@ -65,9 +65,9 @@ func TestComposer_WaitResponse_ContextCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	composer.WaitResponse(ctx, makeParser(), respChan)
+	composer.Wait(ctx, makeParser(), respChan)
 
-	res, err := composer.Response()
+	res, err := composer.Compose()
 	if err == nil {
 		t.Fatalf("expected error, got nil. While response was: %s", res)
 	}

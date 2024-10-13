@@ -42,7 +42,7 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 		calls: make(map[string]core.Handler),
 	}
 
-	composerFactory := func() handler.Composer {
+	composerFactory := func() handler.WaitComposer {
 		return composer.New()
 	}
 
@@ -52,7 +52,7 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 			return nil, fmt.Errorf("failed to create validator: %w", err)
 		}
 
-		processors := make([]handler.Processor, 0, len(call.Backend))
+		processors := make([]handler.RenderParser, 0, len(call.Backend))
 		for _, req := range call.Backend {
 			tmplt, err := template.New("request").Parse(req.RequestTemplate)
 			if err != nil {
