@@ -8,12 +8,15 @@ import (
 	"github.com/ksysoev/wasabi"
 )
 
+type Sender func(context.Context, []byte) error
+type Waiter func() (reqID int64, respChan <-chan []byte)
+
 type CallsRepo interface {
 	GetCall(method string) Handler
 }
 
 type Handler interface {
-	Handle(ctx context.Context, params map[string]any, watcher func() (reqID int64, respChan <-chan []byte), send func(context.Context, []byte) error) (map[string]any, error)
+	Handle(ctx context.Context, params map[string]any, watcher Waiter, send Sender) (map[string]any, error)
 }
 
 type ConnRegistry interface {

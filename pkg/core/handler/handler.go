@@ -6,7 +6,11 @@ import (
 	"fmt"
 	"io"
 	"iter"
+
+	"github.com/ksysoev/deriv-api-bff/pkg/core"
 )
+
+type Parser func([]byte) (map[string]any, error)
 
 type Validator interface {
 	Validate(data map[string]any) error
@@ -18,7 +22,7 @@ type Processor interface {
 }
 
 type Composer interface {
-	WaitResponse(ctx context.Context, parser func([]byte) (map[string]any, error), respChan <-chan []byte)
+	WaitResponse(ctx context.Context, parser Parser, respChan <-chan []byte)
 	Response() (map[string]any, error)
 }
 
@@ -43,7 +47,7 @@ func New(val Validator, proc []Processor, composeFactory func() Composer) *Handl
 	}
 }
 
-func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher func() (reqID int64, respChan <-chan []byte), send func(context.Context, []byte) error) (map[string]any, error) {
+func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher core.Waiter, send core.Sender) (map[string]any, error) {
 	if err := h.validator.Validate(params); err != nil {
 		return nil, err
 	}

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+
+	"github.com/ksysoev/deriv-api-bff/pkg/core/handler"
 )
 
 type Composer struct {
@@ -28,7 +30,7 @@ func New() *Composer {
 // It does not return any values.
 // It sets an error if the context is done before a response is received or if there is a failure in parsing the response.
 // If the response body does not contain expected keys, it logs a warning and continues processing other keys.
-func (c *Composer) WaitResponse(ctx context.Context, parser func([]byte) (map[string]any, error), respChan <-chan []byte) {
+func (c *Composer) WaitResponse(ctx context.Context, parser handler.Parser, respChan <-chan []byte) {
 	c.wg.Add(1)
 	defer c.wg.Done()
 
