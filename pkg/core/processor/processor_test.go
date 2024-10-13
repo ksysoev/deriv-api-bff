@@ -1,6 +1,7 @@
-package core
+package processor
 
 import (
+	"bytes"
 	"html/template"
 	"reflect"
 	"testing"
@@ -12,35 +13,34 @@ func TestRequestProcessor_Render(t *testing.T) {
 		t.Fatalf("failed to parse template: %v", err)
 	}
 
-	rp := &RequestProcessor{
-		tempate: tmpl,
+	rp := &Processor{
+		tmpl: tmpl,
 	}
 
-	data := TemplateData{
-		Params: map[string]any{"key1": "value1", "key2": "value2"},
-		ReqID:  12345,
-	}
+	params := map[string]any{"key1": "value1", "key2": "value2"}
+	reqID := 12345
 	expected := "Params: map[key1:value1 key2:value2], ReqID: 12345"
 
-	result, err := rp.Render(data)
-	if err != nil {
+	var buf bytes.Buffer
+
+	if err := rp.Render(&buf, int64(reqID), params); err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if string(result) != expected {
-		t.Fatalf("expected %s, got %s", expected, string(result))
+	if buf.String() != expected {
+		t.Fatalf("expected %s, got %s", expected, buf.String())
 	}
 }
 
-func TestRequestProcessor_ParseResp_Success(t *testing.T) {
-	rp := &RequestProcessor{
+func TestRequestProcessor_parse_Success(t *testing.T) {
+	rp := &Processor{
 		responseBody: "data",
 	}
 
 	jsonData := `{"data": {"key1": "value1", "key2": "value2"}}`
 	expected := map[string]any{"key1": "value1", "key2": "value2"}
 
-	result, err := rp.ParseResp([]byte(jsonData))
+	result, err := rp.parse([]byte(jsonData))
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -50,27 +50,27 @@ func TestRequestProcessor_ParseResp_Success(t *testing.T) {
 	}
 }
 
-func TestRequestProcessor_ParseResp_Error(t *testing.T) {
-	rp := &RequestProcessor{
+func TestRequestProcessor_parse_Error(t *testing.T) {
+	rp := &Processor{
 		responseBody: "data",
 	}
 
 	jsonData := `{"error": "something went wrong"}`
 
-	_, err := rp.ParseResp([]byte(jsonData))
+	_, err := rp.parse([]byte(jsonData))
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
 }
 
-func TestRequestProcessor_ParseResp_UnexpectedFormat(t *testing.T) {
-	rp := &RequestProcessor{
+func TestRequestProcessor_parse_UnexpectedFormat(t *testing.T) {
+	rp := &Processor{
 		responseBody: "data",
 	}
 
 	jsonData := `{"data": 123}`
 
-	result, err := rp.ParseResp([]byte(jsonData))
+	result, err := rp.parse([]byte(jsonData))
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
