@@ -10,11 +10,15 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/cmd"
 )
 
+// version is the version of the application. It should be set at build time.
+var version = "dev"
+var name = "deriv-api-bff"
+
 func main() {
 	ctx := context.Background()
 	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 
-	rootCmd := cmd.InitCommands()
+	rootCmd := cmd.InitCommands(name, version)
 
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		slog.Error("failed to execute command", slog.Any("error", err))
