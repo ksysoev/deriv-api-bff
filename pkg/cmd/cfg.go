@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/api"
@@ -34,6 +35,8 @@ func initConfig(configPath string) (*config, error) {
 	if err := viper.Unmarshal(cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
+
+	slog.Debug("Config loaded", slog.Any("config", cfg))
 
 	return cfg, nil
 }

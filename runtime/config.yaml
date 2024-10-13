@@ -6,7 +6,8 @@ api:
   calls:
     - method: "aggregate"
       params:
-        country: string
+        country: 
+          type: "string"
       backend:
         - response_body: "landing_company"
           allow: 

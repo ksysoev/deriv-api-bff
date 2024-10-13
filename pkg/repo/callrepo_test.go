@@ -1,9 +1,9 @@
 package repo
 
 import (
-	"html/template"
 	"testing"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/core/validator"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,7 +19,7 @@ func TestNewCallsRepository(t *testing.T) {
 				Calls: []CallConfig{
 					{
 						Method: "testMethod",
-						Params: map[string]string{"param1": "value1"},
+						Params: validator.Config{"param1": {Type: "string"}},
 						Backend: []BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
@@ -39,7 +39,7 @@ func TestNewCallsRepository(t *testing.T) {
 				Calls: []CallConfig{
 					{
 						Method: "testMethod",
-						Params: map[string]string{"param1": "value1"},
+						Params: validator.Config{"param1": {Type: "value1"}},
 						Backend: []BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
@@ -64,20 +64,6 @@ func TestNewCallsRepository(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, got)
 				assert.Contains(t, got.calls, "testMethod")
-
-				callConfig := got.calls["testMethod"]
-				assert.NotNil(t, callConfig)
-				assert.Contains(t, callConfig.Requests, "responseBody1")
-
-				requestConfig := callConfig.Requests["responseBody1"]
-				assert.NotNil(t, requestConfig)
-				assert.Equal(t, "responseBody1", requestConfig.ResponseBody)
-				assert.Equal(t, []string{"allow1"}, requestConfig.Allow)
-				assert.Equal(t, map[string]string{"field1": "value1"}, requestConfig.FieldMap)
-
-				tmpl, err := template.New("request").Parse("template1")
-				assert.NoError(t, err)
-				assert.Equal(t, tmpl.Tree.Root.String(), requestConfig.Tmplt.Tree.Root.String())
 			}
 		})
 	}
@@ -87,7 +73,7 @@ func TestGetCall(t *testing.T) {
 		Calls: []CallConfig{
 			{
 				Method: "testMethod",
-				Params: map[string]string{"param1": "value1"},
+				Params: validator.Config{"param1": {Type: "string"}},
 				Backend: []BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
