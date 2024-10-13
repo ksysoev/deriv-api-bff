@@ -8,8 +8,8 @@ type args struct {
 	appName    string
 	version    string
 	logLevel   string
-	textFormat bool
 	configPath string
+	textFormat bool
 }
 
 // InitCommands initializes and returns the root command for the Backend for Frontend (BFF) service.
