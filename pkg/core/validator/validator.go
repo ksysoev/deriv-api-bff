@@ -4,27 +4,27 @@ import (
 	"fmt"
 )
 
-type ValidatorConfig map[string]*FieldSchema
+type Config map[string]*FieldSchema
 
 type FieldSchema struct {
 	Type string `mapstructure:"type"`
 }
 
-type validator struct {
-	fields ValidatorConfig
+type FieldValidator struct {
+	fields Config
 }
 
-func New(cfg ValidatorConfig) (*validator, error) {
+func New(cfg Config) (*FieldValidator, error) {
 	for field, fieldConfig := range cfg {
 		if fieldConfig.Type != "string" && fieldConfig.Type != "number" && fieldConfig.Type != "bool" {
 			return nil, fmt.Errorf("unknown type %s for field %s", fieldConfig.Type, field)
 		}
 	}
 
-	return &validator{fields: cfg}, nil
+	return &FieldValidator{fields: cfg}, nil
 }
 
-func (v *validator) Validate(data map[string]any) error {
+func (v *FieldValidator) Validate(data map[string]any) error {
 	errValidation := NewValidationError()
 
 	for field, config := range v.fields {
@@ -50,7 +50,7 @@ func (v *validator) Validate(data map[string]any) error {
 	return nil
 }
 
-func (v *validator) validateField(config *FieldSchema, value any) error {
+func (v *FieldValidator) validateField(config *FieldSchema, value any) error {
 	switch config.Type {
 	case "string":
 		if _, ok := value.(string); !ok {

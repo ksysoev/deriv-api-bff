@@ -11,8 +11,8 @@ import (
 func makeParser() func([]byte) (map[string]any, error) {
 	return func(data []byte) (map[string]any, error) {
 		var res map[string]any
-		err := json.Unmarshal(data, &res)
-		if err != nil {
+
+		if err := json.Unmarshal(data, &res); err != nil {
 			return nil, err
 		}
 
@@ -24,10 +24,10 @@ func TestComposer_WaitResponse_Success(t *testing.T) {
 	expectedData := `{"Params":"param1,param2","ReqID":1234}`
 	composer := New()
 	respChan := make(chan []byte, 1)
-	respChan <- []byte(expectedData)
 	parser := makeParser()
-
 	ctx := context.Background()
+
+	respChan <- []byte(expectedData)
 
 	go composer.Wait(ctx, parser, respChan)
 

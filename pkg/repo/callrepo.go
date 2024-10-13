@@ -16,9 +16,9 @@ type CallsConfig struct {
 }
 
 type CallConfig struct {
-	Method  string                    `mapstructure:"method"`
-	Params  validator.ValidatorConfig `mapstructure:"params"`
-	Backend []BackendConfig           `mapstructure:"backend"`
+	Method  string           `mapstructure:"method"`
+	Params  validator.Config `mapstructure:"params"`
+	Backend []BackendConfig  `mapstructure:"backend"`
 }
 
 type BackendConfig struct {
@@ -42,34 +42,33 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 		calls: make(map[string]core.Handler),
 	}
 
-	composerFactory := func() handler.WaitComposer {
+	factory := func() handler.WaitComposer {
 		return composer.New()
 	}
 
 	for _, call := range cfg.Calls {
-		validator, err := validator.New(call.Params)
+		valid, err := validator.New(call.Params)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create validator: %w", err)
 		}
 
-		processors := make([]handler.RenderParser, 0, len(call.Backend))
+		procs := make([]handler.RenderParser, 0, len(call.Backend))
+
 		for _, req := range call.Backend {
 			tmplt, err := template.New("request").Parse(req.RequestTemplate)
 			if err != nil {
 				return nil, err
 			}
 
-			p := processor.New(&processor.Config{
+			procs = append(procs, processor.New(&processor.Config{
 				Tmplt:        tmplt,
 				FieldMap:     req.FieldsMap,
 				ResponseBody: req.ResponseBody,
 				Allow:        req.Allow,
-			})
-
-			processors = append(processors, p)
+			}))
 		}
 
-		r.calls[call.Method] = handler.New(validator, processors, composerFactory)
+		r.calls[call.Method] = handler.New(valid, procs, factory)
 	}
 
 	return r, nil

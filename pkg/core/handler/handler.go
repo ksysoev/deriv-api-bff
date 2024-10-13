@@ -28,15 +28,15 @@ type WaitComposer interface {
 
 type Handler struct {
 	validator   Validator
-	processors  []RenderParser
 	newComposer func() WaitComposer
+	processors  []RenderParser
 }
 
 type request struct {
-	id       int64
 	respChan <-chan []byte
 	parser   func([]byte) (map[string]any, error)
 	data     []byte
+	id       int64
 }
 
 func New(val Validator, proc []RenderParser, composeFactory func() WaitComposer) *Handler {
@@ -76,6 +76,7 @@ func (h *Handler) requests(ctx context.Context, params map[string]any, watcher f
 			if ctx.Err() != nil {
 				return
 			}
+
 			reqID, respChan := watcher()
 
 			// TODO: check for race conditions here that iterator blocks until the previous request is sent

@@ -38,7 +38,6 @@ type Service struct {
 // It returns a pointer to Service and an error.
 // It returns an error if the call handler creation fails.
 func NewService(callRepo CallsRepo, wsBackend DerivAPI, connRegistry ConnRegistry) *Service {
-
 	return &Service{
 		be:       wsBackend,
 		ch:       callRepo,
