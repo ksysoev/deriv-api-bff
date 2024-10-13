@@ -43,20 +43,20 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          push: true # change later when if event != pull request
+          push: ${{ github.event_name !=  'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-push
-    if: true # change later when if event != pull request
+    if: ${{ github.event_name !=  'pull_request' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
