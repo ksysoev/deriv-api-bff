@@ -39,6 +39,9 @@ type request struct {
 	id       int64
 }
 
+// New creates a new instance of Handler with the provided validator, processors, and composer factory function.
+// It takes three parameters: val of type Validator, proc which is a slice of RenderParser, and composeFactory which is a function returning a WaitComposer.
+// It returns a pointer to a Handler initialized with the provided parameters.
 func New(val Validator, proc []RenderParser, composeFactory func() WaitComposer) *Handler {
 	return &Handler{
 		validator:   val,
@@ -47,6 +50,10 @@ func New(val Validator, proc []RenderParser, composeFactory func() WaitComposer)
 	}
 }
 
+// Handle processes incoming requests, validates them, and sends them to the appropriate handler.
+// It takes ctx of type context.Context, params of type map[string]any, watcher of type core.Waiter, and send of type core.Sender.
+// It returns a map[string]any containing the composed response and an error if any occurs during validation or sending requests.
+// It returns an error if the validation of params fails or if sending a request fails.
 func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher core.Waiter, send core.Sender) (map[string]any, error) {
 	if err := h.validator.Validate(params); err != nil {
 		return nil, err
@@ -68,7 +75,12 @@ func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher cor
 	return comp.Compose()
 }
 
-func (h *Handler) requests(ctx context.Context, params map[string]any, watcher func() (reqID int64, respChan <-chan []byte)) iter.Seq[request] {
+// requests generates a sequence of requests based on the provided context, parameters, and watcher.
+// It takes ctx of type context.Context, params of type map[string]any, and watcher of type core.Waiter.
+// It returns an iterator function that yields requests of type request.
+// It panics if there is an error in rendering the processor template.
+// Special behavior includes checking for context cancellation and resetting the buffer for each processor.
+func (h *Handler) requests(ctx context.Context, params map[string]any, watcher core.Waiter) iter.Seq[request] {
 	var buf bytes.Buffer
 
 	return func(yield func(request) bool) {

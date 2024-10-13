@@ -7,9 +7,10 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 )
 
-// NewAPIError creates a new instance of APIError with the provided call string and response data.
-// It takes two parameters: call of type string and data of type map[string]any.
-// It returns a pointer to an APIError struct.
+// NewAPIError creates a new API error from the provided data.
+// It takes a single parameter data of type any, which is expected to be a map with keys "code", "message", and optionally "details".
+// It returns an error which is an instance of core.APIError if the data is in the expected format, or a descriptive error if the data format is incorrect.
+// It returns an error if the data is not a map, if the "code" or "message" fields are missing or not strings, or if the "details" field cannot be marshaled to JSON.
 func NewAPIError(data any) error {
 	err, ok := data.(map[string]any)
 	if !ok {

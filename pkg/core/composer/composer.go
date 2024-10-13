@@ -25,11 +25,9 @@ func New() *Composer {
 	}
 }
 
-// WaitResponse waits for a response on the provided channel and processes it.
-// It takes a context (ctx) of type context.Context, a request processor (req) of type *RequestProcessor, and a response channel (respChan) of type <-chan []byte.
-// It does not return any values.
-// It sets an error if the context is done before a response is received or if there is a failure in parsing the response.
-// If the response body does not contain expected keys, it logs a warning and continues processing other keys.
+// Wait listens for a response on the provided channel and processes it using the given parser.
+// It takes a context (ctx) of type context.Context, a parser of type handler.Parser, and a response channel (respChan) of type <-chan []byte.
+// It does not return any values but may set an error on the Composer if the context is done or if parsing the response fails.
 func (c *Composer) Wait(ctx context.Context, parser handler.Parser, respChan <-chan []byte) {
 	c.wg.Add(1)
 	defer c.wg.Done()
@@ -57,11 +55,10 @@ func (c *Composer) Wait(ctx context.Context, parser handler.Parser, respChan <-c
 	}
 }
 
-// Response generates a JSON response based on the Composer's state.
-// It takes req_id of type *int, which is an optional request identifier.
-// It returns a byte slice containing the JSON response and an error if any occurs.
-// It returns an error if the response cannot be marshaled into JSON or if there is an existing error in the Composer.
-// If the Composer has an APIError, it delegates the response generation to the APIError's Response method.
+// Compose waits for all requests to finish and then returns the composed result.
+// It does not take any parameters.
+// It returns a map[string]any containing the composed result and an error if any occurred during composition.
+// It returns an error if there was an issue during the composition process.
 func (c *Composer) Compose() (map[string]any, error) {
 	c.wg.Wait()
 	c.mu.Lock()

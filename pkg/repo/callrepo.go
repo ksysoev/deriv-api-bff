@@ -32,11 +32,10 @@ type CallsRepository struct {
 	calls map[string]core.Handler
 }
 
-// NewCallsRepository initializes a new CallsRepository based on the provided CallsConfig.
+// NewCallsRepository creates a new instance of CallsRepository based on the provided configuration.
 // It takes cfg of type *CallsConfig which contains the configuration for the calls.
-// It returns a pointer to CallsRepository and an error.
-// It returns an error if there is an issue parsing the request templates.
-// Edge cases include handling empty or nil CallsConfig, which will result in an empty CallsRepository.
+// It returns a pointer to CallsRepository and an error if the repository creation fails.
+// It returns an error if the validator creation fails or if there is an error parsing the request template.
 func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 	r := &CallsRepository{
 		calls: make(map[string]core.Handler),

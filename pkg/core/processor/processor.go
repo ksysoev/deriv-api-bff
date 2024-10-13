@@ -27,6 +27,9 @@ type templateData struct {
 	ReqID  int64
 }
 
+// New creates and returns a new Processor instance configured with the provided Config.
+// It takes a single parameter cfg of type *Config which contains the necessary configuration.
+// It returns a pointer to a Processor struct initialized with the values from the Config.
 func New(cfg *Config) *Processor {
 	return &Processor{
 		tmpl:         cfg.Tmplt,
@@ -36,10 +39,9 @@ func New(cfg *Config) *Processor {
 	}
 }
 
-// Render generates a byte slice from the provided TemplateData using the RequestProcessor's template.
-// It takes data of type TemplateData.
-// It returns a byte slice containing the rendered template and an error if the template execution fails.
-// It returns an error if the template execution encounters an issue.
+// Render generates and writes the output of a template to the provided writer.
+// It takes a writer w of type io.Writer, a request ID reqID of type int64, and a map of parameters params of type map[string]any.
+// It returns an error if the template execution fails.
 func (p *Processor) Render(w io.Writer, reqID int64, params map[string]any) error {
 	data := templateData{
 		Params: params,
@@ -49,13 +51,10 @@ func (p *Processor) Render(w io.Writer, reqID int64, params map[string]any) erro
 	return p.tmpl.Execute(w, data)
 }
 
-// ParseResp parses the given JSON byte data into a map[string]any.
-// It takes data of type []byte and returns a map[string]any and an error.
-// It returns an error if the JSON unmarshalling fails, if the response contains an "error" key,
-// or if the expected response body is not found or is in an unexpected format.
-// If the response body is a map, it returns the map directly.
-// If the response body is a list, it returns a map with the key "list" containing the list.
-// If the response body is a single value, it returns a map with the key "value" containing the value.
+// Parse processes the input data and extracts allowed fields into a map.
+// It takes data of type []byte.
+// It returns a map[string]any containing the allowed fields and an error if parsing fails.
+// It returns an error if the input data cannot be parsed or if the response body does not contain expected keys.
 func (p *Processor) Parse(data []byte) (map[string]any, error) {
 	resp, err := p.parse(data)
 	if err != nil {
@@ -84,13 +83,12 @@ func (p *Processor) Parse(data []byte) (map[string]any, error) {
 	return result, nil
 }
 
-// ParseResp parses the given JSON byte data into a map[string]any.
+// parse unmarshals JSON data into a map and processes the response body.
 // It takes data of type []byte and returns a map[string]any and an error.
-// It returns an error if the JSON unmarshalling fails, if the response contains an "error" key,
-// or if the expected response body is not found or is in an unexpected format.
-// If the response body is a map, it returns the map directly.
-// If the response body is a list, it returns a map with the key "list" containing the list.
-// If the response body is a single value, it returns a map with the key "value" containing the value.
+// It returns an error if the JSON unmarshalling fails, if the response contains an error,
+// or if the response body is not found or is in an unexpected format.
+// If the response body is a map, it returns it directly. If it is a list, it wraps it in a map with the key "list".
+// If it is any other type, it wraps it in a map with the key "value".
 func (p *Processor) parse(data []byte) (map[string]any, error) {
 	var rdata map[string]any
 

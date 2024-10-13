@@ -55,9 +55,10 @@ func (s *Service) PassThrough(clientConn wasabi.Connection, req *Request) error 
 	return s.be.Handle(conn, req)
 }
 
-// ProcessRequest processes a request by iterating over responses and handling them.
-// It takes clientConn of type wasabi.Connection and req of type *Request.
-// It returns an error if processing the request fails or if the method is unsupported.
+// ProcessRequest handles an incoming request by delegating it to the appropriate handler based on the request method.
+// It takes a client connection of type wasabi.Connection and a request of type *Request.
+// It returns an error if the request method is unsupported, if the handler fails to process the request, or if the response cannot be marshaled to JSON.
+// If the handler returns an APIError, it encodes the error in the response.
 func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *Request) error {
 	conn := s.registry.GetConnection(clientConn)
 
