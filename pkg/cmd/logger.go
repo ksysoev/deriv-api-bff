@@ -27,7 +27,7 @@ func initLogger(arg *args) error {
 
 	logger := slog.New(logHandler).With(
 		slog.String("ver", arg.version),
-		slog.String("app", arg.appName),
+		slog.String("app", "deriv-api-bff"),
 	)
 
 	slog.SetDefault(logger)
