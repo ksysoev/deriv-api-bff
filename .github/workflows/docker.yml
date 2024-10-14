@@ -33,7 +33,9 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ghcr.io/${{ github.repository }}
-
+      - name: Extract version from tag
+        id: extract_version
+        run: echo "VERSION=$(echo ${{ steps.meta.outputs.tags }} | cut -d ':' -f 2)" >> $GITHUB_ENV
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
@@ -42,6 +44,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VERSION=${{ steps.meta.outputs.tags }}
+            VERSION=${{ env.VERSION }}
             BUILD=${{ github.sha }}
             ARCH=amd64
