@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"log/slog"
+
 	"github.com/spf13/cobra"
 )
 
 type args struct {
-	appName    string
+	build      string
 	version    string
 	logLevel   string
 	configPath string
@@ -15,9 +17,9 @@ type args struct {
 // InitCommands initializes and returns the root command for the Backend for Frontend (BFF) service.
 // It sets up the command structure and adds subcommands, including setting up persistent flags.
 // It returns a pointer to a cobra.Command which represents the root command.
-func InitCommands(name, version string) *cobra.Command {
+func InitCommands(build, version string) *cobra.Command {
 	args := &args{
-		appName: name,
+		build:   build,
 		version: version,
 	}
 
@@ -49,6 +51,8 @@ func ServerCommand(arg *args) *cobra.Command {
 			if err := initLogger(arg); err != nil {
 				return err
 			}
+
+			slog.Info("Starting Deriv API BFF server", slog.String("version", arg.version), slog.String("build", arg.build))
 
 			cfg, err := initConfig(arg.configPath)
 			if err != nil {

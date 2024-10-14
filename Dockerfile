@@ -1,5 +1,9 @@
 FROM golang:1.23 AS builder
 
+ARG VERSION=${VERSION}
+ARG BUILD=${BUILD}
+ARG ARCH=${ARCH}
+
 WORKDIR /app/
 
 COPY . .
@@ -7,12 +11,13 @@ COPY . .
 RUN go mod download
 RUN go mod verify
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /main ./cmd/bff
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} go build -o /deriv-api-bff  -ldflags "-X main.version=$VERSION -X main.build=$BUILD" ./cmd/bff
 
 FROM scratch
 
-COPY --from=builder /main /main
+COPY --from=builder /deriv-api-bff /deriv-api-bff
 
 COPY --from=builder /app/runtime/config.yaml /runtime/config.yaml
 
-ENTRYPOINT [ "./main", "server" ]
+ENTRYPOINT [ "./deriv-api-bff" ]
+CMD [ "server" ]
