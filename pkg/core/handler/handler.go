@@ -65,7 +65,7 @@ func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher cor
 	comp := h.newComposer()
 
 	for req := range h.requests(ctx, params, watcher) {
-		go comp.Wait(ctx, req.parser, req.respChan)
+		comp.Wait(ctx, req.parser, req.respChan)
 
 		if err := send(ctx, req.data); err != nil {
 			return nil, fmt.Errorf("failed to send request: %w", err)
