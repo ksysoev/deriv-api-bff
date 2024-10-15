@@ -3,11 +3,12 @@ package processor
 import (
 	"bytes"
 	"html/template"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestRequestProcessor_Render(t *testing.T) {
+func TestProcessor_Render(t *testing.T) {
 	tmpl, err := template.New("test").Parse("Params: {{.Params}}, ReqID: {{.ReqID}}")
 	if err != nil {
 		t.Fatalf("failed to parse template: %v", err)
@@ -23,34 +24,52 @@ func TestRequestProcessor_Render(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	if err := rp.Render(&buf, int64(reqID), params); err != nil {
-		t.Fatalf("expected no error, got %v", err)
+	err = rp.Render(&buf, int64(reqID), params)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, buf.String())
+}
+
+func TestProcessor_parse_Success(t *testing.T) {
+	tests := []struct {
+		name         string
+		responseBody string
+		jsonData     string
+		expected     map[string]any
+	}{
+		{
+			name:         "object",
+			responseBody: "data",
+			jsonData:     `{"data": {"key1": "value1", "key2": "value2"}}`,
+			expected:     map[string]any{"key1": "value1", "key2": "value2"},
+		},
+		{
+			name:         "array",
+			responseBody: "data",
+			jsonData:     `{"data": [{"key1": "value1"}, {"key2": "value2"}]}`,
+			expected:     map[string]any{"list": []any{map[string]any{"key1": "value1"}, map[string]any{"key2": "value2"}}},
+		},
+		{
+			name:         "scalar",
+			responseBody: "data",
+			jsonData:     `{"data": "value"}`,
+			expected:     map[string]any{"value": "value"},
+		},
 	}
 
-	if buf.String() != expected {
-		t.Fatalf("expected %s, got %s", expected, buf.String())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rp := &Processor{
+				responseBody: tt.responseBody,
+			}
+
+			result, err := rp.parse([]byte(tt.jsonData))
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
+		})
 	}
 }
 
-func TestRequestProcessor_parse_Success(t *testing.T) {
-	rp := &Processor{
-		responseBody: "data",
-	}
-
-	jsonData := `{"data": {"key1": "value1", "key2": "value2"}}`
-	expected := map[string]any{"key1": "value1", "key2": "value2"}
-
-	result, err := rp.parse([]byte(jsonData))
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	if !reflect.DeepEqual(result, expected) {
-		t.Fatalf("expected %v, got %v", expected, result)
-	}
-}
-
-func TestRequestProcessor_parse_Error(t *testing.T) {
+func TestProcessor_parse_Error(t *testing.T) {
 	rp := &Processor{
 		responseBody: "data",
 	}
@@ -58,25 +77,28 @@ func TestRequestProcessor_parse_Error(t *testing.T) {
 	jsonData := `{"error": "something went wrong"}`
 
 	_, err := rp.parse([]byte(jsonData))
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
+	assert.Error(t, err)
 }
 
-func TestRequestProcessor_parse_UnexpectedFormat(t *testing.T) {
+func TestProcessor_parse_ResponseBodyNotFound(t *testing.T) {
 	rp := &Processor{
 		responseBody: "data",
 	}
 
-	jsonData := `{"data": 123}`
+	jsonData := `{"key": "value"}`
+
+	_, err := rp.parse([]byte(jsonData))
+	assert.Error(t, err)
+}
+
+func TestProcessor_parse_UnexpectedFormat(t *testing.T) {
+	rp := &Processor{
+		responseBody: "data",
+	}
+
+	jsonData := `{invalid json}`
 
 	result, err := rp.parse([]byte(jsonData))
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	expected := map[string]any{"value": 123.0} // go will parse string numerics to float64
-	if !reflect.DeepEqual(result, expected) {
-		t.Fatalf("expected %v, got %v", expected, result)
-	}
+	assert.Error(t, err)
+	assert.Nil(t, result)
 }
