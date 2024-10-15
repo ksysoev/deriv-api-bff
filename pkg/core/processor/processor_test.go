@@ -53,10 +53,10 @@ func TestProcessor_Render(t *testing.T) {
 
 func TestProcessor_parse_Success(t *testing.T) {
 	tests := []struct {
+		expected     map[string]any
 		name         string
 		responseBody string
 		jsonData     string
-		expected     map[string]any
 	}{
 		{
 			name:         "object",
@@ -126,12 +126,12 @@ func TestProcessor_parse_UnexpectedFormat(t *testing.T) {
 }
 func TestProcessor_Parse_Success(t *testing.T) {
 	tests := []struct {
+		fieldMap     map[string]string
+		expected     map[string]any
 		name         string
 		responseBody string
-		fieldMap     map[string]string
-		allow        []string
 		jsonData     string
-		expected     map[string]any
+		allow        []string
 	}{
 		{
 			name:         "allowed fields with field mapping",
