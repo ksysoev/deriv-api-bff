@@ -8,6 +8,28 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNew(t *testing.T) {
+	tmpl, err := template.New("test").Parse("Params: {{.Params}}, ReqID: {{.ReqID}}")
+	if err != nil {
+		t.Fatalf("failed to parse template: %v", err)
+	}
+
+	cfg := &Config{
+		Tmplt:        tmpl,
+		FieldMap:     map[string]string{"key1": "mappedKey1"},
+		ResponseBody: "data",
+		Allow:        []string{"key1", "key2"},
+	}
+
+	processor := New(cfg)
+
+	assert.NotNil(t, processor)
+	assert.Equal(t, tmpl, processor.tmpl)
+	assert.Equal(t, cfg.FieldMap, processor.fieldMap)
+	assert.Equal(t, cfg.ResponseBody, processor.responseBody)
+	assert.Equal(t, cfg.Allow, processor.allow)
+}
+
 func TestProcessor_Render(t *testing.T) {
 	tmpl, err := template.New("test").Parse("Params: {{.Params}}, ReqID: {{.ReqID}}")
 	if err != nil {
