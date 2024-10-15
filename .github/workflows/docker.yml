@@ -52,3 +52,8 @@ jobs:
           build-args: |
             VERSION=${{ env.VERSION }}
             BUILD=${{ github.sha }}
+      - name: Scan docker image for vulnerabilities
+        uses: crazy-max/ghaction-container-scan@v3
+        with:
+          image: ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tags }}
+          severity_threshold: LOW
