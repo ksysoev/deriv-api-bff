@@ -124,3 +124,63 @@ func TestProcessor_parse_UnexpectedFormat(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, result)
 }
+func TestProcessor_Parse_Success(t *testing.T) {
+	tests := []struct {
+		name         string
+		responseBody string
+		fieldMap     map[string]string
+		allow        []string
+		jsonData     string
+		expected     map[string]any
+	}{
+		{
+			name:         "allowed fields with field mapping",
+			responseBody: "data",
+			fieldMap:     map[string]string{"key1": "mappedKey1"},
+			allow:        []string{"key1", "key2"},
+			jsonData:     `{"data": {"key1": "value1", "key2": "value2"}}`,
+			expected:     map[string]any{"mappedKey1": "value1", "key2": "value2"},
+		},
+		{
+			name:         "allowed fields without field mapping",
+			responseBody: "data",
+			fieldMap:     nil,
+			allow:        []string{"key1", "key2"},
+			jsonData:     `{"data": {"key1": "value1", "key2": "value2"}}`,
+			expected:     map[string]any{"key1": "value1", "key2": "value2"},
+		},
+		{
+			name:         "missing allowed fields",
+			responseBody: "data",
+			fieldMap:     nil,
+			allow:        []string{"key3"},
+			jsonData:     `{"data": {"key1": "value1", "key2": "value2"}}`,
+			expected:     map[string]any{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rp := &Processor{
+				responseBody: tt.responseBody,
+				fieldMap:     tt.fieldMap,
+				allow:        tt.allow,
+			}
+
+			result, err := rp.Parse([]byte(tt.jsonData))
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestProcessor_Parse_Error(t *testing.T) {
+	rp := &Processor{
+		responseBody: "data",
+	}
+
+	jsonData := `{"error": "something went wrong"}`
+
+	_, err := rp.Parse([]byte(jsonData))
+	assert.Error(t, err)
+}
