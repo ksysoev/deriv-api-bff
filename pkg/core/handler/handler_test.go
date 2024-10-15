@@ -43,11 +43,11 @@ func TestHandle_Success(t *testing.T) {
 	ctx := context.Background()
 
 	echoChan := make(chan []byte, 1)
-	waiter := func() (reqID int64, respChan <-chan []byte) {
+	waiter := func() (int64, <-chan []byte) {
 		return 1, echoChan
 	}
 
-	sender := func(ctx context.Context, data []byte) error {
+	sender := func(_ context.Context, data []byte) error {
 		echoChan <- data
 		return nil
 	}
@@ -73,11 +73,11 @@ func TestHandle_ValidationError(t *testing.T) {
 	ctx := context.Background()
 
 	echoChan := make(chan []byte, 1)
-	waiter := func() (reqID int64, respChan <-chan []byte) {
+	waiter := func() (int64, <-chan []byte) {
 		return 1, echoChan
 	}
 
-	sender := func(ctx context.Context, data []byte) error {
+	sender := func(_ context.Context, data []byte) error {
 		echoChan <- data
 		return nil
 	}
@@ -106,11 +106,11 @@ func TestHandle_SendError(t *testing.T) {
 	ctx := context.Background()
 
 	echoChan := make(chan []byte, 1)
-	waiter := func() (reqID int64, respChan <-chan []byte) {
+	waiter := func() (int64, <-chan []byte) {
 		return 1, echoChan
 	}
 
-	sender := func(ctx context.Context, data []byte) error {
+	sender := func(_ context.Context, _ []byte) error {
 		return assert.AnError
 	}
 
@@ -138,11 +138,11 @@ func TestHandle_CancelledContext(t *testing.T) {
 	})
 
 	echoChan := make(chan []byte, 1)
-	waiter := func() (reqID int64, respChan <-chan []byte) {
+	waiter := func() (int64, <-chan []byte) {
 		return 1, echoChan
 	}
 
-	sender := func(ctx context.Context, data []byte) error {
+	sender := func(_ context.Context, _ []byte) error {
 		return nil
 	}
 
