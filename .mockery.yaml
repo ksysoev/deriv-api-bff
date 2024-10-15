@@ -1,9 +1,13 @@
 with-expecter: true
-inpackage: false
-dir: ./mocks
-outpkg: mocks
 mock-build-tags: "!compile"
+inpackage: true
+filename: "{{.InterfaceName | snakecase }}_mock.go"
+dir: "{{.InterfaceDir}}"
+mockname: "Mock{{.InterfaceName}}"
 packages:
-   github.com/ksysoev/deriv-api-bff:
+  github.com/ksysoev/deriv-api-bff/pkg/core/handler:
     interfaces:
-      BFFService:
+      Validator:
+      RenderParser:
+      WaitComposer:
+      

@@ -8,7 +8,7 @@ lint:
 	golangci-lint run
 
 mocks:
-	mockery --all
+	mockery
 
 fmt-all:
 	gofmt -w .
