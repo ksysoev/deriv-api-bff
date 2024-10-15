@@ -30,29 +30,31 @@ func New() *Composer {
 // It does not return any values but may set an error on the Composer if the context is done or if parsing the response fails.
 func (c *Composer) Wait(ctx context.Context, parser handler.Parser, respChan <-chan []byte) {
 	c.wg.Add(1)
-	defer c.wg.Done()
 
-	select {
-	case <-ctx.Done():
-		c.setError(ctx.Err())
-	case resp := <-respChan:
-		data, err := parser(resp)
-		if err != nil {
-			c.setError(fmt.Errorf("fail to parse response: %w", err))
-			return
-		}
-
-		c.mu.Lock()
-		defer c.mu.Unlock()
-
-		for key, value := range data {
-			if _, ok := c.resp[key]; ok {
-				slog.Warn("duplicate key", slog.String("key", key))
+	go func() {
+		defer c.wg.Done()
+		select {
+		case <-ctx.Done():
+			c.setError(ctx.Err())
+		case resp := <-respChan:
+			data, err := parser(resp)
+			if err != nil {
+				c.setError(fmt.Errorf("fail to parse response: %w", err))
+				return
 			}
 
-			c.resp[key] = value
+			c.mu.Lock()
+			defer c.mu.Unlock()
+
+			for key, value := range data {
+				if _, ok := c.resp[key]; ok {
+					slog.Warn("duplicate key", slog.String("key", key))
+				}
+
+				c.resp[key] = value
+			}
 		}
-	}
+	}()
 }
 
 // Compose waits for all requests to finish and then returns the composed result.
