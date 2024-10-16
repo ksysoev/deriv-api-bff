@@ -59,10 +59,10 @@ func TestSvc_Run(t *testing.T) {
 
 func TestParse(t *testing.T) {
 	tests := []struct {
-		name     string
-		msgType  wasabi.MessageType
-		data     []byte
 		expected wasabi.Request
+		name     string
+		data     []byte
+		msgType  wasabi.MessageType
 	}{
 		{
 			name:     "TextMessage",
@@ -100,8 +100,8 @@ func TestService_Handle(t *testing.T) {
 	mockBFFService.EXPECT().ProcessRequest(mockConn, mock.Anything).Return(nil)
 
 	tests := []struct {
-		name        string
 		request     wasabi.Request
+		name        string
 		expectError bool
 	}{
 		{
