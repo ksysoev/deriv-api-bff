@@ -8,6 +8,11 @@ on:
       - v*
   pull_request:
 
+permissions:
+  contents: read
+  security-events: write
+  packages: write
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
