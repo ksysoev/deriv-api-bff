@@ -90,7 +90,9 @@ func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *Request) err
 		return fmt.Errorf("failed to handle request: %w", err)
 	}
 
-	resp["req_id"] = req.ID
+	if req.ID != nil {
+		resp["req_id"] = *req.ID
+	}
 
 	data, err := json.Marshal(resp)
 	if err != nil {
