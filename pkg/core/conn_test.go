@@ -12,12 +12,12 @@ import (
 
 func TestNewConnection(t *testing.T) {
 	assert.Panics(t, func() {
-		NewConnection(nil, func(id string) {})
+		NewConnection(nil, func(_ string) {})
 	})
 
 	mockConn := mocks.NewMockConnection(t)
 	onCloseCalled := false
-	onClose := func(id string) {
+	onClose := func(_ string) {
 		onCloseCalled = true
 	}
 
@@ -37,7 +37,7 @@ func TestConn_ID(t *testing.T) {
 	expectedID := "test-connection-id"
 	mockConn.EXPECT().ID().Return(expectedID)
 
-	conn := NewConnection(mockConn, func(id string) {})
+	conn := NewConnection(mockConn, func(_ string) {})
 
 	actualID := conn.ID()
 
@@ -49,7 +49,7 @@ func TestConn_Context(t *testing.T) {
 	expectedCtx := context.Background()
 	mockConn.EXPECT().Context().Return(expectedCtx)
 
-	conn := NewConnection(mockConn, func(id string) {})
+	conn := NewConnection(mockConn, func(_ string) {})
 
 	actualCtx := conn.Context()
 
@@ -58,7 +58,7 @@ func TestConn_Context(t *testing.T) {
 
 func TestConn_WaitResponse(t *testing.T) {
 	mockConn := mocks.NewMockConnection(t)
-	conn := NewConnection(mockConn, func(id string) {})
+	conn := NewConnection(mockConn, func(_ string) {})
 
 	reqID, respChan := conn.WaitResponse()
 
@@ -76,6 +76,7 @@ func TestConn_Close(t *testing.T) {
 	onCloseCalled := false
 	onClose := func(id string) {
 		onCloseCalled = true
+
 		assert.Equal(t, expectedID, id)
 	}
 
@@ -95,7 +96,7 @@ func TestConn_Send(t *testing.T) {
 		msg := []byte("binary message")
 		mockConn.EXPECT().Send(msgType, msg).Return(nil)
 
-		conn := NewConnection(mockConn, func(id string) {})
+		conn := NewConnection(mockConn, func(_ string) {})
 		err := conn.Send(msgType, msg)
 
 		assert.NoError(t, err)
@@ -107,7 +108,7 @@ func TestConn_Send(t *testing.T) {
 		msg := []byte(`{"data":"test"}`)
 		mockConn.EXPECT().Send(msgType, msg).Return(nil)
 
-		conn := NewConnection(mockConn, func(id string) {})
+		conn := NewConnection(mockConn, func(_ string) {})
 		err := conn.Send(msgType, msg)
 
 		assert.NoError(t, err)
@@ -120,13 +121,14 @@ func TestConn_Send(t *testing.T) {
 		msg := []byte(`{"req_id":1000001,"data":"test"}`)
 		respChan := make(chan []byte, 1)
 
-		conn := NewConnection(mockConn, func(id string) {})
+		conn := NewConnection(mockConn, func(_ string) {})
 		conn.requests[reqID] = respChan
 
 		err := conn.Send(msgType, msg)
 
 		assert.NoError(t, err)
 		assert.Equal(t, msg, <-respChan)
+
 		_, exists := conn.requests[reqID]
 		assert.False(t, exists)
 	})
@@ -136,7 +138,7 @@ func TestConn_Send(t *testing.T) {
 		msg := []byte(`{"req_id":1000001,"data":"test"}`)
 		mockConn.EXPECT().Send(msgType, msg).Return(nil)
 
-		conn := NewConnection(mockConn, func(id string) {})
+		conn := NewConnection(mockConn, func(_ string) {})
 		err := conn.Send(msgType, msg)
 
 		assert.NoError(t, err)
