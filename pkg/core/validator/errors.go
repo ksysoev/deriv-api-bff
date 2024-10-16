@@ -8,14 +8,19 @@ import (
 )
 
 type ValidationError struct {
-	errors map[string]error
+	errors []fieldError
+}
+
+type fieldError struct {
+	err   error
+	field string
 }
 
 // NewValidationError creates and returns a new instance of ValidationError.
 // It initializes the errors map to store validation errors.
 // It returns a pointer to a ValidationError struct.
 func NewValidationError() *ValidationError {
-	return &ValidationError{errors: make(map[string]error)}
+	return &ValidationError{errors: make([]fieldError, 0)}
 }
 
 // Error constructs a string representation of the ValidationError.
@@ -25,8 +30,8 @@ func NewValidationError() *ValidationError {
 // If there are no errors, it returns a string with the message "message is not valid".
 func (e *ValidationError) Error() string {
 	errStr := "message is not valid:"
-	for field, err := range e.errors {
-		errStr += fmt.Sprintf(" %s: %v,", field, err)
+	for _, fieldErr := range e.errors {
+		errStr += fmt.Sprintf(" %s: %v,", fieldErr.field, fieldErr.err)
 	}
 
 	errStr = errStr[:len(errStr)-1]
@@ -37,7 +42,7 @@ func (e *ValidationError) Error() string {
 // AddError adds an error to the ValidationError for a specific field.
 // It takes field of type string and err of type error.
 func (e *ValidationError) AddError(field string, err error) {
-	e.errors[field] = err
+	e.errors = append(e.errors, fieldError{field: field, err: err})
 }
 
 // HasErrors checks if there are any validation errors present.
@@ -52,8 +57,8 @@ func (e *ValidationError) HasErrors() bool {
 func (e *ValidationError) APIError() error {
 	details := make(map[string]string, len(e.errors))
 
-	for field, err := range e.errors {
-		details[field] = err.Error()
+	for _, fieldErr := range e.errors {
+		details[fieldErr.field] = fieldErr.err.Error()
 	}
 
 	detailsData, err := json.Marshal(details)

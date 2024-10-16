@@ -101,3 +101,72 @@ func TestFieldValidator_Validate(t *testing.T) {
 		})
 	}
 }
+func TestFieldValidator_validateField(t *testing.T) {
+	config := Config{
+		"name":  &FieldSchema{Type: "string"},
+		"age":   &FieldSchema{Type: "number"},
+		"admin": &FieldSchema{Type: "bool"},
+		"array": &FieldSchema{Type: "array"},
+	}
+
+	validator := &FieldValidator{fields: config}
+
+	tests := []struct {
+		field   string
+		value   any
+		name    string
+		wantErr bool
+	}{
+		{
+			name:    "Valid string field",
+			field:   "name",
+			value:   "John",
+			wantErr: false,
+		},
+		{
+			name:    "Invalid string field",
+			field:   "name",
+			value:   123,
+			wantErr: true,
+		},
+		{
+			name:    "Valid number field",
+			field:   "age",
+			value:   30.0,
+			wantErr: false,
+		},
+		{
+			name:    "Invalid number field",
+			field:   "age",
+			value:   "thirty",
+			wantErr: true,
+		},
+		{
+			name:    "Valid bool field",
+			field:   "admin",
+			value:   true,
+			wantErr: false,
+		},
+		{
+			name:    "Invalid bool field",
+			field:   "admin",
+			value:   "true",
+			wantErr: true,
+		},
+		{
+			name:    "Unknown field type",
+			field:   "array",
+			value:   "value",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validator.validateField(config[tt.field], tt.value)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateField() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
