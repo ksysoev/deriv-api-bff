@@ -10,4 +10,10 @@ packages:
       Validator:
       RenderParser:
       WaitComposer:
+  github.com/ksysoev/deriv-api-bff/pkg/core:
+    interfaces:
+      CallsRepo:
+      Handler:
+      ConnRegistry:
+      DerivAPI:
       
