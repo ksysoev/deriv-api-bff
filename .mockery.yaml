@@ -16,4 +16,7 @@ packages:
       Handler:
       ConnRegistry:
       DerivAPI:
+  github.com/ksysoev/deriv-api-bff/pkg/api:
+    interfaces:
+      BFFService:
       
