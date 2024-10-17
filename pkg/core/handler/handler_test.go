@@ -99,7 +99,7 @@ func TestHandle_SendError(t *testing.T) {
 	waitComposer := NewMockWaitComposer(t)
 	waitComposer.EXPECT().Wait(mock.Anything, mock.Anything, mock.Anything)
 
-	handler := New(validator, []RenderParser{renderParser}, func() WaitComposer {
+	handler := New(validator, []RenderParser{renderParser, renderParser}, func() WaitComposer {
 		return waitComposer
 	})
 
