@@ -79,7 +79,7 @@ func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *Request) err
 		},
 	)
 
-	data, err := createRespose(req, resp, err)
+	data, err := createResponse(req, resp, err)
 	if err != nil {
 		return err
 	}

@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-func createRespose(req *Request, resp map[string]any, err error) ([]byte, error) {
+func createResponse(req *Request, resp map[string]any, err error) ([]byte, error) {
 	var apiErr *APIError
 
 	if errors.As(err, &apiErr) {
