@@ -1,11 +1,24 @@
-version: '3.8'
-
 services:
   deriv-api-bff:
-    image: ${IMAGE_NAME}:${IMAGE_TAG}
-    container_name: ${CONTAINER_NAME}
-    restart: unless-stopped
+    image: ghcr.io/ksysoev/deriv-api-bff:main
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - VERSION=dev
+        - BUILD=dev
+    container_name: deriv-api-bff
     ports:
-      - "${HOST_PORT}:${HOST_PORT}"
+      - "8080:8080"
     environment:
-      - GLOBAL_DEBUG_ON=${GLOBAL_DEBUG_ON}
+      - SERVER_LISTEN=:8080
+    volumes:
+      - ./runtime/config.yaml:/runtime/config.yaml
+    command: [
+      "server", 
+      "--config", 
+      "/runtime/config.yaml", 
+      "--log-level=debug", 
+      "--log-text"
+      ]
+    

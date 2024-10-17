@@ -1,4 +1,4 @@
-FROM golang:1.23 AS builder
+FROM golang:1.23.1 AS builder
 
 ARG VERSION=${VERSION}
 ARG BUILD=${BUILD}
@@ -15,8 +15,9 @@ RUN CGO_ENABLED=0 go build -o /deriv-api-bff  -ldflags "-X main.version=$VERSION
 FROM scratch
 
 COPY --from=builder /deriv-api-bff /deriv-api-bff
-
 COPY --from=builder /app/runtime/config.yaml /runtime/config.yaml
 
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
 ENTRYPOINT [ "./deriv-api-bff" ]
-CMD [ "server" ]
+CMD [ "server", "--config=./runtime/config.yaml" ]
