@@ -15,16 +15,13 @@ deriv:
 api:
 `
 
-var invalidConfig = `
-server:
-  listen: 123
-`
-
 func createTempConfigFile(t *testing.T, content string) string {
+	t.Helper()
+
 	tmpdir := os.TempDir()
 	configPath := tmpdir + "/test_config.yaml"
 
-	err := os.WriteFile(configPath, []byte(content), 0644)
+	err := os.WriteFile(configPath, []byte(content), 0o600)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
