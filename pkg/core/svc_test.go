@@ -55,9 +55,10 @@ func TestService_ProcessRequest(t *testing.T) {
 		Method: "testMethod",
 		Params: map[string]any{"key": "value"},
 		ID:     &reqID,
+		data:   []byte(`{"req_id":1,"method":"testMethod","params":{"key":"value"}}`),
 	}
 
-	expectedResp := []byte(`{"req_id":1,"result":"success"}`)
+	expectedResp := []byte(`{"echo":{"req_id":1,"method":"testMethod","params":{"key":"value"}},"req_id":1,"result":"success"}`)
 
 	conn := NewConnection(mockConn, func(_ string) {})
 
@@ -145,9 +146,10 @@ func TestService_ProcessRequest_APIError(t *testing.T) {
 	mockRequest := &Request{
 		Method: "testMethod",
 		Params: map[string]any{"key": "value"},
+		data:   []byte(`{"method":"testMethod","params":{"key":"value"}}`),
 	}
 
-	expectedResp := []byte(`{"error":{"code":"BadRequest","message":"Bad Request"}}`)
+	expectedResp := []byte(`{"echo":{"method":"testMethod","params":{"key":"value"}},"error":{"code":"BadRequest","message":"Bad Request"}}`)
 
 	conn := NewConnection(mockConn, func(_ string) {})
 
