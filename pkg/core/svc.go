@@ -2,8 +2,6 @@ package core
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/ksysoev/wasabi"
@@ -81,22 +79,9 @@ func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *Request) err
 		},
 	)
 
-	var apiErr *APIError
-
-	if errors.As(err, &apiErr) {
-		resp = make(map[string]any)
-		resp["error"] = apiErr.Encode()
-	} else if err != nil {
-		return fmt.Errorf("failed to handle request: %w", err)
-	}
-
-	if req.ID != nil {
-		resp["req_id"] = *req.ID
-	}
-
-	data, err := json.Marshal(resp)
+	data, err := createRespose(req, resp, err)
 	if err != nil {
-		return fmt.Errorf("failed to marshal response: %w", err)
+		return err
 	}
 
 	return clientConn.Send(wasabi.MsgTypeText, data)
