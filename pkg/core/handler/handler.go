@@ -106,7 +106,9 @@ func (h *Handler) requests(ctx context.Context, params map[string]any, watcher c
 				data:     buf.Bytes(),
 			}
 
-			yield(request)
+			if !yield(request) {
+				return
+			}
 		}
 	}
 }
