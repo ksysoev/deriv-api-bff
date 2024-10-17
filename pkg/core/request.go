@@ -13,11 +13,12 @@ const (
 )
 
 type Request struct {
-	ctx    context.Context
-	Params map[string]any `json:"params"`
-	ID     *int           `json:"req_id"`
-	Method string         `json:"method"`
-	data   []byte
+	ctx         context.Context
+	Params      map[string]any `json:"params"`
+	ID          *int           `json:"req_id"`
+	Method      string         `json:"method"`
+	PassThrough any            `json:"passthrough"`
+	data        []byte
 }
 
 // NewRequest creates a new Request object based on the provided message type and data.
