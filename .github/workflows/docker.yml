@@ -10,7 +10,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
   packages: write
 
 jobs:
@@ -53,16 +52,3 @@ jobs:
           build-args: |
             VERSION=${{ env.VERSION }}
             BUILD=${{ github.sha }}
-      - name: Scan docker image for vulnerabilities'
-        id: docker_scan
-        uses: crazy-max/ghaction-container-scan@v3
-        if: ${{ github.event_name != 'pull_request' }}
-        with:
-          image: ${{ steps.meta.outputs.tags }}
-          severity_threshold: MEDIUM
-          dockerfile: ./Dockerfile
-      - name: Upload docker scan results
-        if: ${{ steps.docker_scan.outputs.sarif != '' }}
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: ${{ steps.docker_scan.outputs.sarif }}
