@@ -9,8 +9,16 @@ services:
         - BUILD=dev
     container_name: deriv-api-bff
     ports:
-      - "8082:8082"
+      - "8080:8080"
     environment:
-      - SERVER_LISTEN=:8082
-    command: ["server", "--config", "/runtime/config.yaml", "--log-level=debug", "--log-text"]
+      - SERVER_LISTEN=:8080
+    volumes:
+      - ./runtime/config.yaml:/runtime/config.yaml
+    command: [
+      "server", 
+      "--config", 
+      "/runtime/config.yaml", 
+      "--log-level=debug", 
+      "--log-text"
+      ]
     
