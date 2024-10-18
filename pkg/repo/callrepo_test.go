@@ -117,3 +117,73 @@ func TestGetCall(t *testing.T) {
 		})
 	}
 }
+func TestSortBackends(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   []BackendConfig
+		want    []BackendConfig
+		wantErr bool
+	}{
+		{
+			name: "no dependencies",
+			input: []BackendConfig{
+				{ResponseBody: "response1"},
+				{ResponseBody: "response2"},
+			},
+			want: []BackendConfig{
+				{ResponseBody: "response1"},
+				{ResponseBody: "response2"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "simple dependency",
+			input: []BackendConfig{
+				{ResponseBody: "response1", DependsOn: []string{"response2"}},
+				{ResponseBody: "response2"},
+			},
+			want: []BackendConfig{
+				{ResponseBody: "response2"},
+				{ResponseBody: "response1", DependsOn: []string{"response2"}},
+			},
+			wantErr: false,
+		},
+		{
+			name: "circular dependency",
+			input: []BackendConfig{
+				{ResponseBody: "response1", DependsOn: []string{"response2"}},
+				{ResponseBody: "response2", DependsOn: []string{"response1"}},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+
+		//TODO: Fix the test case
+		{
+			name: "complex dependency",
+			input: []BackendConfig{
+				{ResponseBody: "response1", DependsOn: []string{"response3"}},
+				{ResponseBody: "response2", DependsOn: []string{"response1"}},
+				{ResponseBody: "response3"},
+			},
+			want: []BackendConfig{
+				{ResponseBody: "response3"},
+				{ResponseBody: "response1", DependsOn: []string{"response3"}},
+				{ResponseBody: "response2", DependsOn: []string{"response1"}},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := sortBackends(tt.input)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}

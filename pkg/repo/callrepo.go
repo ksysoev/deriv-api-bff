@@ -104,6 +104,11 @@ func sortBackends(be []BackendConfig) ([]BackendConfig, error) {
 			return false
 		}
 
+		if !dep1 && !dep2 {
+			// Preserve order of backends that do not depend on each other
+			return i < j
+		}
+
 		return !dep1
 	})
 
