@@ -3,6 +3,8 @@ package repo
 import (
 	"fmt"
 	"html/template"
+	"slices"
+	"sort"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/composer"
@@ -23,6 +25,7 @@ type CallConfig struct {
 
 type BackendConfig struct {
 	FieldsMap       map[string]string `mapstructure:"fields_map"`
+	DependsOn       []string          `mapstructure:"depends_on"`
 	ResponseBody    string            `mapstructure:"response_body"`
 	RequestTemplate string            `mapstructure:"request_template"`
 	Allow           []string          `mapstructure:"allow"`
@@ -53,6 +56,11 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 
 		procs := make([]handler.RenderParser, 0, len(call.Backend))
 
+		call.Backend, err = sortBackends(call.Backend)
+		if err != nil {
+			return nil, fmt.Errorf("failed to sort backends: %w", err)
+		}
+
 		for _, req := range call.Backend {
 			tmplt, err := template.New("request").Parse(req.RequestTemplate)
 			if err != nil {
@@ -78,4 +86,30 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 // It returns a pointer to a CallRunConfig if the method exists in the repository, otherwise it returns nil.
 func (r *CallsRepository) GetCall(method string) core.Handler {
 	return r.calls[method]
+}
+
+// sortBackends sorts a slice of BackendConfig based on their dependencies.
+// It takes a slice of BackendConfig as input.
+// It returns a sorted slice of BackendConfig and an error if a circular dependency is detected.
+// It returns an error if there is a circular dependency among the backends.
+func sortBackends(be []BackendConfig) ([]BackendConfig, error) {
+	hasCircularDependency := false
+
+	sort.Slice(be, func(i, j int) bool {
+		dep1 := slices.Contains(be[i].DependsOn, be[j].ResponseBody)
+		dep2 := slices.Contains(be[j].DependsOn, be[i].ResponseBody)
+
+		if dep1 && dep2 {
+			hasCircularDependency = true
+			return false
+		}
+
+		return !dep1
+	})
+
+	if hasCircularDependency {
+		return nil, fmt.Errorf("circular dependency detected")
+	}
+
+	return be, nil
 }
