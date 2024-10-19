@@ -23,7 +23,9 @@ type Composer struct {
 // It returns a pointer to the newly created Composer instance.
 func New() *Composer {
 	return &Composer{
-		resp: make(map[string]any),
+		resp:     make(map[string]any),
+		req:      make(map[string]chan struct{}),
+		rawResps: make(map[string]map[string]any),
 	}
 }
 
