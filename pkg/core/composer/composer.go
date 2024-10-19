@@ -91,7 +91,6 @@ func (c *Composer) ComposeDependencies(ctx context.Context, dependsOn []string) 
 				}
 			}
 		}()
-
 	}
 	c.mu.Unlock()
 
