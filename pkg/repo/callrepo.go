@@ -3,8 +3,6 @@ package repo
 import (
 	"fmt"
 	"html/template"
-	"slices"
-	"sort"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/composer"
@@ -56,7 +54,7 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 
 		procs := make([]handler.RenderParser, 0, len(call.Backend))
 
-		call.Backend, err = sortBackends(call.Backend)
+		call.Backend, err = topSortDFS(call.Backend)
 		if err != nil {
 			return nil, fmt.Errorf("failed to sort backends: %w", err)
 		}
@@ -88,43 +86,59 @@ func (r *CallsRepository) GetCall(method string) core.Handler {
 	return r.calls[method]
 }
 
-// sortBackends sorts a slice of BackendConfig based on their dependencies.
-// It takes a slice of BackendConfig as input.
-// It returns a sorted slice of BackendConfig and an error if a circular dependency is detected.
-// It returns an error if there is a circular dependency among the backends.
-func sortBackends(be []BackendConfig) ([]BackendConfig, error) {
-	hasCircularDependency := false
+// topSortDFS performs a topological sort on a slice of BackendConfig using Depth-First Search (DFS).
+// It takes a slice of BackendConfig as input and returns a sorted slice of BackendConfig and an error.
+// It returns an error if a circular dependency is detected among the BackendConfig elements.
+// Each BackendConfig element must have a unique ResponseBody and a list of dependencies specified in DependsOn.
+func topSortDFS(be []BackendConfig) ([]BackendConfig, error) {
+	graph := make(map[string][]string)
+	visited := make(map[string]bool)
+	recStack := make(map[string]bool)
 
-	sort.Slice(be, func(i, j int) bool {
-		dep1 := slices.Contains(be[i].DependsOn, be[j].ResponseBody)
-		dep2 := slices.Contains(be[j].DependsOn, be[i].ResponseBody)
-
-		if dep1 && dep2 {
-			hasCircularDependency = true
-			return false
-		}
-
-		if !dep1 && !dep2 {
-			if len(be[i].DependsOn) != 0 || len(be[j].DependsOn) != 0 {
-				if len(be[i].DependsOn) == 0 {
-					return true
-				}
-
-				if len(be[j].DependsOn) == 0 {
-					return false
-				}
-			}
-
-			// Preserve order of backends that do not depend on each other
-			return i < j
-		}
-
-		return !dep1
-	})
-
-	if hasCircularDependency {
-		return nil, fmt.Errorf("circular dependency detected")
+	for _, b := range be {
+		graph[b.ResponseBody] = b.DependsOn
 	}
 
-	return be, nil
+	var sorted []BackendConfig
+
+	var dfs func(string) error
+	dfs = func(v string) error {
+		if recStack[v] {
+			return fmt.Errorf("circular dependency detected")
+		}
+
+		if visited[v] {
+			return nil
+		}
+
+		visited[v] = true
+		recStack[v] = true
+
+		for _, u := range graph[v] {
+			if err := dfs(u); err != nil {
+				return err
+			}
+		}
+
+		var indx int
+		for i, b := range be {
+			if b.ResponseBody == v {
+				indx = i
+				break
+			}
+		}
+
+		recStack[v] = false
+		sorted = append(sorted, be[indx])
+
+		return nil
+	}
+
+	for k := range graph {
+		if err := dfs(k); err != nil {
+			return nil, err
+		}
+	}
+
+	return sorted, nil
 }

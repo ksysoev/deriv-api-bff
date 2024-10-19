@@ -117,7 +117,7 @@ func TestGetCall(t *testing.T) {
 		})
 	}
 }
-func TestSortBackends(t *testing.T) {
+func TestTopSortDFS(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   []BackendConfig
@@ -171,11 +171,21 @@ func TestSortBackends(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "complex cicular dependency",
+			input: []BackendConfig{
+				{ResponseBody: "response1", DependsOn: []string{"response3"}},
+				{ResponseBody: "response2", DependsOn: []string{"response1"}},
+				{ResponseBody: "response3", DependsOn: []string{"response2"}},
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := sortBackends(tt.input)
+			got, err := topSortDFS(tt.input)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
