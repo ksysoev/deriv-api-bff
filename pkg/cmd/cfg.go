@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -9,6 +10,9 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/prov/deriv"
 	"github.com/ksysoev/deriv-api-bff/pkg/repo"
 	"github.com/spf13/viper"
+
+	"context"
+	"time"
 )
 
 type config struct {
@@ -39,4 +43,34 @@ func initConfig(configPath string) (*config, error) {
 	slog.Debug("Config loaded", slog.Any("config", cfg))
 
 	return cfg, nil
+}
+
+// putCallConfigToEtcd loads the calls config from a specific config file and pushes it to Etcd
+// The function also accepts etcd settings like host and dial timeout.
+// The function will return the Etcd key it had used to put the CallConfig
+// The function may return empty key and an error in case of any errors.
+func putCallConfigToEtcd(ctx context.Context, configPath, etcdURL string, dialTimeoutSeconds int) error {
+	cfg, err := initConfig(configPath)
+
+	if err != nil {
+		return err
+	}
+
+	callConfig := cfg.API.Calls
+
+	callConfigJSON, err := json.Marshal(callConfig)
+
+	if err != nil {
+		return err
+	}
+
+	etcd := NewEtcdHandler(etcdURL, time.Duration(dialTimeoutSeconds*int(time.Second)))
+
+	err = etcd.Put(ctx, "CallConfig", string(callConfigJSON))
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
