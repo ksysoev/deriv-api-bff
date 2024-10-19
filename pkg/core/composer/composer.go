@@ -11,6 +11,7 @@ import (
 
 type Composer struct {
 	err  error
+	req  map[string]chan struct{}
 	resp map[string]any
 	wg   sync.WaitGroup
 	mu   sync.Mutex
@@ -28,18 +29,18 @@ func New() *Composer {
 // Wait listens for a response on the provided channel and processes it using the given parser.
 // It takes a context (ctx) of type context.Context, a parser of type handler.Parser, and a response channel (respChan) of type <-chan []byte.
 // It does not return any values but may set an error on the Composer if the context is done or if parsing the response fails.
-func (c *Composer) Wait(ctx context.Context, parser handler.Parser, respChan <-chan []byte) {
+func (c *Composer) Wait(ctx context.Context, name string, parser handler.Parser, respChan <-chan []byte) {
 	c.wg.Add(1)
 
 	go func() {
 		defer c.wg.Done()
 		select {
 		case <-ctx.Done():
-			c.setError(ctx.Err())
+			c.setError(name, ctx.Err())
 		case resp := <-respChan:
 			data, err := parser(resp)
 			if err != nil {
-				c.setError(fmt.Errorf("fail to parse response: %w", err))
+				c.setError(name, fmt.Errorf("fail to parse response: %w", err))
 				return
 			}
 
@@ -53,6 +54,8 @@ func (c *Composer) Wait(ctx context.Context, parser handler.Parser, respChan <-c
 
 				c.resp[key] = value
 			}
+
+			c.doneRequest(name)
 		}
 	}()
 }
@@ -77,7 +80,7 @@ func (c *Composer) Compose() (map[string]any, error) {
 // It takes one parameter: err of type error.
 // It does not return any values.
 // If the Composer instance already has an error set, it does nothing.
-func (c *Composer) setError(err error) {
+func (c *Composer) setError(name string, err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -86,4 +89,30 @@ func (c *Composer) setError(err error) {
 	}
 
 	c.err = err
+
+	c.doneRequest(name)
+}
+
+func (c *Composer) addRequest(name string) <-chan struct{} {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if _, ok := c.req[name]; ok {
+		return c.req[name]
+	}
+
+	c.req[name] = make(chan struct{})
+	return c.req[name]
+}
+
+func (c *Composer) doneRequest(name string) {
+	if ch, ok := c.req[name]; ok {
+		close(ch)
+		return
+	}
+
+	ch := make(chan struct{})
+	close(ch)
+
+	c.req[name] = ch
 }

@@ -23,6 +23,51 @@ func (_m *MockRenderParser) EXPECT() *MockRenderParser_Expecter {
 	return &MockRenderParser_Expecter{mock: &_m.Mock}
 }
 
+// Name provides a mock function with given fields:
+func (_m *MockRenderParser) Name() string {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Name")
+	}
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// MockRenderParser_Name_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Name'
+type MockRenderParser_Name_Call struct {
+	*mock.Call
+}
+
+// Name is a helper method to define mock.On call
+func (_e *MockRenderParser_Expecter) Name() *MockRenderParser_Name_Call {
+	return &MockRenderParser_Name_Call{Call: _e.mock.On("Name")}
+}
+
+func (_c *MockRenderParser_Name_Call) Run(run func()) *MockRenderParser_Name_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockRenderParser_Name_Call) Return(_a0 string) *MockRenderParser_Name_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockRenderParser_Name_Call) RunAndReturn(run func() string) *MockRenderParser_Name_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Parse provides a mock function with given fields: data
 func (_m *MockRenderParser) Parse(data []byte) (map[string]interface{}, error) {
 	ret := _m.Called(data)

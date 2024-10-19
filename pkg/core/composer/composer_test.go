@@ -30,7 +30,7 @@ func TestComposer_WaitResponse_Success(t *testing.T) {
 
 	respChan <- []byte(`{"Params":"param1,param2","ReqID":1234}`)
 
-	composer.Wait(ctx, parser, respChan)
+	composer.Wait(ctx, "test", parser, respChan)
 
 	resp, err := composer.Compose()
 
@@ -47,7 +47,7 @@ func TestComposer_WaitResponse_ParseError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	composer.Wait(ctx, makeParser(), respChan)
+	composer.Wait(ctx, "test", makeParser(), respChan)
 
 	_, err := composer.Compose()
 
@@ -63,7 +63,7 @@ func TestComposer_WaitResponse_ContextCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	composer.Wait(ctx, makeParser(), respChan)
+	composer.Wait(ctx, "test", makeParser(), respChan)
 
 	res, err := composer.Compose()
 	assert.Nil(t, res)

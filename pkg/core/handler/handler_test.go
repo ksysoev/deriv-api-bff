@@ -25,16 +25,18 @@ func TestNew(t *testing.T) {
 
 func TestHandle_Success(t *testing.T) {
 	expectedParams := map[string]any{"key": "value"}
+	expectedCallName := "test"
 
 	validator := NewMockValidator(t)
 	validator.EXPECT().Validate(expectedParams).Return(nil)
 
 	renderParser := NewMockRenderParser(t)
+	renderParser.EXPECT().Name().Return(expectedCallName)
 	renderParser.EXPECT().Render(mock.Anything, mock.Anything, expectedParams).Return(nil)
 
 	waitComposer := NewMockWaitComposer(t)
 	waitComposer.EXPECT().Compose().Return(expectedParams, nil)
-	waitComposer.EXPECT().Wait(mock.Anything, mock.Anything, mock.Anything)
+	waitComposer.EXPECT().Wait(mock.Anything, expectedCallName, mock.Anything, mock.Anything)
 
 	handler := New(validator, []RenderParser{renderParser}, func() WaitComposer {
 		return waitComposer
@@ -89,15 +91,17 @@ func TestHandle_ValidationError(t *testing.T) {
 
 func TestHandle_SendError(t *testing.T) {
 	expectedParams := map[string]any{"key": "value"}
+	expectedCallName := "test"
 
 	validator := NewMockValidator(t)
 	validator.EXPECT().Validate(expectedParams).Return(nil)
 
 	renderParser := NewMockRenderParser(t)
 	renderParser.EXPECT().Render(mock.Anything, mock.Anything, expectedParams).Return(nil)
+	renderParser.EXPECT().Name().Return(expectedCallName)
 
 	waitComposer := NewMockWaitComposer(t)
-	waitComposer.EXPECT().Wait(mock.Anything, mock.Anything, mock.Anything)
+	waitComposer.EXPECT().Wait(mock.Anything, expectedCallName, mock.Anything, mock.Anything)
 
 	handler := New(validator, []RenderParser{renderParser, renderParser}, func() WaitComposer {
 		return waitComposer

@@ -39,6 +39,10 @@ func New(cfg *Config) *Processor {
 	}
 }
 
+func (p *Processor) Name() string {
+	return p.responseBody
+}
+
 // Render generates and writes the output of a template to the provided writer.
 // It takes a writer w of type io.Writer, a request ID reqID of type int64, and a map of parameters params of type map[string]any.
 // It returns an error if the template execution fails.

@@ -17,12 +17,13 @@ type Validator interface {
 }
 
 type RenderParser interface {
+	Name() string
 	Render(w io.Writer, reqID int64, params map[string]any) error
 	Parse(data []byte) (map[string]any, error)
 }
 
 type WaitComposer interface {
-	Wait(ctx context.Context, parser Parser, respChan <-chan []byte)
+	Wait(ctx context.Context, name string, parser Parser, respChan <-chan []byte)
 	Compose() (map[string]any, error)
 }
 
@@ -33,6 +34,7 @@ type Handler struct {
 }
 
 type request struct {
+	name     string
 	respChan <-chan []byte
 	parser   func([]byte) (map[string]any, error)
 	data     []byte
@@ -65,7 +67,7 @@ func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher cor
 	comp := h.newComposer()
 
 	for req := range h.requests(ctx, params, watcher) {
-		comp.Wait(ctx, req.parser, req.respChan)
+		comp.Wait(ctx, req.name, req.parser, req.respChan)
 
 		if err := send(ctx, req.data); err != nil {
 			return nil, fmt.Errorf("failed to send request: %w", err)
@@ -100,6 +102,7 @@ func (h *Handler) requests(ctx context.Context, params map[string]any, watcher c
 			}
 
 			request := request{
+				name:     proc.Name(),
 				id:       reqID,
 				respChan: respChan,
 				parser:   proc.Parse,

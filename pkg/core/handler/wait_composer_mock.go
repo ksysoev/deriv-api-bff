@@ -80,9 +80,9 @@ func (_c *MockWaitComposer_Compose_Call) RunAndReturn(run func() (map[string]int
 	return _c
 }
 
-// Wait provides a mock function with given fields: ctx, parser, respChan
-func (_m *MockWaitComposer) Wait(ctx context.Context, parser Parser, respChan <-chan []byte) {
-	_m.Called(ctx, parser, respChan)
+// Wait provides a mock function with given fields: ctx, name, parser, respChan
+func (_m *MockWaitComposer) Wait(ctx context.Context, name string, parser Parser, respChan <-chan []byte) {
+	_m.Called(ctx, name, parser, respChan)
 }
 
 // MockWaitComposer_Wait_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Wait'
@@ -92,15 +92,16 @@ type MockWaitComposer_Wait_Call struct {
 
 // Wait is a helper method to define mock.On call
 //   - ctx context.Context
+//   - name string
 //   - parser Parser
 //   - respChan <-chan []byte
-func (_e *MockWaitComposer_Expecter) Wait(ctx interface{}, parser interface{}, respChan interface{}) *MockWaitComposer_Wait_Call {
-	return &MockWaitComposer_Wait_Call{Call: _e.mock.On("Wait", ctx, parser, respChan)}
+func (_e *MockWaitComposer_Expecter) Wait(ctx interface{}, name interface{}, parser interface{}, respChan interface{}) *MockWaitComposer_Wait_Call {
+	return &MockWaitComposer_Wait_Call{Call: _e.mock.On("Wait", ctx, name, parser, respChan)}
 }
 
-func (_c *MockWaitComposer_Wait_Call) Run(run func(ctx context.Context, parser Parser, respChan <-chan []byte)) *MockWaitComposer_Wait_Call {
+func (_c *MockWaitComposer_Wait_Call) Run(run func(ctx context.Context, name string, parser Parser, respChan <-chan []byte)) *MockWaitComposer_Wait_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(Parser), args[2].(<-chan []byte))
+		run(args[0].(context.Context), args[1].(string), args[2].(Parser), args[3].(<-chan []byte))
 	})
 	return _c
 }
@@ -110,7 +111,7 @@ func (_c *MockWaitComposer_Wait_Call) Return() *MockWaitComposer_Wait_Call {
 	return _c
 }
 
-func (_c *MockWaitComposer_Wait_Call) RunAndReturn(run func(context.Context, Parser, <-chan []byte)) *MockWaitComposer_Wait_Call {
+func (_c *MockWaitComposer_Wait_Call) RunAndReturn(run func(context.Context, string, Parser, <-chan []byte)) *MockWaitComposer_Wait_Call {
 	_c.Call.Return(run)
 	return _c
 }
