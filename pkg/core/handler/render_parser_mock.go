@@ -69,7 +69,7 @@ func (_c *MockRenderParser_Name_Call) RunAndReturn(run func() string) *MockRende
 }
 
 // Parse provides a mock function with given fields: data
-func (_m *MockRenderParser) Parse(data []byte) (map[string]interface{}, error) {
+func (_m *MockRenderParser) Parse(data []byte) (map[string]interface{}, map[string]interface{}, error) {
 	ret := _m.Called(data)
 
 	if len(ret) == 0 {
@@ -77,8 +77,9 @@ func (_m *MockRenderParser) Parse(data []byte) (map[string]interface{}, error) {
 	}
 
 	var r0 map[string]interface{}
-	var r1 error
-	if rf, ok := ret.Get(0).(func([]byte) (map[string]interface{}, error)); ok {
+	var r1 map[string]interface{}
+	var r2 error
+	if rf, ok := ret.Get(0).(func([]byte) (map[string]interface{}, map[string]interface{}, error)); ok {
 		return rf(data)
 	}
 	if rf, ok := ret.Get(0).(func([]byte) map[string]interface{}); ok {
@@ -89,13 +90,21 @@ func (_m *MockRenderParser) Parse(data []byte) (map[string]interface{}, error) {
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func([]byte) error); ok {
+	if rf, ok := ret.Get(1).(func([]byte) map[string]interface{}); ok {
 		r1 = rf(data)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(map[string]interface{})
+		}
 	}
 
-	return r0, r1
+	if rf, ok := ret.Get(2).(func([]byte) error); ok {
+		r2 = rf(data)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
 }
 
 // MockRenderParser_Parse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Parse'
@@ -116,12 +125,12 @@ func (_c *MockRenderParser_Parse_Call) Run(run func(data []byte)) *MockRenderPar
 	return _c
 }
 
-func (_c *MockRenderParser_Parse_Call) Return(_a0 map[string]interface{}, _a1 error) *MockRenderParser_Parse_Call {
-	_c.Call.Return(_a0, _a1)
+func (_c *MockRenderParser_Parse_Call) Return(_a0 map[string]interface{}, _a1 map[string]interface{}, _a2 error) *MockRenderParser_Parse_Call {
+	_c.Call.Return(_a0, _a1, _a2)
 	return _c
 }
 
-func (_c *MockRenderParser_Parse_Call) RunAndReturn(run func([]byte) (map[string]interface{}, error)) *MockRenderParser_Parse_Call {
+func (_c *MockRenderParser_Parse_Call) RunAndReturn(run func([]byte) (map[string]interface{}, map[string]interface{}, error)) *MockRenderParser_Parse_Call {
 	_c.Call.Return(run)
 	return _c
 }

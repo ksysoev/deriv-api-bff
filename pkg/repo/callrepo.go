@@ -121,6 +121,7 @@ func topSortDFS(be []BackendConfig) ([]BackendConfig, error) {
 		}
 
 		var indx int
+
 		for i, b := range be {
 			if b.ResponseBody == v {
 				indx = i
@@ -129,6 +130,7 @@ func topSortDFS(be []BackendConfig) ([]BackendConfig, error) {
 		}
 
 		recStack[v] = false
+
 		sorted = append(sorted, be[indx])
 
 		return nil

@@ -10,15 +10,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func makeParser() func([]byte) (map[string]any, error) {
-	return func(data []byte) (map[string]any, error) {
+func makeParser() func([]byte) (map[string]any, map[string]any, error) {
+	return func(data []byte) (map[string]any, map[string]any, error) {
 		var res map[string]any
 
 		if err := json.Unmarshal(data, &res); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
-		return res, nil
+		return res, res, nil
 	}
 }
 

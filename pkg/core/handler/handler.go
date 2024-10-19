@@ -10,7 +10,7 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 )
 
-type Parser func([]byte) (map[string]any, error)
+type Parser func([]byte) (map[string]any, map[string]any, error)
 
 type Validator interface {
 	Validate(data map[string]any) error
@@ -19,7 +19,7 @@ type Validator interface {
 type RenderParser interface {
 	Name() string
 	Render(w io.Writer, reqID int64, params map[string]any) error
-	Parse(data []byte) (map[string]any, error)
+	Parse(data []byte) (map[string]any, map[string]any, error)
 }
 
 type WaitComposer interface {
@@ -36,7 +36,7 @@ type Handler struct {
 type request struct {
 	name     string
 	respChan <-chan []byte
-	parser   func([]byte) (map[string]any, error)
+	parser   func([]byte) (map[string]any, map[string]any, error)
 	data     []byte
 	id       int64
 }

@@ -10,11 +10,12 @@ import (
 )
 
 type Composer struct {
-	err  error
-	req  map[string]chan struct{}
-	resp map[string]any
-	wg   sync.WaitGroup
-	mu   sync.Mutex
+	err      error
+	rawResps map[string]map[string]any
+	req      map[string]chan struct{}
+	resp     map[string]any
+	wg       sync.WaitGroup
+	mu       sync.Mutex
 }
 
 // NewComposer creates and returns a new instance of Composer.
@@ -38,7 +39,7 @@ func (c *Composer) Wait(ctx context.Context, name string, parser handler.Parser,
 		case <-ctx.Done():
 			c.setError(name, ctx.Err())
 		case resp := <-respChan:
-			data, err := parser(resp)
+			rawResp, data, err := parser(resp)
 			if err != nil {
 				c.setError(name, fmt.Errorf("fail to parse response: %w", err))
 				return
@@ -47,8 +48,11 @@ func (c *Composer) Wait(ctx context.Context, name string, parser handler.Parser,
 			c.mu.Lock()
 			defer c.mu.Unlock()
 
+			c.rawResps[name] = rawResp
+
 			for key, value := range data {
 				if _, ok := c.resp[key]; ok {
+					//TODO: Move fields uniqueness check to the config validation step
 					slog.Warn("duplicate key", slog.String("key", key))
 				}
 
@@ -58,6 +62,45 @@ func (c *Composer) Wait(ctx context.Context, name string, parser handler.Parser,
 			c.doneRequest(name)
 		}
 	}()
+}
+
+func (c *Composer) ComposeDependencies(ctx context.Context, dependsOn []string) (map[string]any, error) {
+	c.mu.Lock()
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	wg := sync.WaitGroup{}
+
+	for _, name := range dependsOn {
+		c.wg.Add(1)
+		done := c.addRequest(name)
+
+		go func() {
+			defer c.wg.Done()
+
+			select {
+			case <-ctx.Done():
+			case <-done:
+				c.mu.Lock()
+				err := c.err
+				c.mu.Unlock()
+
+				if err != nil {
+					cancel()
+				}
+			}
+		}()
+
+	}
+	c.mu.Unlock()
+
+	wg.Wait()
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.resp, c.err
 }
 
 // Compose waits for all requests to finish and then returns the composed result.
@@ -94,14 +137,12 @@ func (c *Composer) setError(name string, err error) {
 }
 
 func (c *Composer) addRequest(name string) <-chan struct{} {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	if _, ok := c.req[name]; ok {
 		return c.req[name]
 	}
 
 	c.req[name] = make(chan struct{})
+
 	return c.req[name]
 }
 

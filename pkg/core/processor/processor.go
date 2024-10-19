@@ -59,10 +59,10 @@ func (p *Processor) Render(w io.Writer, reqID int64, params map[string]any) erro
 // It takes data of type []byte.
 // It returns a map[string]any containing the allowed fields and an error if parsing fails.
 // It returns an error if the input data cannot be parsed or if the response body does not contain expected keys.
-func (p *Processor) Parse(data []byte) (map[string]any, error) {
+func (p *Processor) Parse(data []byte) (map[string]any, map[string]any, error) {
 	resp, err := p.parse(data)
 	if err != nil {
-		return nil, fmt.Errorf("fail to parse response %s: %w", p.responseBody, err)
+		return nil, nil, fmt.Errorf("fail to parse response %s: %w", p.responseBody, err)
 	}
 
 	result := make(map[string]any, len(p.allow))
@@ -84,7 +84,7 @@ func (p *Processor) Parse(data []byte) (map[string]any, error) {
 		result[destKey] = resp[key]
 	}
 
-	return result, nil
+	return resp, result, nil
 }
 
 // parse unmarshals JSON data into a map and processes the response body.

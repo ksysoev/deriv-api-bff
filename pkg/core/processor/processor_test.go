@@ -167,7 +167,7 @@ func TestProcessor_Parse_Success(t *testing.T) {
 				allow:        tt.allow,
 			}
 
-			result, err := rp.Parse([]byte(tt.jsonData))
+			_, result, err := rp.Parse([]byte(tt.jsonData))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -181,6 +181,6 @@ func TestProcessor_Parse_Error(t *testing.T) {
 
 	jsonData := `{"error": "something went wrong"}`
 
-	_, err := rp.Parse([]byte(jsonData))
+	_, _, err := rp.Parse([]byte(jsonData))
 	assert.Error(t, err)
 }
