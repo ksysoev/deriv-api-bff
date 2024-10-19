@@ -51,7 +51,6 @@ func (c *Composer) Wait(ctx context.Context, name string, parser handler.Parser,
 			defer c.mu.Unlock()
 
 			c.rawResps[name] = rawResp
-			slog.Debug("parsed response", slog.String("name", name), slog.Any("data", data))
 
 			for key, value := range data {
 				if _, ok := c.resp[key]; ok {
@@ -76,17 +75,15 @@ func (c *Composer) ComposeDependencies(ctx context.Context, dependsOn []string) 
 	wg := sync.WaitGroup{}
 
 	for _, name := range dependsOn {
-		c.wg.Add(1)
+		wg.Add(1)
 		done := c.addRequest(name)
 
 		go func() {
-			defer c.wg.Done()
+			defer wg.Done()
 
 			select {
 			case <-ctx.Done():
-				slog.Debug("context cancelled", slog.String("name", name))
 			case <-done:
-				slog.Debug("dependency done", slog.String("name", name))
 				c.mu.Lock()
 				err := c.err
 				c.mu.Unlock()

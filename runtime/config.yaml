@@ -11,8 +11,8 @@ api:
       backend:
         - response_body: "landing_company"
           allow: 
-            - financial_company
-            - gaming_company
+            - virtual_company
+            - name
           fields_map:
             financial_company: "financial"
             gaming_company: "gaming"
@@ -36,8 +36,8 @@ api:
           depends_on: 
             - "website_status"
           allow: 
-            - financial_company
-            - gaming_company
+            - virtual_company
+            - name
           fields_map:
             financial_company: "financial"
             gaming_company: "gaming"

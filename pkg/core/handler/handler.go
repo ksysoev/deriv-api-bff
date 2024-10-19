@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"iter"
-	"log/slog"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 )
@@ -95,7 +94,6 @@ func (h *Handler) requests(ctx context.Context, params map[string]any, watcher c
 			}
 
 			depsOn := proc.DependsOn()
-			slog.Debug("Processing request", slog.String("name", proc.Name()), slog.Any("depends_on", depsOn))
 
 			depResuls := make(map[string]any)
 			if len(depsOn) > 0 {
@@ -104,8 +102,6 @@ func (h *Handler) requests(ctx context.Context, params map[string]any, watcher c
 					return
 				}
 			}
-
-			slog.Debug("Composed dependencies", slog.Any("deps", depResuls))
 
 			reqID, respChan := watcher()
 

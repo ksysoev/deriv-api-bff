@@ -70,8 +70,6 @@ func (p *Processor) Render(w io.Writer, reqID int64, params map[string]any, deps
 		Resp:   deps,
 	}
 
-	slog.Debug("Rendering template", slog.String("template", p.tmpl.Name()), slog.Any("data", data))
-
 	return p.tmpl.Execute(w, data)
 }
 
