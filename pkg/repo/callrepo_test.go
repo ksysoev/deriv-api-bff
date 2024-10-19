@@ -157,8 +157,6 @@ func TestSortBackends(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 		},
-
-		//TODO: Fix the test case
 		{
 			name: "complex dependency",
 			input: []BackendConfig{

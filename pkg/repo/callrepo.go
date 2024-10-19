@@ -105,6 +105,16 @@ func sortBackends(be []BackendConfig) ([]BackendConfig, error) {
 		}
 
 		if !dep1 && !dep2 {
+			if len(be[i].DependsOn) != 0 || len(be[j].DependsOn) != 0 {
+				if len(be[i].DependsOn) == 0 {
+					return true
+				}
+
+				if len(be[j].DependsOn) == 0 {
+					return false
+				}
+			}
+
 			// Preserve order of backends that do not depend on each other
 			return i < j
 		}
