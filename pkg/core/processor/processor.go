@@ -10,12 +10,14 @@ import (
 
 type Config struct {
 	Tmplt        *template.Template
+	DependsOn    []string
 	FieldMap     map[string]string
 	ResponseBody string
 	Allow        []string
 }
 
 type Processor struct {
+	depemdsOn    []string
 	tmpl         *template.Template
 	fieldMap     map[string]string
 	responseBody string
@@ -24,6 +26,7 @@ type Processor struct {
 
 type templateData struct {
 	Params map[string]any
+	Resp   map[string]any
 	ReqID  int64
 }
 
@@ -33,6 +36,7 @@ type templateData struct {
 func New(cfg *Config) *Processor {
 	return &Processor{
 		tmpl:         cfg.Tmplt,
+		depemdsOn:    cfg.DependsOn,
 		fieldMap:     cfg.FieldMap,
 		responseBody: cfg.ResponseBody,
 		allow:        cfg.Allow,
@@ -43,14 +47,30 @@ func (p *Processor) Name() string {
 	return p.responseBody
 }
 
+func (p *Processor) DependsOn() []string {
+	return p.depemdsOn
+}
+
 // Render generates and writes the output of a template to the provided writer.
 // It takes a writer w of type io.Writer, a request ID reqID of type int64, and a map of parameters params of type map[string]any.
 // It returns an error if the template execution fails.
-func (p *Processor) Render(w io.Writer, reqID int64, params map[string]any) error {
+func (p *Processor) Render(w io.Writer, reqID int64, params map[string]any, deps map[string]any) error {
+
+	if deps == nil {
+		deps = make(map[string]any)
+	}
+
+	if params == nil {
+		params = make(map[string]any)
+	}
+
 	data := templateData{
 		Params: params,
 		ReqID:  reqID,
+		Resp:   deps,
 	}
+
+	slog.Debug("Rendering template", slog.String("template", p.tmpl.Name()), slog.Any("data", data))
 
 	return p.tmpl.Execute(w, data)
 }

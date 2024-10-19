@@ -46,7 +46,7 @@ func TestProcessor_Render(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err = rp.Render(&buf, int64(reqID), params)
+	err = rp.Render(&buf, int64(reqID), params, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, buf.String())
 }

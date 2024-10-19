@@ -32,7 +32,7 @@ func TestHandle_Success(t *testing.T) {
 
 	renderParser := NewMockRenderParser(t)
 	renderParser.EXPECT().Name().Return(expectedCallName)
-	renderParser.EXPECT().Render(mock.Anything, mock.Anything, expectedParams).Return(nil)
+	renderParser.EXPECT().Render(mock.Anything, mock.Anything, expectedParams, nil).Return(nil)
 
 	waitComposer := NewMockWaitComposer(t)
 	waitComposer.EXPECT().Compose().Return(expectedParams, nil)
@@ -97,7 +97,7 @@ func TestHandle_SendError(t *testing.T) {
 	validator.EXPECT().Validate(expectedParams).Return(nil)
 
 	renderParser := NewMockRenderParser(t)
-	renderParser.EXPECT().Render(mock.Anything, mock.Anything, expectedParams).Return(nil)
+	renderParser.EXPECT().Render(mock.Anything, mock.Anything, expectedParams, nil).Return(nil)
 	renderParser.EXPECT().Name().Return(expectedCallName)
 
 	waitComposer := NewMockWaitComposer(t)

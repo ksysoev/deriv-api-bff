@@ -67,6 +67,7 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 
 			procs = append(procs, processor.New(&processor.Config{
 				Tmplt:        tmplt,
+				DependsOn:    req.DependsOn,
 				FieldMap:     req.FieldsMap,
 				ResponseBody: req.ResponseBody,
 				Allow:        req.Allow,

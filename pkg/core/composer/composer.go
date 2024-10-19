@@ -11,7 +11,7 @@ import (
 
 type Composer struct {
 	err      error
-	rawResps map[string]map[string]any
+	rawResps map[string]any
 	req      map[string]chan struct{}
 	resp     map[string]any
 	wg       sync.WaitGroup
@@ -25,7 +25,7 @@ func New() *Composer {
 	return &Composer{
 		resp:     make(map[string]any),
 		req:      make(map[string]chan struct{}),
-		rawResps: make(map[string]map[string]any),
+		rawResps: make(map[string]any),
 	}
 }
 
@@ -51,6 +51,7 @@ func (c *Composer) Wait(ctx context.Context, name string, parser handler.Parser,
 			defer c.mu.Unlock()
 
 			c.rawResps[name] = rawResp
+			slog.Debug("parsed response", slog.String("name", name), slog.Any("data", data))
 
 			for key, value := range data {
 				if _, ok := c.resp[key]; ok {
@@ -83,7 +84,9 @@ func (c *Composer) ComposeDependencies(ctx context.Context, dependsOn []string) 
 
 			select {
 			case <-ctx.Done():
+				slog.Debug("context cancelled", slog.String("name", name))
 			case <-done:
+				slog.Debug("dependency done", slog.String("name", name))
 				c.mu.Lock()
 				err := c.err
 				c.mu.Unlock()
@@ -101,7 +104,7 @@ func (c *Composer) ComposeDependencies(ctx context.Context, dependsOn []string) 
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	return c.resp, c.err
+	return c.rawResps, c.err
 }
 
 // Compose waits for all requests to finish and then returns the composed result.

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"iter"
+	"log/slog"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 )
@@ -18,12 +19,14 @@ type Validator interface {
 
 type RenderParser interface {
 	Name() string
-	Render(w io.Writer, reqID int64, params map[string]any) error
+	DependsOn() []string
+	Render(w io.Writer, reqID int64, params map[string]any, deps map[string]any) error
 	Parse(data []byte) (map[string]any, map[string]any, error)
 }
 
 type WaitComposer interface {
 	Wait(ctx context.Context, name string, parser Parser, respChan <-chan []byte)
+	ComposeDependencies(ctx context.Context, dependsOn []string) (map[string]any, error)
 	Compose() (map[string]any, error)
 }
 
@@ -66,7 +69,7 @@ func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher cor
 
 	comp := h.newComposer()
 
-	for req := range h.requests(ctx, params, watcher) {
+	for req := range h.requests(ctx, params, watcher, comp) {
 		comp.Wait(ctx, req.name, req.parser, req.respChan)
 
 		if err := send(ctx, req.data); err != nil {
@@ -82,7 +85,7 @@ func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher cor
 // It returns an iterator function that yields requests of type request.
 // It panics if there is an error in rendering the processor template.
 // Special behavior includes checking for context cancellation and resetting the buffer for each processor.
-func (h *Handler) requests(ctx context.Context, params map[string]any, watcher core.Waiter) iter.Seq[request] {
+func (h *Handler) requests(ctx context.Context, params map[string]any, watcher core.Waiter, comp WaitComposer) iter.Seq[request] {
 	var buf bytes.Buffer
 
 	return func(yield func(request) bool) {
@@ -91,12 +94,25 @@ func (h *Handler) requests(ctx context.Context, params map[string]any, watcher c
 				return
 			}
 
+			depsOn := proc.DependsOn()
+			slog.Debug("Processing request", slog.String("name", proc.Name()), slog.Any("depends_on", depsOn))
+
+			depResuls := make(map[string]any)
+			if len(depsOn) > 0 {
+				var err error
+				if depResuls, err = comp.ComposeDependencies(ctx, depsOn); err != nil {
+					return
+				}
+			}
+
+			slog.Debug("Composed dependencies", slog.Any("deps", depResuls))
+
 			reqID, respChan := watcher()
 
 			// TODO: check for race conditions here that iterator blocks until the previous request is sent
 			buf.Reset()
 
-			if err := proc.Render(&buf, reqID, params); err != nil {
+			if err := proc.Render(&buf, reqID, params, depResuls); err != nil {
 				// TODO: add prevalidating template on startup to avoid this error in runtime
 				panic(fmt.Sprintf("template execution failed: %v", err))
 			}

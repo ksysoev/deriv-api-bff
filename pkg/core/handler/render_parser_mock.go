@@ -23,6 +23,53 @@ func (_m *MockRenderParser) EXPECT() *MockRenderParser_Expecter {
 	return &MockRenderParser_Expecter{mock: &_m.Mock}
 }
 
+// DependsOn provides a mock function with given fields:
+func (_m *MockRenderParser) DependsOn() []string {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for DependsOn")
+	}
+
+	var r0 []string
+	if rf, ok := ret.Get(0).(func() []string); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	return r0
+}
+
+// MockRenderParser_DependsOn_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DependsOn'
+type MockRenderParser_DependsOn_Call struct {
+	*mock.Call
+}
+
+// DependsOn is a helper method to define mock.On call
+func (_e *MockRenderParser_Expecter) DependsOn() *MockRenderParser_DependsOn_Call {
+	return &MockRenderParser_DependsOn_Call{Call: _e.mock.On("DependsOn")}
+}
+
+func (_c *MockRenderParser_DependsOn_Call) Run(run func()) *MockRenderParser_DependsOn_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockRenderParser_DependsOn_Call) Return(_a0 []string) *MockRenderParser_DependsOn_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockRenderParser_DependsOn_Call) RunAndReturn(run func() []string) *MockRenderParser_DependsOn_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Name provides a mock function with given fields:
 func (_m *MockRenderParser) Name() string {
 	ret := _m.Called()
@@ -135,17 +182,17 @@ func (_c *MockRenderParser_Parse_Call) RunAndReturn(run func([]byte) (map[string
 	return _c
 }
 
-// Render provides a mock function with given fields: w, reqID, params
-func (_m *MockRenderParser) Render(w io.Writer, reqID int64, params map[string]interface{}) error {
-	ret := _m.Called(w, reqID, params)
+// Render provides a mock function with given fields: w, reqID, params, deps
+func (_m *MockRenderParser) Render(w io.Writer, reqID int64, params map[string]interface{}, deps map[string]interface{}) error {
+	ret := _m.Called(w, reqID, params, deps)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Render")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(io.Writer, int64, map[string]interface{}) error); ok {
-		r0 = rf(w, reqID, params)
+	if rf, ok := ret.Get(0).(func(io.Writer, int64, map[string]interface{}, map[string]interface{}) error); ok {
+		r0 = rf(w, reqID, params, deps)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -162,13 +209,14 @@ type MockRenderParser_Render_Call struct {
 //   - w io.Writer
 //   - reqID int64
 //   - params map[string]interface{}
-func (_e *MockRenderParser_Expecter) Render(w interface{}, reqID interface{}, params interface{}) *MockRenderParser_Render_Call {
-	return &MockRenderParser_Render_Call{Call: _e.mock.On("Render", w, reqID, params)}
+//   - deps map[string]interface{}
+func (_e *MockRenderParser_Expecter) Render(w interface{}, reqID interface{}, params interface{}, deps interface{}) *MockRenderParser_Render_Call {
+	return &MockRenderParser_Render_Call{Call: _e.mock.On("Render", w, reqID, params, deps)}
 }
 
-func (_c *MockRenderParser_Render_Call) Run(run func(w io.Writer, reqID int64, params map[string]interface{})) *MockRenderParser_Render_Call {
+func (_c *MockRenderParser_Render_Call) Run(run func(w io.Writer, reqID int64, params map[string]interface{}, deps map[string]interface{})) *MockRenderParser_Render_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(io.Writer), args[1].(int64), args[2].(map[string]interface{}))
+		run(args[0].(io.Writer), args[1].(int64), args[2].(map[string]interface{}), args[3].(map[string]interface{}))
 	})
 	return _c
 }
@@ -178,7 +226,7 @@ func (_c *MockRenderParser_Render_Call) Return(_a0 error) *MockRenderParser_Rend
 	return _c
 }
 
-func (_c *MockRenderParser_Render_Call) RunAndReturn(run func(io.Writer, int64, map[string]interface{}) error) *MockRenderParser_Render_Call {
+func (_c *MockRenderParser_Render_Call) RunAndReturn(run func(io.Writer, int64, map[string]interface{}, map[string]interface{}) error) *MockRenderParser_Render_Call {
 	_c.Call.Return(run)
 	return _c
 }
