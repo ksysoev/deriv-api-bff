@@ -18,7 +18,6 @@ type Validator interface {
 
 type RenderParser interface {
 	Name() string
-	DependsOn() []string
 	Render(w io.Writer, reqID int64, params map[string]any, deps map[string]any) error
 	Parse(data []byte) (map[string]any, map[string]any, error)
 }

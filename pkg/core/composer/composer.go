@@ -76,6 +76,7 @@ func (c *Composer) ComposeDependencies(ctx context.Context, name string) (map[st
 	}
 
 	c.mu.Lock()
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

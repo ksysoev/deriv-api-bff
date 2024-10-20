@@ -10,14 +10,12 @@ import (
 
 type Config struct {
 	Tmplt        *template.Template
-	DependsOn    []string
 	FieldMap     map[string]string
 	ResponseBody string
 	Allow        []string
 }
 
 type Processor struct {
-	depemdsOn    []string
 	tmpl         *template.Template
 	fieldMap     map[string]string
 	responseBody string
@@ -36,7 +34,6 @@ type templateData struct {
 func New(cfg *Config) *Processor {
 	return &Processor{
 		tmpl:         cfg.Tmplt,
-		depemdsOn:    cfg.DependsOn,
 		fieldMap:     cfg.FieldMap,
 		responseBody: cfg.ResponseBody,
 		allow:        cfg.Allow,
@@ -45,10 +42,6 @@ func New(cfg *Config) *Processor {
 
 func (p *Processor) Name() string {
 	return p.responseBody
-}
-
-func (p *Processor) DependsOn() []string {
-	return p.depemdsOn
 }
 
 // Render generates and writes the output of a template to the provided writer.
