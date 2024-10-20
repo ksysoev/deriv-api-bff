@@ -17,7 +17,7 @@ type EtcdHandler struct {
 	conf *clientv3.Config
 }
 
-func (etcdHandler *EtcdHandler) Put(ctx context.Context, key, value string) error {
+func (etcdHandler EtcdHandler) Put(ctx context.Context, key, value string) error {
 	cli, err := clientv3.New(*etcdHandler.conf)
 
 	if err != nil {
@@ -40,7 +40,7 @@ func (etcdHandler *EtcdHandler) Put(ctx context.Context, key, value string) erro
 	return nil
 }
 
-func NewEtcdHandler(etcdConfig EtcdConfig) *Etcd {
+func NewEtcdHandler(etcdConfig EtcdConfig) Etcd {
 	return &EtcdHandler{
 		conf: &clientv3.Config{
 			Endpoints:   etcdConfig.Servers,

@@ -109,7 +109,7 @@ func ReadConfigCommand(arg *args) *cobra.Command {
 
 			etcd := repo.NewEtcdHandler(cfg.Etcd)
 
-			return putCallConfigToEtcd(cmd.Context(), *etcd, arg.configPath)
+			return putCallConfigToEtcd(cmd.Context(), etcd, arg.configPath)
 		},
 	}
 }
