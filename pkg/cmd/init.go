@@ -1,19 +1,18 @@
 package cmd
 
 import (
+	"fmt"
 	"log/slog"
 
 	"github.com/spf13/cobra"
 )
 
 type args struct {
-	build              string
-	version            string
-	logLevel           string
-	configPath         string
-	etcdURL            string
-	dialTimeoutSeconds int
-	textFormat         bool
+	build      string
+	version    string
+	logLevel   string
+	configPath string
+	textFormat bool
 }
 
 // InitCommands initializes and returns the root command for the Backend for Frontend (BFF) service.
@@ -33,11 +32,13 @@ func InitCommands(build, version string) *cobra.Command {
 
 	cmd.AddCommand(ServerCommand(args))
 
+	configCmd := ConfigCommand(args)
+	configCmd.AddCommand(ReadConfigCommand(args))
+	cmd.AddCommand(configCmd)
+
 	cmd.PersistentFlags().StringVar(&args.configPath, "config", "./runtime/config.yaml", "config file path")
 	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", "info", "log level (debug, info, warn, error)")
 	cmd.PersistentFlags().BoolVar(&args.textFormat, "log-text", false, "log in text format, otherwise JSON")
-	cmd.PersistentFlags().StringVar(&args.etcdURL, "etcdURL", "localhost:2379", "the host:port for etcd")
-	cmd.PersistentFlags().IntVar(&args.dialTimeoutSeconds, "dialTimeoutSeconds", 5, "the dial timeout in seconds for etcd operations")
 
 	return cmd
 }
@@ -68,6 +69,19 @@ func ServerCommand(arg *args) *cobra.Command {
 	}
 }
 
+// ConfigCommand is a top-level cobra.Command for config relation operations for Deriv API.
+// You can use its sub commands as `config [sub command]`
+func ConfigCommand(_ *args) *cobra.Command {
+	return &cobra.Command{
+		Use:   "config",
+		Short: "Config related commands for Deriv API BFF",
+		Long:  "Use this command to invoke various config related operations. Use --help for help",
+		Run: func(_ *cobra.Command, _ []string) {
+			fmt.Println("Usage `config [sub-command]`")
+		},
+	}
+}
+
 // ReadConfigCommand creates a new cobra.Command to load the calls config for Deriv API.
 // The config is loaded and then pushed to etcd for watching changes.
 // It can take cfgPath of type *string which is the path to the configuration file as an argument.
@@ -76,7 +90,7 @@ func ServerCommand(arg *args) *cobra.Command {
 // It returns an error if the logger initialization fails, the configuration cannot be loaded, or there is error thrown by etcd.
 func ReadConfigCommand(arg *args) *cobra.Command {
 	return &cobra.Command{
-		Use:   "read-config",
+		Use:   "upload",
 		Short: "Read config and push call config to etcd",
 		Long:  "Read config and push call config to etcd for hot reloads. Also sets up a watcher for the config",
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -86,7 +100,7 @@ func ReadConfigCommand(arg *args) *cobra.Command {
 
 			slog.Info("Trying to load config...", slog.String("version", arg.version), slog.String("build", arg.build))
 
-			return putCallConfigToEtcd(cmd.Context(), arg.configPath, arg.etcdURL, arg.dialTimeoutSeconds)
+			return putCallConfigToEtcd(cmd.Context(), arg.configPath)
 		},
 	}
 }

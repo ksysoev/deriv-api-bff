@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,8 +32,18 @@ func TestInitCommands(t *testing.T) {
 	assert.Equal(t, "false", logTextFlag.DefValue)
 
 	subCommands := cmd.Commands()
-	assert.Equal(t, 1, len(subCommands))
-	assert.Equal(t, "server", subCommands[0].Use)
+	assert.Equal(t, 2, len(subCommands))
+	assert.ElementsMatchf(t, []string{"server", "config"}, mapToNames(subCommands), "commands should match")
+}
+
+func mapToNames(commands []*cobra.Command) []string {
+	result := make([]string, len(commands))
+
+	for i, v := range commands {
+		result[i] = v.Use
+	}
+
+	return result
 }
 
 func TestServerCommand(t *testing.T) {

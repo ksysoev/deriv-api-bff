@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -10,15 +11,13 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/prov/deriv"
 	"github.com/ksysoev/deriv-api-bff/pkg/repo"
 	"github.com/spf13/viper"
-
-	"context"
-	"time"
 )
 
 type config struct {
 	Server api.Config       `mapstructure:"server"`
 	Deriv  deriv.Config     `mapstructure:"deriv"`
 	API    repo.CallsConfig `mapstructure:"api"`
+	Etcd   repo.EtcdConfig  `mapstructure:"etcd"`
 }
 
 // initConfig initializes the configuration by reading from the specified config file.
@@ -49,7 +48,7 @@ func initConfig(configPath string) (*config, error) {
 // The function also accepts etcd settings like host and dial timeout.
 // The function will return the Etcd key it had used to put the CallConfig
 // The function may return empty key and an error in case of any errors.
-func putCallConfigToEtcd(ctx context.Context, configPath, etcdURL string, dialTimeoutSeconds int) error {
+func putCallConfigToEtcd(ctx context.Context, configPath string) error {
 	cfg, err := initConfig(configPath)
 
 	if err != nil {
@@ -64,7 +63,7 @@ func putCallConfigToEtcd(ctx context.Context, configPath, etcdURL string, dialTi
 		return err
 	}
 
-	etcd := NewEtcdHandler(etcdURL, time.Duration(dialTimeoutSeconds*int(time.Second)))
+	etcd := repo.NewEtcdHandler(cfg.Etcd)
 
 	err = etcd.Put(ctx, "CallConfig", string(callConfigJSON))
 

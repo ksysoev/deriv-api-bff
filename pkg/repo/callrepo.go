@@ -15,6 +15,11 @@ type CallsConfig struct {
 	Calls []CallConfig `mapstructure:"calls"`
 }
 
+type EtcdConfig struct {
+	Servers            []string `mapstructure:"server"`
+	dialTimeoutSeconds int      `mapstructure:"dialTimeoutSeconds"`
+}
+
 type CallConfig struct {
 	Method  string           `mapstructure:"method"`
 	Params  validator.Config `mapstructure:"params"`

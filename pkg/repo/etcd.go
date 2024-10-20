@@ -1,4 +1,4 @@
-package cmd
+package repo
 
 import (
 	"context"
@@ -20,11 +20,11 @@ type EtcdHandler struct {
 	conf *clientv3.Config
 }
 
-func NewEtcdHandler(etcdURL string, dialTimeout time.Duration) *EtcdHandler {
+func NewEtcdHandler(etcdConfig EtcdConfig) *EtcdHandler {
 	return &EtcdHandler{
 		conf: &clientv3.Config{
-			Endpoints:   []string{etcdURL},
-			DialTimeout: dialTimeout,
+			Endpoints:   etcdConfig.Servers,
+			DialTimeout: time.Duration(etcdConfig.dialTimeoutSeconds),
 		},
 	}
 }
