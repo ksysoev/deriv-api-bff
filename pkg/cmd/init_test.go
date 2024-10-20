@@ -11,7 +11,8 @@ func TestInitCommands(t *testing.T) {
 	build := "test-build"
 	version := "test-version"
 
-	cmd := InitCommands(build, version)
+	cmd, err := InitCommands(build, version)
+	assert.NoError(t, err)
 
 	assert.NotNil(t, cmd)
 	assert.Equal(t, "bff", cmd.Use)
@@ -41,9 +42,9 @@ func TestServerCommand(t *testing.T) {
 	arg := &args{
 		build:      "test-build",
 		version:    "test-version",
-		configPath: configPath,
-		logLevel:   "debug",
-		textFormat: true,
+		ConfigPath: configPath,
+		LogLevel:   "debug",
+		TextFormat: true,
 	}
 
 	cmd := ServerCommand(arg)

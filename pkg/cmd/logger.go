@@ -10,7 +10,7 @@ import (
 // It returns an error if the logger initialization fails, although in this implementation, it always returns nil.
 func initLogger(arg *args) error {
 	var logLever slog.Level
-	if err := logLever.UnmarshalText([]byte(arg.logLevel)); err != nil {
+	if err := logLever.UnmarshalText([]byte(arg.LogLevel)); err != nil {
 		return err
 	}
 
@@ -19,7 +19,7 @@ func initLogger(arg *args) error {
 	}
 
 	var logHandler slog.Handler
-	if arg.textFormat {
+	if arg.TextFormat {
 		logHandler = slog.NewTextHandler(os.Stdout, options)
 	} else {
 		logHandler = slog.NewJSONHandler(os.Stdout, options)
