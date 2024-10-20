@@ -80,9 +80,9 @@ func (_c *MockWaitComposer_Compose_Call) RunAndReturn(run func() (map[string]int
 	return _c
 }
 
-// ComposeDependencies provides a mock function with given fields: ctx, dependsOn
-func (_m *MockWaitComposer) ComposeDependencies(ctx context.Context, dependsOn []string) (map[string]interface{}, error) {
-	ret := _m.Called(ctx, dependsOn)
+// ComposeDependencies provides a mock function with given fields: ctx, name
+func (_m *MockWaitComposer) ComposeDependencies(ctx context.Context, name string) (map[string]interface{}, error) {
+	ret := _m.Called(ctx, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ComposeDependencies")
@@ -90,19 +90,19 @@ func (_m *MockWaitComposer) ComposeDependencies(ctx context.Context, dependsOn [
 
 	var r0 map[string]interface{}
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, []string) (map[string]interface{}, error)); ok {
-		return rf(ctx, dependsOn)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (map[string]interface{}, error)); ok {
+		return rf(ctx, name)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, []string) map[string]interface{}); ok {
-		r0 = rf(ctx, dependsOn)
+	if rf, ok := ret.Get(0).(func(context.Context, string) map[string]interface{}); ok {
+		r0 = rf(ctx, name)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[string]interface{})
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, []string) error); ok {
-		r1 = rf(ctx, dependsOn)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -117,14 +117,14 @@ type MockWaitComposer_ComposeDependencies_Call struct {
 
 // ComposeDependencies is a helper method to define mock.On call
 //   - ctx context.Context
-//   - dependsOn []string
-func (_e *MockWaitComposer_Expecter) ComposeDependencies(ctx interface{}, dependsOn interface{}) *MockWaitComposer_ComposeDependencies_Call {
-	return &MockWaitComposer_ComposeDependencies_Call{Call: _e.mock.On("ComposeDependencies", ctx, dependsOn)}
+//   - name string
+func (_e *MockWaitComposer_Expecter) ComposeDependencies(ctx interface{}, name interface{}) *MockWaitComposer_ComposeDependencies_Call {
+	return &MockWaitComposer_ComposeDependencies_Call{Call: _e.mock.On("ComposeDependencies", ctx, name)}
 }
 
-func (_c *MockWaitComposer_ComposeDependencies_Call) Run(run func(ctx context.Context, dependsOn []string)) *MockWaitComposer_ComposeDependencies_Call {
+func (_c *MockWaitComposer_ComposeDependencies_Call) Run(run func(ctx context.Context, name string)) *MockWaitComposer_ComposeDependencies_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].([]string))
+		run(args[0].(context.Context), args[1].(string))
 	})
 	return _c
 }
@@ -134,7 +134,7 @@ func (_c *MockWaitComposer_ComposeDependencies_Call) Return(_a0 map[string]inter
 	return _c
 }
 
-func (_c *MockWaitComposer_ComposeDependencies_Call) RunAndReturn(run func(context.Context, []string) (map[string]interface{}, error)) *MockWaitComposer_ComposeDependencies_Call {
+func (_c *MockWaitComposer_ComposeDependencies_Call) RunAndReturn(run func(context.Context, string) (map[string]interface{}, error)) *MockWaitComposer_ComposeDependencies_Call {
 	_c.Call.Return(run)
 	return _c
 }

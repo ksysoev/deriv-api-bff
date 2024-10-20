@@ -10,6 +10,7 @@ import (
 )
 
 type Composer struct {
+	depGraph map[string][]string
 	err      error
 	rawResps map[string]any
 	req      map[string]chan struct{}
@@ -21,8 +22,9 @@ type Composer struct {
 // NewComposer creates and returns a new instance of Composer.
 // It initializes the Composer with an empty response map.
 // It returns a pointer to the newly created Composer instance.
-func New() *Composer {
+func New(depGraph map[string][]string) *Composer {
 	return &Composer{
+		depGraph: depGraph,
 		resp:     make(map[string]any),
 		req:      make(map[string]chan struct{}),
 		rawResps: make(map[string]any),
@@ -66,9 +68,14 @@ func (c *Composer) Wait(ctx context.Context, name string, parser handler.Parser,
 	}()
 }
 
-func (c *Composer) ComposeDependencies(ctx context.Context, dependsOn []string) (map[string]any, error) {
-	c.mu.Lock()
+func (c *Composer) ComposeDependencies(ctx context.Context, name string) (map[string]any, error) {
+	dependsOn := c.depGraph[name]
 
+	if len(dependsOn) == 0 {
+		return make(map[string]any), nil
+	}
+
+	c.mu.Lock()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

@@ -33,11 +33,11 @@ func TestHandle_Success(t *testing.T) {
 	renderParser := NewMockRenderParser(t)
 	renderParser.EXPECT().Name().Return(expectedCallName)
 	renderParser.EXPECT().Render(mock.Anything, mock.Anything, expectedParams, make(map[string]any)).Return(nil)
-	renderParser.EXPECT().DependsOn().Return(nil)
 
 	waitComposer := NewMockWaitComposer(t)
 	waitComposer.EXPECT().Compose().Return(expectedParams, nil)
 	waitComposer.EXPECT().Wait(mock.Anything, expectedCallName, mock.Anything, mock.Anything)
+	waitComposer.EXPECT().ComposeDependencies(mock.Anything, expectedCallName).Return(make(map[string]any), nil)
 
 	handler := New(validator, []RenderParser{renderParser}, func() WaitComposer {
 		return waitComposer
@@ -100,10 +100,10 @@ func TestHandle_SendError(t *testing.T) {
 	renderParser := NewMockRenderParser(t)
 	renderParser.EXPECT().Render(mock.Anything, mock.Anything, expectedParams, make(map[string]any)).Return(nil)
 	renderParser.EXPECT().Name().Return(expectedCallName)
-	renderParser.EXPECT().DependsOn().Return(nil)
 
 	waitComposer := NewMockWaitComposer(t)
 	waitComposer.EXPECT().Wait(mock.Anything, expectedCallName, mock.Anything, mock.Anything)
+	waitComposer.EXPECT().ComposeDependencies(mock.Anything, expectedCallName).Return(make(map[string]any), nil)
 
 	handler := New(validator, []RenderParser{renderParser, renderParser}, func() WaitComposer {
 		return waitComposer

@@ -23,7 +23,7 @@ func makeParser() func([]byte) (map[string]any, map[string]any, error) {
 }
 
 func TestComposer_WaitResponse_Success(t *testing.T) {
-	composer := New()
+	composer := New(make(map[string][]string))
 	respChan := make(chan []byte, 1)
 	parser := makeParser()
 	ctx := context.Background()
@@ -40,7 +40,7 @@ func TestComposer_WaitResponse_Success(t *testing.T) {
 }
 
 func TestComposer_WaitResponse_ParseError(t *testing.T) {
-	composer := New()
+	composer := New(make(map[string][]string))
 	respChan := make(chan []byte, 1)
 	respChan <- []byte("invalid json")
 
@@ -57,7 +57,7 @@ func TestComposer_WaitResponse_ParseError(t *testing.T) {
 }
 
 func TestComposer_WaitResponse_ContextCancelled(t *testing.T) {
-	composer := New()
+	composer := New(make(map[string][]string))
 	respChan := make(chan []byte)
 
 	ctx, cancel := context.WithCancel(context.Background())

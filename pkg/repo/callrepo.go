@@ -42,10 +42,6 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 		calls: make(map[string]core.Handler),
 	}
 
-	factory := func() handler.WaitComposer {
-		return composer.New()
-	}
-
 	for _, call := range cfg.Calls {
 		valid, err := validator.New(call.Params)
 		if err != nil {
@@ -53,6 +49,8 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 		}
 
 		procs := make([]handler.RenderParser, 0, len(call.Backend))
+
+		graph := createDepGraph(call.Backend)
 
 		call.Backend, err = topSortDFS(call.Backend)
 		if err != nil {
@@ -72,6 +70,10 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 				ResponseBody: req.ResponseBody,
 				Allow:        req.Allow,
 			}))
+		}
+
+		factory := func() handler.WaitComposer {
+			return composer.New(graph)
 		}
 
 		r.calls[call.Method] = handler.New(valid, procs, factory)
@@ -144,4 +146,14 @@ func topSortDFS(be []BackendConfig) ([]BackendConfig, error) {
 	}
 
 	return sorted, nil
+}
+
+func createDepGraph(be []BackendConfig) map[string][]string {
+	graph := make(map[string][]string)
+
+	for _, b := range be {
+		graph[b.ResponseBody] = b.DependsOn
+	}
+
+	return graph
 }

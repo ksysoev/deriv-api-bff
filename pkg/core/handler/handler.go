@@ -25,7 +25,7 @@ type RenderParser interface {
 
 type WaitComposer interface {
 	Wait(ctx context.Context, name string, parser Parser, respChan <-chan []byte)
-	ComposeDependencies(ctx context.Context, dependsOn []string) (map[string]any, error)
+	ComposeDependencies(ctx context.Context, name string) (map[string]any, error)
 	Compose() (map[string]any, error)
 }
 
@@ -93,15 +93,9 @@ func (h *Handler) requests(ctx context.Context, params map[string]any, watcher c
 				return
 			}
 
-			depsOn := proc.DependsOn()
-
-			depResuls := make(map[string]any)
-
-			if len(depsOn) > 0 {
-				var err error
-				if depResuls, err = comp.ComposeDependencies(ctx, depsOn); err != nil {
-					return
-				}
+			depResuls, err := comp.ComposeDependencies(ctx, proc.Name())
+			if err != nil {
+				return
 			}
 
 			reqID, respChan := watcher()
