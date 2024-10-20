@@ -10,23 +10,25 @@ import (
 )
 
 type Etcd interface {
-	Put(ctx context.Context, key string, value string) error
+	Put(ctx context.Context, cli *clientv3.Client, key string, value string) error
+	Client(cfg EtcdConfig) (*clientv3.Client, error)
 }
 
 type EtcdHandler struct {
-	conf *clientv3.Config
+	Conf *clientv3.Config
 }
 
-func (etcdHandler EtcdHandler) Put(ctx context.Context, key, value string) error {
-	cli, err := clientv3.New(*etcdHandler.conf)
+func (etcdHandler EtcdHandler) Client(cfg EtcdConfig) (*clientv3.Client, error) {
+	return clientv3.New(clientv3.Config{
+		Endpoints:   cfg.Servers,
+		DialTimeout: time.Duration(cfg.DialTimeoutSeconds * int(time.Second)),
+	})
+}
 
-	if err != nil {
-		return err
-	}
-
+func (etcdHandler EtcdHandler) Put(ctx context.Context, cli *clientv3.Client, key, value string) error {
 	defer cli.Close()
 
-	ctx, cancel := context.WithTimeout(ctx, etcdHandler.conf.DialTimeout)
+	ctx, cancel := context.WithTimeout(ctx, etcdHandler.Conf.DialTimeout)
 	res, err := cli.Put(ctx, key, value)
 
 	slog.Debug(fmt.Sprintf("Etcd response for push config: %v", res.Header))
@@ -42,7 +44,7 @@ func (etcdHandler EtcdHandler) Put(ctx context.Context, key, value string) error
 
 func NewEtcdHandler(etcdConfig EtcdConfig) Etcd {
 	return &EtcdHandler{
-		conf: &clientv3.Config{
+		Conf: &clientv3.Config{
 			Endpoints:   etcdConfig.Servers,
 			DialTimeout: time.Duration(etcdConfig.DialTimeoutSeconds * int(time.Second)),
 		},

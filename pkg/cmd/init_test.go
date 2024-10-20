@@ -129,4 +129,16 @@ func TestReadConfigCommand(t *testing.T) {
 	assert.Equal(t, "upload", cmd.Use)
 	assert.Equal(t, "Read config and push call config to etcd", cmd.Short)
 	assert.Equal(t, "Read config and push call config to etcd for hot reloads. Also sets up a watcher for the config", cmd.Long)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		}
+	}()
+
+	_ = cmd.ExecuteContext(ctx)
+
+	cancel()
 }
