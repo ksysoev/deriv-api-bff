@@ -31,13 +31,13 @@ func (etcdHandler EtcdHandler) Put(ctx context.Context, cli *clientv3.Client, ke
 	ctx, cancel := context.WithTimeout(ctx, etcdHandler.Conf.DialTimeout)
 	res, err := cli.Put(ctx, key, value)
 
-	slog.Debug(fmt.Sprintf("Etcd response for push config: %v", res.Header))
-
 	cancel()
 
 	if err != nil {
 		return err
 	}
+
+	slog.Debug(fmt.Sprintf("Etcd response for push config: %v", res.Header))
 
 	return nil
 }

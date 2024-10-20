@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,17 +21,11 @@ func TestNew(t *testing.T) {
 }
 
 func TestClient(t *testing.T) {
-	etcd := NewMockEtcd(t)
 	cfg := EtcdConfig{
 		Servers:            []string{"localhost:7000"},
 		DialTimeoutSeconds: 1,
 	}
-
-	etcd.EXPECT().Client(cfg).Return(
-		&clientv3.Client{
-			Username: "test",
-			Password: "pass",
-		}, nil)
+	etcd := NewEtcdHandler(cfg)
 
 	cli, err := etcd.Client(cfg)
 
@@ -38,11 +33,10 @@ func TestClient(t *testing.T) {
 		t.Errorf("Unexpected err: %s", err)
 	}
 
-	assert.Equal(t, "test", cli.Username)
-	assert.Equal(t, "pass", cli.Password)
+	assert.ElementsMatch(t, []string{"localhost:7000"}, cli.Endpoints())
 }
 
-func TestPut(t *testing.T) {
+func TestPut_Success(t *testing.T) {
 	etcd := NewEtcdHandler(EtcdConfig{})
 	mockKV := NewMockKV(t)
 	mockLease := NewMockLease(t)
@@ -61,6 +55,30 @@ func TestPut(t *testing.T) {
 	err := etcd.Put(ctx, cli, "key", "value")
 
 	if err != nil {
+		t.Errorf("Unexpected error: %s", err)
+	}
+}
+
+func TestPut_Error(t *testing.T) {
+	etcd := NewEtcdHandler(EtcdConfig{})
+	mockKV := NewMockKV(t)
+	mockLease := NewMockLease(t)
+	mockWatcher := NewMockWatcher(t)
+	ctx := context.Background()
+	cli := clientv3.NewCtxClient(ctx)
+	expectedErr := errors.New("test error")
+
+	cli.KV = mockKV
+	cli.Lease = mockLease
+	cli.Watcher = mockWatcher
+
+	mockKV.EXPECT().Put(mock.Anything, mock.Anything, mock.Anything).Return(nil, expectedErr)
+	mockWatcher.EXPECT().Close().Return(nil)
+	mockLease.EXPECT().Close().Return(nil)
+
+	err := etcd.Put(ctx, cli, "key", "value")
+
+	if err != expectedErr {
 		t.Errorf("Unexpected error: %s", err)
 	}
 }

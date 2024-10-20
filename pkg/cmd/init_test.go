@@ -135,13 +135,11 @@ func TestReadConfigCommand(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("The code did not panic")
-		}
-	}()
+	err := cmd.ExecuteContext(ctx)
 
-	_ = cmd.ExecuteContext(ctx)
+	if err.Error() != "context deadline exceeded" {
+		t.Errorf("Unexpected error: %s", err)
+	}
 
 	cancel()
 }
