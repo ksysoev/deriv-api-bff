@@ -143,6 +143,9 @@ func topSortDFS(be []BackendConfig) ([]BackendConfig, error) {
 	return sorted, nil
 }
 
+// createDepGraph constructs a dependency graph from a slice of BackendConfig.
+// It takes a single parameter be which is a slice of BackendConfig.
+// It returns a map where the keys are response bodies and the values are slices of dependencies.
 func createDepGraph(be []BackendConfig) map[string][]string {
 	graph := make(map[string][]string)
 

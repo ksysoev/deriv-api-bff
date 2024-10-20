@@ -40,13 +40,18 @@ func New(cfg *Config) *Processor {
 	}
 }
 
+// Name returns the name of the Processor as a string.
+// It does not take any parameters.
+// It returns a string which is the response body of the Processor.
 func (p *Processor) Name() string {
 	return p.responseBody
 }
 
-// Render generates and writes the output of a template to the provided writer.
-// It takes a writer w of type io.Writer, a request ID reqID of type int64, and a map of parameters params of type map[string]any.
+// Render generates and writes the rendered template to the provided writer.
+// It takes a writer w of type io.Writer, a request ID reqID of type int64,
+// and two maps params and deps of type map[string]any.
 // It returns an error if the template execution fails.
+// If deps or params are nil, they are initialized as empty maps before template execution.
 func (p *Processor) Render(w io.Writer, reqID int64, params, deps map[string]any) error {
 	if deps == nil {
 		deps = make(map[string]any)
@@ -65,10 +70,13 @@ func (p *Processor) Render(w io.Writer, reqID int64, params, deps map[string]any
 	return p.tmpl.Execute(w, data)
 }
 
-// Parse processes the input data and extracts allowed fields into a map.
+// Parse processes the input data and filters the response based on allowed keys.
 // It takes data of type []byte.
-// It returns a map[string]any containing the allowed fields and an error if parsing fails.
-// It returns an error if the input data cannot be parsed or if the response body does not contain expected keys.
+// It returns three values: resp which is a map[string]any containing the parsed response,
+// filetered which is a map[string]any containing the filtered response based on allowed keys,
+// and an error if the parsing fails.
+// It returns an error if the input data cannot be parsed.
+// Edge case: If the response does not contain an expected key, a warning is logged and the key is skipped.
 func (p *Processor) Parse(data []byte) (resp, filetered map[string]any, err error) {
 	resp, err = p.parse(data)
 	if err != nil {

@@ -149,10 +149,10 @@ func (c *Composer) Compose() (map[string]any, error) {
 	return nil, c.err
 }
 
-// setError sets the error for the Composer instance if it is not already set.
-// It takes one parameter: err of type error.
+// setError sets an error for the Composer if one has not already been set.
+// It takes a name of type string and an err of type error.
 // It does not return any values.
-// If the Composer instance already has an error set, it does nothing.
+// If an error is already set, it does nothing. It also marks the request as done by name.
 func (c *Composer) setError(name string, err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -166,6 +166,10 @@ func (c *Composer) setError(name string, err error) {
 	c.doneRequest(name)
 }
 
+// addRequest adds a new request channel to the Composer if it does not already exist.
+// It takes a name of type string which identifies the request.
+// It returns a receive-only channel of type struct{}.
+// If a request with the given name already exists, it returns the existing channel.
 func (c *Composer) addRequest(name string) <-chan struct{} {
 	if _, ok := c.req[name]; ok {
 		return c.req[name]
@@ -176,6 +180,10 @@ func (c *Composer) addRequest(name string) <-chan struct{} {
 	return c.req[name]
 }
 
+// doneRequest marks a request as done by closing its associated channel.
+// It takes a single parameter name of type string, which is the name of the request.
+// If the request name already exists in the map, it closes the existing channel.
+// If the request name does not exist, it creates a new channel, closes it, and stores it in the map.
 func (c *Composer) doneRequest(name string) {
 	if ch, ok := c.req[name]; ok {
 		close(ch)
