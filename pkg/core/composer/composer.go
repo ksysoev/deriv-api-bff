@@ -76,6 +76,7 @@ func (c *Composer) ComposeDependencies(ctx context.Context, dependsOn []string) 
 
 	for _, name := range dependsOn {
 		wg.Add(1)
+
 		done := c.addRequest(name)
 
 		go func() {

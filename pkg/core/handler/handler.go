@@ -96,6 +96,7 @@ func (h *Handler) requests(ctx context.Context, params map[string]any, watcher c
 			depsOn := proc.DependsOn()
 
 			depResuls := make(map[string]any)
+
 			if len(depsOn) > 0 {
 				var err error
 				if depResuls, err = comp.ComposeDependencies(ctx, depsOn); err != nil {

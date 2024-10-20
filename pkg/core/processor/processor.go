@@ -54,8 +54,7 @@ func (p *Processor) DependsOn() []string {
 // Render generates and writes the output of a template to the provided writer.
 // It takes a writer w of type io.Writer, a request ID reqID of type int64, and a map of parameters params of type map[string]any.
 // It returns an error if the template execution fails.
-func (p *Processor) Render(w io.Writer, reqID int64, params map[string]any, deps map[string]any) error {
-
+func (p *Processor) Render(w io.Writer, reqID int64, params, deps map[string]any) error {
 	if deps == nil {
 		deps = make(map[string]any)
 	}
