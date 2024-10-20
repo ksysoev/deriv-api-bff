@@ -130,7 +130,11 @@ func (c *Composer) composeDependencies(ctx context.Context, name string) (map[st
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	return c.rawResps, c.err
+	if c.err != nil {
+		return nil, c.err
+	}
+
+	return c.rawResps, nil
 }
 
 // Compose waits for all requests to finish and then returns the composed result.
