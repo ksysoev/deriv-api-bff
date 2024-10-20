@@ -37,11 +37,11 @@ func TestProcessor_Render(t *testing.T) {
 	}
 
 	tests := []struct {
-		name     string
 		params   map[string]any
 		deps     map[string]any
-		reqID    int64
+		name     string
 		expected string
+		reqID    int64
 	}{
 		{
 			name:     "with params and deps",
