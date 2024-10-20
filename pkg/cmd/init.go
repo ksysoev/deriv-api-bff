@@ -38,9 +38,9 @@ func InitCommands(build, version string) (*cobra.Command, error) {
 	configCmd.AddCommand(ReadConfigCommand(args))
 	cmd.AddCommand(configCmd)
 
-	cmd.PersistentFlags().StringVar(&args.configPath, "config", "./runtime/config.yaml", "config file path")
-	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", "info", "log level (debug, info, warn, error)")
-	cmd.PersistentFlags().BoolVar(&args.textFormat, "log-text", false, "log in text format, otherwise JSON")
+	cmd.PersistentFlags().StringVar(&args.ConfigPath, "config", "./runtime/config.yaml", "config file path")
+	cmd.PersistentFlags().StringVar(&args.LogLevel, "loglevel", "info", "log level (debug, info, warn, error)")
+	cmd.PersistentFlags().BoolVar(&args.TextFormat, "logtext", false, "log in text format, otherwise JSON")
 
 	if err := viper.BindPFlags(cmd.PersistentFlags()); err != nil {
 		return nil, fmt.Errorf("failed to parse env args: %w", err)
@@ -112,7 +112,7 @@ func ReadConfigCommand(arg *args) *cobra.Command {
 
 			slog.Info("Trying to load config...", slog.String("version", arg.version), slog.String("build", arg.build))
 
-			cfg, err := initConfig(arg.configPath)
+			cfg, err := initConfig(arg.ConfigPath)
 
 			if err != nil {
 				return err
@@ -120,7 +120,7 @@ func ReadConfigCommand(arg *args) *cobra.Command {
 
 			etcd := repo.NewEtcdHandler(cfg.Etcd)
 
-			return putCallConfigToEtcd(cmd.Context(), etcd, arg.configPath)
+			return putCallConfigToEtcd(cmd.Context(), etcd, arg.ConfigPath)
 		},
 	}
 }

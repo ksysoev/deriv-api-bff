@@ -95,9 +95,9 @@ func TestConfigCommand(t *testing.T) {
 	arg := &args{
 		build:      "test-build",
 		version:    "test-version",
-		configPath: configPath,
-		logLevel:   "debug",
-		textFormat: true,
+		ConfigPath: configPath,
+		LogLevel:   "debug",
+		TextFormat: true,
 	}
 
 	cmd := ConfigCommand(arg)
@@ -121,9 +121,9 @@ func TestReadConfigCommand(t *testing.T) {
 	arg := &args{
 		build:      "test-build",
 		version:    "test-version",
-		configPath: configPath,
-		logLevel:   "debug",
-		textFormat: true,
+		ConfigPath: configPath,
+		LogLevel:   "debug",
+		TextFormat: true,
 	}
 
 	cmd := ReadConfigCommand(arg)
