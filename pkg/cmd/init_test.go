@@ -34,6 +34,10 @@ func TestInitCommands(t *testing.T) {
 	subCommands := cmd.Commands()
 	assert.Equal(t, 2, len(subCommands))
 	assert.ElementsMatchf(t, []string{"server", "config"}, mapToNames(subCommands), "commands should match")
+
+	configCommands := findByName(subCommands, "config").Commands()
+	assert.Equal(t, 1, len(configCommands))
+	assert.Equal(t, "upload", configCommands[0].Use)
 }
 
 func mapToNames(commands []*cobra.Command) []string {
@@ -44,6 +48,16 @@ func mapToNames(commands []*cobra.Command) []string {
 	}
 
 	return result
+}
+
+func findByName(commands []*cobra.Command, name string) *cobra.Command {
+	for _, cmd := range commands {
+		if cmd.Use == name {
+			return cmd
+		}
+	}
+
+	return nil
 }
 
 func TestServerCommand(t *testing.T) {
@@ -70,4 +84,49 @@ func TestServerCommand(t *testing.T) {
 	err := cmd.ExecuteContext(ctx)
 
 	assert.NoError(t, err)
+}
+
+func TestConfigCommand(t *testing.T) {
+	configPath := createTempConfigFile(t, validConfig)
+
+	arg := &args{
+		build:      "test-build",
+		version:    "test-version",
+		configPath: configPath,
+		logLevel:   "debug",
+		textFormat: true,
+	}
+
+	cmd := ConfigCommand(arg)
+
+	assert.NotNil(t, cmd)
+	assert.Equal(t, "config", cmd.Use)
+	assert.Equal(t, "Config related commands for Deriv API BFF", cmd.Short)
+	assert.Equal(t, "Use this command to invoke various config related operations. Use --help for help", cmd.Long)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := cmd.ExecuteContext(ctx)
+
+	assert.NoError(t, err)
+}
+
+func TestReadConfigCommand(t *testing.T) {
+	configPath := createTempConfigFile(t, validConfig)
+
+	arg := &args{
+		build:      "test-build",
+		version:    "test-version",
+		configPath: configPath,
+		logLevel:   "debug",
+		textFormat: true,
+	}
+
+	cmd := ReadConfigCommand(arg)
+
+	assert.NotNil(t, cmd)
+	assert.Equal(t, "upload", cmd.Use)
+	assert.Equal(t, "Read config and push call config to etcd", cmd.Short)
+	assert.Equal(t, "Read config and push call config to etcd for hot reloads. Also sets up a watcher for the config", cmd.Long)
 }

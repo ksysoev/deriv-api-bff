@@ -31,7 +31,6 @@ api:
               "req_id": {{ .ReqID }}
             }
 etcd:
-  servers: 
-    - "localhost:2379"
+  servers: ["localhost:2379"]
   dialTimeoutSeconds: 5
       

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/repo"
 	"github.com/spf13/cobra"
 )
 
@@ -100,7 +101,15 @@ func ReadConfigCommand(arg *args) *cobra.Command {
 
 			slog.Info("Trying to load config...", slog.String("version", arg.version), slog.String("build", arg.build))
 
-			return putCallConfigToEtcd(cmd.Context(), arg.configPath)
+			cfg, err := initConfig(arg.configPath)
+
+			if err != nil {
+				return err
+			}
+
+			etcd := repo.NewEtcdHandler(cfg.Etcd)
+
+			return putCallConfigToEtcd(cmd.Context(), *etcd, arg.configPath)
 		},
 	}
 }

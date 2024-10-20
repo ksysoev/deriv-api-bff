@@ -11,22 +11,10 @@ import (
 
 type Etcd interface {
 	Put(ctx context.Context, key string, value string) error
-
-	// TODO: implement watcher
-	Watch(ctx context.Context, key string)
 }
 
 type EtcdHandler struct {
 	conf *clientv3.Config
-}
-
-func NewEtcdHandler(etcdConfig EtcdConfig) *EtcdHandler {
-	return &EtcdHandler{
-		conf: &clientv3.Config{
-			Endpoints:   etcdConfig.Servers,
-			DialTimeout: time.Duration(etcdConfig.dialTimeoutSeconds),
-		},
-	}
 }
 
 func (etcdHandler *EtcdHandler) Put(ctx context.Context, key, value string) error {
@@ -50,4 +38,13 @@ func (etcdHandler *EtcdHandler) Put(ctx context.Context, key, value string) erro
 	}
 
 	return nil
+}
+
+func NewEtcdHandler(etcdConfig EtcdConfig) *Etcd {
+	return &EtcdHandler{
+		conf: &clientv3.Config{
+			Endpoints:   etcdConfig.Servers,
+			DialTimeout: time.Duration(etcdConfig.DialTimeoutSeconds * int(time.Second)),
+		},
+	}
 }

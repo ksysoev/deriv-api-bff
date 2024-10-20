@@ -48,7 +48,7 @@ func initConfig(configPath string) (*config, error) {
 // The function also accepts etcd settings like host and dial timeout.
 // The function will return the Etcd key it had used to put the CallConfig
 // The function may return empty key and an error in case of any errors.
-func putCallConfigToEtcd(ctx context.Context, configPath string) error {
+func putCallConfigToEtcd(ctx context.Context, etcdHandler repo.Etcd, configPath string) error {
 	cfg, err := initConfig(configPath)
 
 	if err != nil {
@@ -63,9 +63,7 @@ func putCallConfigToEtcd(ctx context.Context, configPath string) error {
 		return err
 	}
 
-	etcd := repo.NewEtcdHandler(cfg.Etcd)
-
-	err = etcd.Put(ctx, "CallConfig", string(callConfigJSON))
+	err = etcdHandler.Put(ctx, "CallConfig", string(callConfigJSON))
 
 	if err != nil {
 		return err

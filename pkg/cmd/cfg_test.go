@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"context"
+	"errors"
 	"os"
 	"testing"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/repo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,6 +16,10 @@ server:
 deriv:
   endpoint: "wss://localhost/"
 api:
+  calls:
+etcd:
+  dialTimeoutSeconds: 5
+  servers: ["host1:port1", "host2:port2"]
 `
 
 func createTempConfigFile(t *testing.T, content string) string {
@@ -39,6 +46,8 @@ func TestInitConfig_Valid(t *testing.T) {
 	assert.NotNil(t, cfg)
 	assert.Equal(t, ":0", cfg.Server.Listen)
 	assert.Equal(t, "wss://localhost/", cfg.Deriv.Endpoint)
+	assert.Equal(t, 5, cfg.Etcd.DialTimeoutSeconds)
+	assert.ElementsMatch(t, []string{"host1:port1", "host2:port2"}, cfg.Etcd.Servers)
 }
 
 func TestInitConfig_InvalidContent(t *testing.T) {
@@ -56,4 +65,33 @@ func TestInitConfig_Missing(t *testing.T) {
 	cfg, err := initConfig(configPath)
 	assert.Error(t, err)
 	assert.Nil(t, cfg)
+}
+
+func TestPutCallConfig_Success(t *testing.T) {
+	configPath := createTempConfigFile(t, validConfig)
+	mockEtcd := repo.NewMockEtcd(t)
+	ctx := context.Background()
+
+	mockEtcd.EXPECT().Put(ctx, "CallConfig", "null").Return(nil)
+
+	err := putCallConfigToEtcd(ctx, mockEtcd, configPath)
+
+	if err != nil {
+		t.Errorf("Unexpected erro: %s", err)
+	}
+}
+
+func TestPutCallConfig_Fail_OnPut(t *testing.T) {
+	configPath := createTempConfigFile(t, validConfig)
+	mockEtcd := repo.NewMockEtcd(t)
+	ctx := context.Background()
+	expectedErr := errors.New("test error")
+
+	mockEtcd.EXPECT().Put(ctx, "CallConfig", "null").Return(expectedErr)
+
+	err := putCallConfigToEtcd(ctx, mockEtcd, configPath)
+
+	if err != expectedErr {
+		t.Errorf("Unexpected erro: %s", err)
+	}
 }

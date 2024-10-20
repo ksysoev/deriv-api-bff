@@ -16,8 +16,8 @@ type CallsConfig struct {
 }
 
 type EtcdConfig struct {
-	Servers            []string `mapstructure:"server"`
-	dialTimeoutSeconds int      `mapstructure:"dialTimeoutSeconds"`
+	Servers            []string `mapstructure:"servers"`
+	DialTimeoutSeconds int      `mapstructure:"dialTimeoutSeconds"`
 }
 
 type CallConfig struct {
