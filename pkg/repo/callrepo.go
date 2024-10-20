@@ -93,13 +93,9 @@ func (r *CallsRepository) GetCall(method string) core.Handler {
 // It returns an error if a circular dependency is detected among the BackendConfig elements.
 // Each BackendConfig element must have a unique ResponseBody and a list of dependencies specified in DependsOn.
 func topSortDFS(be []BackendConfig) ([]BackendConfig, error) {
-	graph := make(map[string][]string)
+	graph := createDepGraph(be)
 	visited := make(map[string]bool)
 	recStack := make(map[string]bool)
-
-	for _, b := range be {
-		graph[b.ResponseBody] = b.DependsOn
-	}
 
 	var sorted []BackendConfig
 

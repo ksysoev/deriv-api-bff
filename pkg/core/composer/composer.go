@@ -21,9 +21,10 @@ type Composer struct {
 	mu       sync.Mutex
 }
 
-// NewComposer creates and returns a new instance of Composer.
-// It initializes the Composer with an empty response map.
-// It returns a pointer to the newly created Composer instance.
+// New creates and returns a new instance of Composer.
+// It takes depGraph of type map[string][]string which represents the dependency graph,
+// and waiter of type core.Waiter which is used to manage synchronization.
+// It returns a pointer to a Composer struct initialized with the provided depGraph and waiter.
 func New(depGraph map[string][]string, waiter core.Waiter) *Composer {
 	return &Composer{
 		depGraph: depGraph,
@@ -34,9 +35,10 @@ func New(depGraph map[string][]string, waiter core.Waiter) *Composer {
 	}
 }
 
-// Wait listens for a response on the provided channel and processes it using the given parser.
-// It takes a context (ctx) of type context.Context, a parser of type handler.Parser, and a response channel (respChan) of type <-chan []byte.
-// It does not return any values but may set an error on the Composer if the context is done or if parsing the response fails.
+// Prepare initializes and prepares a request by composing dependencies and parsing the response.
+// It takes a context.Context, a string name, and a handler.Parser.
+// It returns an int64 request ID, a map of dependency results, and an error if the dependencies cannot be composed or the response cannot be parsed.
+// It returns an error if the dependencies cannot be composed or the response cannot be parsed.
 func (c *Composer) Prepare(ctx context.Context, name string, parser handler.Parser) (reqID int64, depsResults map[string]any, err error) {
 	c.wg.Add(1)
 
@@ -80,6 +82,12 @@ func (c *Composer) Prepare(ctx context.Context, name string, parser handler.Pars
 	return reqID, depsResults, nil
 }
 
+// composeDependencies composes the dependencies for a given name by executing
+// the required dependency functions concurrently and collecting their results.
+// It takes a context.Context and a string name as parameters.
+// It returns a map[string]any containing the results of the dependencies and an error if any dependency fails.
+// It returns an error if any of the dependencies encounter an error during execution.
+// The function locks the mutex to ensure thread safety and uses a wait group to wait for all goroutines to complete.
 func (c *Composer) composeDependencies(ctx context.Context, name string) (map[string]any, error) {
 	dependsOn := c.depGraph[name]
 
