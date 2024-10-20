@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"context"
+	"os"
 	"testing"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,11 +25,11 @@ func TestInitCommands(t *testing.T) {
 	assert.NotNil(t, configFlag)
 	assert.Equal(t, "./runtime/config.yaml", configFlag.DefValue)
 
-	logLevelFlag := cmd.PersistentFlags().Lookup("log-level")
+	logLevelFlag := cmd.PersistentFlags().Lookup("loglevel")
 	assert.NotNil(t, logLevelFlag)
 	assert.Equal(t, "info", logLevelFlag.DefValue)
 
-	logTextFlag := cmd.PersistentFlags().Lookup("log-text")
+	logTextFlag := cmd.PersistentFlags().Lookup("logtext")
 	assert.NotNil(t, logTextFlag)
 	assert.Equal(t, "false", logTextFlag.DefValue)
 
@@ -60,4 +62,47 @@ func TestServerCommand(t *testing.T) {
 	err := cmd.ExecuteContext(ctx)
 
 	assert.NoError(t, err)
+}
+
+func TestInitCommands_BindPFlags(t *testing.T) {
+	build := "test-build"
+	version := "test-version"
+
+	cmd, err := InitCommands(build, version)
+	assert.NoError(t, err)
+
+	assert.NotNil(t, cmd)
+
+	// Check if flags are bound correctly
+	assert.Equal(t, "info", viper.GetString("LOGLEVEL"))
+	assert.Equal(t, false, viper.GetBool("LOGTEXT"))
+	assert.Equal(t, "./runtime/config.yaml", viper.GetString("CONFIG"))
+}
+
+func TestInitCommands_UnmarshalArgs(t *testing.T) {
+	build := "test-build"
+	version := "test-version"
+
+	cmd, err := InitCommands(build, version)
+	assert.NoError(t, err)
+
+	assert.NotNil(t, cmd)
+
+	args := &args{}
+	err = viper.Unmarshal(args)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "info", args.LogLevel)
+	assert.Equal(t, false, args.TextFormat)
+	assert.Equal(t, "./runtime/config.yaml", args.ConfigPath)
+}
+
+func TestInitCommands_InvalidLogText(t *testing.T) {
+	build := "test-build"
+	version := "test-version"
+
+	os.Setenv("LOGTEXT", "invalid")
+
+	_, err := InitCommands(build, version)
+	assert.Error(t, err)
 }

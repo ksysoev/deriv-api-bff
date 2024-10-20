@@ -11,9 +11,9 @@ import (
 type args struct {
 	build      string
 	version    string
-	LogLevel   string `mapstructure:"LOG_LEVEL"`
-	ConfigPath string `mapstructure:"CONFIG"`
-	TextFormat bool   `mapstructure:"LOG_TEXT"`
+	LogLevel   string `mapstructure:"loglevel"`
+	ConfigPath string `mapstructure:"config"`
+	TextFormat bool   `mapstructure:"logtext"`
 }
 
 // InitCommands initializes and returns the root command for the Backend for Frontend (BFF) service.
@@ -34,19 +34,11 @@ func InitCommands(build, version string) (*cobra.Command, error) {
 	cmd.AddCommand(ServerCommand(args))
 
 	cmd.PersistentFlags().StringVar(&args.ConfigPath, "config", "./runtime/config.yaml", "config file path")
-	cmd.PersistentFlags().StringVar(&args.LogLevel, "log-level", "info", "log level (debug, info, warn, error)")
-	cmd.PersistentFlags().BoolVar(&args.TextFormat, "log-text", false, "log in text format, otherwise JSON")
+	cmd.PersistentFlags().StringVar(&args.LogLevel, "loglevel", "info", "log level (debug, info, warn, error)")
+	cmd.PersistentFlags().BoolVar(&args.TextFormat, "logtext", false, "log in text format, otherwise JSON")
 
-	if err := viper.BindPFlag("LOG_LEVEL", cmd.PersistentFlags().Lookup("log-level")); err != nil {
-		return nil, fmt.Errorf("failed to bind log level flag: %w", err)
-	}
-
-	if err := viper.BindPFlag("LOG_TEXT", cmd.PersistentFlags().Lookup("log-text")); err != nil {
-		return nil, fmt.Errorf("failed to bind log text flag: %w", err)
-	}
-
-	if err := viper.BindPFlag("CONFIG", cmd.PersistentFlags().Lookup("config")); err != nil {
-		return nil, fmt.Errorf("failed to bind config flag: %w", err)
+	if err := viper.BindPFlags(cmd.PersistentFlags()); err != nil {
+		return nil, fmt.Errorf("failed to parse env args: %w", err)
 	}
 
 	viper.AutomaticEnv()
