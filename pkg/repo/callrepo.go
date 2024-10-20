@@ -71,8 +71,8 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 			}))
 		}
 
-		factory := func() handler.WaitComposer {
-			return composer.New(graph)
+		factory := func(waiter core.Waiter) handler.WaitComposer {
+			return composer.New(graph, waiter)
 		}
 
 		r.calls[call.Method] = handler.New(valid, procs, factory)

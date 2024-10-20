@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"sync"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handler"
 )
 
@@ -15,6 +16,7 @@ type Composer struct {
 	rawResps map[string]any
 	req      map[string]chan struct{}
 	resp     map[string]any
+	waiter   core.Waiter
 	wg       sync.WaitGroup
 	mu       sync.Mutex
 }
@@ -22,9 +24,10 @@ type Composer struct {
 // NewComposer creates and returns a new instance of Composer.
 // It initializes the Composer with an empty response map.
 // It returns a pointer to the newly created Composer instance.
-func New(depGraph map[string][]string) *Composer {
+func New(depGraph map[string][]string, waiter core.Waiter) *Composer {
 	return &Composer{
 		depGraph: depGraph,
+		waiter:   waiter,
 		resp:     make(map[string]any),
 		req:      make(map[string]chan struct{}),
 		rawResps: make(map[string]any),
@@ -34,8 +37,15 @@ func New(depGraph map[string][]string) *Composer {
 // Wait listens for a response on the provided channel and processes it using the given parser.
 // It takes a context (ctx) of type context.Context, a parser of type handler.Parser, and a response channel (respChan) of type <-chan []byte.
 // It does not return any values but may set an error on the Composer if the context is done or if parsing the response fails.
-func (c *Composer) Wait(ctx context.Context, name string, parser handler.Parser, respChan <-chan []byte) {
+func (c *Composer) Prepare(ctx context.Context, name string, parser handler.Parser) (reqID int64, depsResults map[string]any, err error) {
 	c.wg.Add(1)
+
+	depsResults, err = c.composeDependencies(ctx, name)
+	if err != nil {
+		return 0, nil, fmt.Errorf("failed to compose dependencies: %w", err)
+	}
+
+	reqID, respChan := c.waiter()
 
 	go func() {
 		defer c.wg.Done()
@@ -66,9 +76,11 @@ func (c *Composer) Wait(ctx context.Context, name string, parser handler.Parser,
 			c.doneRequest(name)
 		}
 	}()
+
+	return reqID, depsResults, nil
 }
 
-func (c *Composer) ComposeDependencies(ctx context.Context, name string) (map[string]any, error) {
+func (c *Composer) composeDependencies(ctx context.Context, name string) (map[string]any, error) {
 	dependsOn := c.depGraph[name]
 
 	if len(dependsOn) == 0 {

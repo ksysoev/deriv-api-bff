@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -11,7 +12,7 @@ import (
 func TestNew(t *testing.T) {
 	validator := NewMockValidator(t)
 	processors := []RenderParser{NewMockRenderParser(t)}
-	compFactory := func() WaitComposer {
+	compFactory := func(core.Waiter) WaitComposer {
 		return NewMockWaitComposer(t)
 	}
 
@@ -36,10 +37,9 @@ func TestHandle_Success(t *testing.T) {
 
 	waitComposer := NewMockWaitComposer(t)
 	waitComposer.EXPECT().Compose().Return(expectedParams, nil)
-	waitComposer.EXPECT().Wait(mock.Anything, expectedCallName, mock.Anything, mock.Anything)
-	waitComposer.EXPECT().ComposeDependencies(mock.Anything, expectedCallName).Return(make(map[string]any), nil)
+	waitComposer.EXPECT().Prepare(mock.Anything, expectedCallName, mock.Anything).Return(1, make(map[string]any), nil)
 
-	handler := New(validator, []RenderParser{renderParser}, func() WaitComposer {
+	handler := New(validator, []RenderParser{renderParser}, func(core.Waiter) WaitComposer {
 		return waitComposer
 	})
 
@@ -69,7 +69,7 @@ func TestHandle_ValidationError(t *testing.T) {
 	renderParser := NewMockRenderParser(t)
 	waitComposer := NewMockWaitComposer(t)
 
-	handler := New(validator, []RenderParser{renderParser}, func() WaitComposer {
+	handler := New(validator, []RenderParser{renderParser}, func(core.Waiter) WaitComposer {
 		return waitComposer
 	})
 
@@ -102,10 +102,9 @@ func TestHandle_SendError(t *testing.T) {
 	renderParser.EXPECT().Name().Return(expectedCallName)
 
 	waitComposer := NewMockWaitComposer(t)
-	waitComposer.EXPECT().Wait(mock.Anything, expectedCallName, mock.Anything, mock.Anything)
-	waitComposer.EXPECT().ComposeDependencies(mock.Anything, expectedCallName).Return(make(map[string]any), nil)
+	waitComposer.EXPECT().Prepare(mock.Anything, expectedCallName, mock.Anything).Return(1, make(map[string]any), nil)
 
-	handler := New(validator, []RenderParser{renderParser, renderParser}, func() WaitComposer {
+	handler := New(validator, []RenderParser{renderParser, renderParser}, func(core.Waiter) WaitComposer {
 		return waitComposer
 	})
 
@@ -139,7 +138,7 @@ func TestHandle_CancelledContext(t *testing.T) {
 	waitComposer := NewMockWaitComposer(t)
 	waitComposer.EXPECT().Compose().Return(nil, ctx.Err())
 
-	handler := New(validator, []RenderParser{renderParser}, func() WaitComposer {
+	handler := New(validator, []RenderParser{renderParser}, func(core.Waiter) WaitComposer {
 		return waitComposer
 	})
 

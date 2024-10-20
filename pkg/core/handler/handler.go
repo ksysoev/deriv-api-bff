@@ -23,29 +23,26 @@ type RenderParser interface {
 }
 
 type WaitComposer interface {
-	Wait(ctx context.Context, name string, parser Parser, respChan <-chan []byte)
-	ComposeDependencies(ctx context.Context, name string) (map[string]any, error)
+	Prepare(context.Context, string, Parser) (int64, map[string]any, error)
 	Compose() (map[string]any, error)
 }
 
 type Handler struct {
 	validator   Validator
-	newComposer func() WaitComposer
+	newComposer func(core.Waiter) WaitComposer
 	processors  []RenderParser
 }
 
 type request struct {
-	name     string
-	respChan <-chan []byte
-	parser   func([]byte) (map[string]any, map[string]any, error)
-	data     []byte
-	id       int64
+	parser func([]byte) (map[string]any, map[string]any, error)
+	data   []byte
+	id     int64
 }
 
 // New creates a new instance of Handler with the provided validator, processors, and composer factory function.
 // It takes three parameters: val of type Validator, proc which is a slice of RenderParser, and composeFactory which is a function returning a WaitComposer.
 // It returns a pointer to a Handler initialized with the provided parameters.
-func New(val Validator, proc []RenderParser, composeFactory func() WaitComposer) *Handler {
+func New(val Validator, proc []RenderParser, composeFactory func(core.Waiter) WaitComposer) *Handler {
 	return &Handler{
 		validator:   val,
 		processors:  proc,
@@ -57,7 +54,7 @@ func New(val Validator, proc []RenderParser, composeFactory func() WaitComposer)
 // It takes ctx of type context.Context, params of type map[string]any, watcher of type core.Waiter, and send of type core.Sender.
 // It returns a map[string]any containing the composed response and an error if any occurs during validation or sending requests.
 // It returns an error if the validation of params fails or if sending a request fails.
-func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher core.Waiter, send core.Sender) (map[string]any, error) {
+func (h *Handler) Handle(ctx context.Context, params map[string]any, waiter core.Waiter, send core.Sender) (map[string]any, error) {
 	if err := h.validator.Validate(params); err != nil {
 		return nil, err
 	}
@@ -65,11 +62,9 @@ func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher cor
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	comp := h.newComposer()
+	comp := h.newComposer(waiter)
 
-	for req := range h.requests(ctx, params, watcher, comp) {
-		comp.Wait(ctx, req.name, req.parser, req.respChan)
-
+	for req := range h.requests(ctx, params, comp) {
 		if err := send(ctx, req.data); err != nil {
 			return nil, fmt.Errorf("failed to send request: %w", err)
 		}
@@ -83,7 +78,7 @@ func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher cor
 // It returns an iterator function that yields requests of type request.
 // It panics if there is an error in rendering the processor template.
 // Special behavior includes checking for context cancellation and resetting the buffer for each processor.
-func (h *Handler) requests(ctx context.Context, params map[string]any, watcher core.Waiter, comp WaitComposer) iter.Seq[request] {
+func (h *Handler) requests(ctx context.Context, params map[string]any, comp WaitComposer) iter.Seq[request] {
 	var buf bytes.Buffer
 
 	return func(yield func(request) bool) {
@@ -92,12 +87,10 @@ func (h *Handler) requests(ctx context.Context, params map[string]any, watcher c
 				return
 			}
 
-			depResuls, err := comp.ComposeDependencies(ctx, proc.Name())
+			reqID, depResuls, err := comp.Prepare(ctx, proc.Name(), proc.Parse)
 			if err != nil {
 				return
 			}
-
-			reqID, respChan := watcher()
 
 			// TODO: check for race conditions here that iterator blocks until the previous request is sent
 			buf.Reset()
@@ -108,11 +101,9 @@ func (h *Handler) requests(ctx context.Context, params map[string]any, watcher c
 			}
 
 			request := request{
-				name:     proc.Name(),
-				id:       reqID,
-				respChan: respChan,
-				parser:   proc.Parse,
-				data:     buf.Bytes(),
+				id:     reqID,
+				parser: proc.Parse,
+				data:   buf.Bytes(),
 			}
 
 			if !yield(request) {

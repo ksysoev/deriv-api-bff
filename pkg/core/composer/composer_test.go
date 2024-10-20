@@ -10,7 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func makeParser() func([]byte) (map[string]any, map[string]any, error) {
+func makeParser(t *testing.T) func([]byte) (map[string]any, map[string]any, error) {
+	t.Helper()
+
 	return func(data []byte) (map[string]any, map[string]any, error) {
 		var res map[string]any
 
@@ -22,15 +24,26 @@ func makeParser() func([]byte) (map[string]any, map[string]any, error) {
 	}
 }
 
-func TestComposer_WaitResponse_Success(t *testing.T) {
-	composer := New(make(map[string][]string))
-	respChan := make(chan []byte, 1)
-	parser := makeParser()
+func makeWaiter(t *testing.T) (respChan chan []byte, waiter func() (int64, <-chan []byte)) {
+	t.Helper()
+
+	respChan = make(chan []byte, 1)
+
+	return respChan, func() (int64, <-chan []byte) {
+		return 1234, respChan
+	}
+}
+
+func TestComposer_Success(t *testing.T) {
+	respChan, waiter := makeWaiter(t)
+	composer := New(make(map[string][]string), waiter)
+	parser := makeParser(t)
 	ctx := context.Background()
 
 	respChan <- []byte(`{"Params":"param1,param2","ReqID":1234}`)
 
-	composer.Wait(ctx, "test", parser, respChan)
+	_, _, err := composer.Prepare(ctx, "test", parser)
+	assert.NoError(t, err)
 
 	resp, err := composer.Compose()
 
@@ -40,16 +53,17 @@ func TestComposer_WaitResponse_Success(t *testing.T) {
 }
 
 func TestComposer_WaitResponse_ParseError(t *testing.T) {
-	composer := New(make(map[string][]string))
-	respChan := make(chan []byte, 1)
+	respChan, waiter := makeWaiter(t)
+	composer := New(make(map[string][]string), waiter)
 	respChan <- []byte("invalid json")
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	composer.Wait(ctx, "test", makeParser(), respChan)
+	_, _, err := composer.Prepare(ctx, "test", makeParser(t))
+	assert.NoError(t, err)
 
-	_, err := composer.Compose()
+	_, err = composer.Compose()
 
 	if !strings.HasPrefix(err.Error(), "fail to parse response: invalid character") {
 		t.Errorf("expected error: %s, got something else: %s", err.Error(), err)
@@ -57,13 +71,14 @@ func TestComposer_WaitResponse_ParseError(t *testing.T) {
 }
 
 func TestComposer_WaitResponse_ContextCancelled(t *testing.T) {
-	composer := New(make(map[string][]string))
-	respChan := make(chan []byte)
+	_, waiter := makeWaiter(t)
+	composer := New(make(map[string][]string), waiter)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	composer.Wait(ctx, "test", makeParser(), respChan)
+	_, _, err := composer.Prepare(ctx, "test", makeParser(t))
+	assert.NoError(t, err)
 
 	res, err := composer.Compose()
 	assert.Nil(t, res)
