@@ -53,6 +53,61 @@ func TestNewCallsRepository(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "circular dependency",
+			cfg: &CallsConfig{
+				Calls: []CallConfig{
+					{
+						Method: "testMethod",
+						Params: validator.Config{"param1": {Type: "string"}},
+						Backend: []BackendConfig{
+							{
+								FieldsMap:       map[string]string{"field1": "value1"},
+								ResponseBody:    "responseBody1",
+								RequestTemplate: "template1",
+								DependsOn:       []string{"responseBody2"},
+								Allow:           []string{"allow1"},
+							},
+							{
+								FieldsMap:       map[string]string{"field2": "value2"},
+								ResponseBody:    "responseBody2",
+								RequestTemplate: "template2",
+								DependsOn:       []string{"responseBody1"},
+								Allow:           []string{"allow2"},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "valid dependency",
+			cfg: &CallsConfig{
+				Calls: []CallConfig{
+					{
+						Method: "testMethod",
+						Params: validator.Config{"param1": {Type: "string"}},
+						Backend: []BackendConfig{
+							{
+								FieldsMap:       map[string]string{"field1": "value1"},
+								ResponseBody:    "responseBody1",
+								RequestTemplate: "template1",
+								DependsOn:       []string{"responseBody2"},
+								Allow:           []string{"allow1"},
+							},
+							{
+								FieldsMap:       map[string]string{"field2": "value2"},
+								ResponseBody:    "responseBody2",
+								RequestTemplate: "template2",
+								Allow:           []string{"allow2"},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -68,6 +123,7 @@ func TestNewCallsRepository(t *testing.T) {
 		})
 	}
 }
+
 func TestGetCall(t *testing.T) {
 	repo, err := NewCallsRepository(&CallsConfig{
 		Calls: []CallConfig{
