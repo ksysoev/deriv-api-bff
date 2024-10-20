@@ -31,24 +31,68 @@ func TestNew(t *testing.T) {
 }
 
 func TestProcessor_Render(t *testing.T) {
-	tmpl, err := template.New("test").Parse("Params: {{.Params}}, ReqID: {{.ReqID}}")
+	tmpl, err := template.New("test").Parse("Params: {{.Params}}, ReqID: {{.ReqID}}, Resp: {{.Resp}}")
 	if err != nil {
 		t.Fatalf("failed to parse template: %v", err)
 	}
 
-	rp := &Processor{
-		tmpl: tmpl,
+	tests := []struct {
+		name     string
+		params   map[string]any
+		deps     map[string]any
+		reqID    int64
+		expected string
+	}{
+		{
+			name:     "with params and deps",
+			params:   map[string]any{"key1": "value1"},
+			deps:     map[string]any{"dep1": "value1"},
+			reqID:    12345,
+			expected: "Params: map[key1:value1], ReqID: 12345, Resp: map[dep1:value1]",
+		},
+		{
+			name:     "with nil params and deps",
+			params:   nil,
+			deps:     nil,
+			reqID:    12345,
+			expected: "Params: map[], ReqID: 12345, Resp: map[]",
+		},
+		{
+			name:     "with empty params and deps",
+			params:   map[string]any{},
+			deps:     map[string]any{},
+			reqID:    12345,
+			expected: "Params: map[], ReqID: 12345, Resp: map[]",
+		},
+		{
+			name:     "with only params",
+			params:   map[string]any{"key1": "value1"},
+			deps:     nil,
+			reqID:    12345,
+			expected: "Params: map[key1:value1], ReqID: 12345, Resp: map[]",
+		},
+		{
+			name:     "with only deps",
+			params:   nil,
+			deps:     map[string]any{"dep1": "value1"},
+			reqID:    12345,
+			expected: "Params: map[], ReqID: 12345, Resp: map[dep1:value1]",
+		},
 	}
 
-	params := map[string]any{"key1": "value1", "key2": "value2"}
-	reqID := 12345
-	expected := "Params: map[key1:value1 key2:value2], ReqID: 12345"
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rp := &Processor{
+				tmpl: tmpl,
+			}
 
-	var buf bytes.Buffer
+			var buf bytes.Buffer
 
-	err = rp.Render(&buf, int64(reqID), params, nil)
-	assert.NoError(t, err)
-	assert.Equal(t, expected, buf.String())
+			err := rp.Render(&buf, tt.reqID, tt.params, tt.deps)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, buf.String())
+		})
+	}
 }
 
 func TestProcessor_parse_Success(t *testing.T) {
@@ -183,4 +227,33 @@ func TestProcessor_Parse_Error(t *testing.T) {
 
 	_, _, err := rp.Parse([]byte(jsonData))
 	assert.Error(t, err)
+}
+func TestProcessor_Name(t *testing.T) {
+	tests := []struct {
+		name         string
+		responseBody string
+		expected     string
+	}{
+		{
+			name:         "non-empty response body",
+			responseBody: "testResponse",
+			expected:     "testResponse",
+		},
+		{
+			name:         "empty response body",
+			responseBody: "",
+			expected:     "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rp := &Processor{
+				responseBody: tt.responseBody,
+			}
+
+			result := rp.Name()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }
