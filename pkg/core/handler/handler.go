@@ -10,39 +10,39 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 )
 
-type Parser func([]byte) (map[string]any, error)
+type Parser func([]byte) (map[string]any, map[string]any, error)
 
 type Validator interface {
 	Validate(data map[string]any) error
 }
 
 type RenderParser interface {
-	Render(w io.Writer, reqID int64, params map[string]any) error
-	Parse(data []byte) (map[string]any, error)
+	Name() string
+	Render(w io.Writer, reqID int64, params map[string]any, deps map[string]any) error
+	Parse(data []byte) (map[string]any, map[string]any, error)
 }
 
 type WaitComposer interface {
-	Wait(ctx context.Context, parser Parser, respChan <-chan []byte)
+	Prepare(context.Context, string, Parser) (int64, map[string]any, error)
 	Compose() (map[string]any, error)
 }
 
 type Handler struct {
 	validator   Validator
-	newComposer func() WaitComposer
+	newComposer func(core.Waiter) WaitComposer
 	processors  []RenderParser
 }
 
 type request struct {
-	respChan <-chan []byte
-	parser   func([]byte) (map[string]any, error)
-	data     []byte
-	id       int64
+	parser func([]byte) (map[string]any, map[string]any, error)
+	data   []byte
+	id     int64
 }
 
-// New creates a new instance of Handler with the provided validator, processors, and composer factory function.
-// It takes three parameters: val of type Validator, proc which is a slice of RenderParser, and composeFactory which is a function returning a WaitComposer.
-// It returns a pointer to a Handler initialized with the provided parameters.
-func New(val Validator, proc []RenderParser, composeFactory func() WaitComposer) *Handler {
+// New creates a new instance of Handler.
+// It takes three parameters: val of type Validator, proc which is a slice of RenderParser, and composeFactory which is a function that takes a core.Waiter and returns a WaitComposer.
+// It returns a pointer to a Handler.
+func New(val Validator, proc []RenderParser, composeFactory func(core.Waiter) WaitComposer) *Handler {
 	return &Handler{
 		validator:   val,
 		processors:  proc,
@@ -50,11 +50,11 @@ func New(val Validator, proc []RenderParser, composeFactory func() WaitComposer)
 	}
 }
 
-// Handle processes incoming requests, validates them, and sends them to the appropriate handler.
-// It takes ctx of type context.Context, params of type map[string]any, watcher of type core.Waiter, and send of type core.Sender.
-// It returns a map[string]any containing the composed response and an error if any occurs during validation or sending requests.
-// It returns an error if the validation of params fails or if sending a request fails.
-func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher core.Waiter, send core.Sender) (map[string]any, error) {
+// Handle processes incoming requests and sends them using the provided sender.
+// It takes a context.Context, a map of parameters, a core.Waiter, and a core.Sender.
+// It returns a map containing the composed results and an error if any occurs during validation or sending requests.
+// It returns an error if the validation of parameters fails or if sending a request fails.
+func (h *Handler) Handle(ctx context.Context, params map[string]any, waiter core.Waiter, send core.Sender) (map[string]any, error) {
 	if err := h.validator.Validate(params); err != nil {
 		return nil, err
 	}
@@ -62,11 +62,9 @@ func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher cor
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	comp := h.newComposer()
+	comp := h.newComposer(waiter)
 
-	for req := range h.requests(ctx, params, watcher) {
-		comp.Wait(ctx, req.parser, req.respChan)
-
+	for req := range h.requests(ctx, params, comp) {
 		if err := send(ctx, req.data); err != nil {
 			return nil, fmt.Errorf("failed to send request: %w", err)
 		}
@@ -75,12 +73,11 @@ func (h *Handler) Handle(ctx context.Context, params map[string]any, watcher cor
 	return comp.Compose()
 }
 
-// requests generates a sequence of requests based on the provided context, parameters, and watcher.
-// It takes ctx of type context.Context, params of type map[string]any, and watcher of type core.Waiter.
-// It returns an iterator function that yields requests of type request.
-// It panics if there is an error in rendering the processor template.
-// Special behavior includes checking for context cancellation and resetting the buffer for each processor.
-func (h *Handler) requests(ctx context.Context, params map[string]any, watcher core.Waiter) iter.Seq[request] {
+// requests generates a sequence of requests based on the provided processors.
+// It takes a context `ctx` for managing request lifecycle, a map `params` containing parameters for the requests, and a `comp` of type WaitComposer for preparing the requests.
+// It returns an iterator function that yields requests of type `request`.
+// The function handles context cancellation and prepares requests using the provided processors. It panics if template execution fails during request rendering.
+func (h *Handler) requests(ctx context.Context, params map[string]any, comp WaitComposer) iter.Seq[request] {
 	var buf bytes.Buffer
 
 	return func(yield func(request) bool) {
@@ -89,21 +86,23 @@ func (h *Handler) requests(ctx context.Context, params map[string]any, watcher c
 				return
 			}
 
-			reqID, respChan := watcher()
+			reqID, depResuls, err := comp.Prepare(ctx, proc.Name(), proc.Parse)
+			if err != nil {
+				return
+			}
 
 			// TODO: check for race conditions here that iterator blocks until the previous request is sent
 			buf.Reset()
 
-			if err := proc.Render(&buf, reqID, params); err != nil {
+			if err := proc.Render(&buf, reqID, params, depResuls); err != nil {
 				// TODO: add prevalidating template on startup to avoid this error in runtime
 				panic(fmt.Sprintf("template execution failed: %v", err))
 			}
 
 			request := request{
-				id:       reqID,
-				respChan: respChan,
-				parser:   proc.Parse,
-				data:     buf.Bytes(),
+				id:     reqID,
+				parser: proc.Parse,
+				data:   buf.Bytes(),
 			}
 
 			if !yield(request) {
