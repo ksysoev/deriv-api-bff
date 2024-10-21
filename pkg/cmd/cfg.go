@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -15,6 +17,7 @@ type config struct {
 	Server api.Config       `mapstructure:"server"`
 	Deriv  deriv.Config     `mapstructure:"deriv"`
 	API    repo.CallsConfig `mapstructure:"api"`
+	Etcd   repo.EtcdConfig  `mapstructure:"etcd"`
 }
 
 // initConfig initializes the configuration by reading from the specified config file.
@@ -39,4 +42,38 @@ func initConfig(configPath string) (*config, error) {
 	slog.Debug("Config loaded", slog.Any("config", cfg))
 
 	return cfg, nil
+}
+
+// putCallConfigToEtcd loads the calls config from a specific config file and pushes it to Etcd
+// The function also accepts etcd settings like host and dial timeout.
+// The function will return the Etcd key it had used to put the CallConfig
+// The function may return empty key and an error in case of any errors.
+func putCallConfigToEtcd(ctx context.Context, etcdHandler repo.Etcd, configPath string) error {
+	cfg, err := initConfig(configPath)
+
+	if err != nil {
+		return err
+	}
+
+	callConfig := cfg.API.Calls
+
+	callConfigJSON, err := json.Marshal(callConfig)
+
+	if err != nil {
+		return err
+	}
+
+	cli, err := etcdHandler.Client(cfg.Etcd)
+
+	if err != nil {
+		return err
+	}
+
+	err = etcdHandler.Put(ctx, cli, "CallConfig", string(callConfigJSON))
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

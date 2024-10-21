@@ -2,6 +2,9 @@ server:
   listen: ":8080"
 deriv:
   endpoint: "wss://ws.derivws.com/websockets/v3"
+etcd:
+  servers: ["localhost:2379"]
+  dialTimeoutSeconds: 5
 api:
   calls:
     - method: "aggregate"
