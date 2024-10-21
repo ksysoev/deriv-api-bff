@@ -98,23 +98,24 @@ func topSortDFS(be []BackendConfig) ([]BackendConfig, error) {
 	recStack := make(map[string]bool)
 	sorted := []BackendConfig{}
 
-	// Create a map for quick index lookup
 	indexMap := make(map[string]int)
 	for i, b := range be {
 		indexMap[b.ResponseBody] = i
 	}
 
 	var dfs func(string) error
+
 	dfs = func(v string) error {
 		if recStack[v] {
 			return fmt.Errorf("circular dependency detected at %s", v)
 		}
+
 		if visited[v] {
 			return nil
 		}
 
-		visited[v] = true
-		recStack[v] = true
+		visited[v], recStack[v] = true, true
+
 		defer func() { recStack[v] = false }() // Ensure recStack is reset
 
 		for _, u := range graph[v] {
@@ -124,30 +125,6 @@ func topSortDFS(be []BackendConfig) ([]BackendConfig, error) {
 		}
 
 		sorted = append(sorted, be[indexMap[v]])
-		return nil
-	}
-
-	for k := range graph {
-		if err := dfs(k); err != nil {
-			return nil, err
-		}
-	}
-
-	return sorted, nil
-}
-
-		var indx int
-
-		for i, b := range be {
-			if b.ResponseBody == v {
-				indx = i
-				break
-			}
-		}
-
-		recStack[v] = false
-
-		sorted = append(sorted, be[indx])
 
 		return nil
 	}
