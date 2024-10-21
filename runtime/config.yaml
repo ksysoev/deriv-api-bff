@@ -30,4 +30,7 @@ api:
               "website_status": 1,
               "req_id": {{ .ReqID }}
             }
+etcd:
+  servers: ["localhost:2379"]
+  dialTimeoutSeconds: 5
       
