@@ -23,8 +23,53 @@ func (_m *MockRenderParser) EXPECT() *MockRenderParser_Expecter {
 	return &MockRenderParser_Expecter{mock: &_m.Mock}
 }
 
+// Name provides a mock function with given fields:
+func (_m *MockRenderParser) Name() string {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Name")
+	}
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// MockRenderParser_Name_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Name'
+type MockRenderParser_Name_Call struct {
+	*mock.Call
+}
+
+// Name is a helper method to define mock.On call
+func (_e *MockRenderParser_Expecter) Name() *MockRenderParser_Name_Call {
+	return &MockRenderParser_Name_Call{Call: _e.mock.On("Name")}
+}
+
+func (_c *MockRenderParser_Name_Call) Run(run func()) *MockRenderParser_Name_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockRenderParser_Name_Call) Return(_a0 string) *MockRenderParser_Name_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockRenderParser_Name_Call) RunAndReturn(run func() string) *MockRenderParser_Name_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Parse provides a mock function with given fields: data
-func (_m *MockRenderParser) Parse(data []byte) (map[string]interface{}, error) {
+func (_m *MockRenderParser) Parse(data []byte) (map[string]interface{}, map[string]interface{}, error) {
 	ret := _m.Called(data)
 
 	if len(ret) == 0 {
@@ -32,8 +77,9 @@ func (_m *MockRenderParser) Parse(data []byte) (map[string]interface{}, error) {
 	}
 
 	var r0 map[string]interface{}
-	var r1 error
-	if rf, ok := ret.Get(0).(func([]byte) (map[string]interface{}, error)); ok {
+	var r1 map[string]interface{}
+	var r2 error
+	if rf, ok := ret.Get(0).(func([]byte) (map[string]interface{}, map[string]interface{}, error)); ok {
 		return rf(data)
 	}
 	if rf, ok := ret.Get(0).(func([]byte) map[string]interface{}); ok {
@@ -44,13 +90,21 @@ func (_m *MockRenderParser) Parse(data []byte) (map[string]interface{}, error) {
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func([]byte) error); ok {
+	if rf, ok := ret.Get(1).(func([]byte) map[string]interface{}); ok {
 		r1 = rf(data)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(map[string]interface{})
+		}
 	}
 
-	return r0, r1
+	if rf, ok := ret.Get(2).(func([]byte) error); ok {
+		r2 = rf(data)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
 }
 
 // MockRenderParser_Parse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Parse'
@@ -71,27 +125,27 @@ func (_c *MockRenderParser_Parse_Call) Run(run func(data []byte)) *MockRenderPar
 	return _c
 }
 
-func (_c *MockRenderParser_Parse_Call) Return(_a0 map[string]interface{}, _a1 error) *MockRenderParser_Parse_Call {
-	_c.Call.Return(_a0, _a1)
+func (_c *MockRenderParser_Parse_Call) Return(_a0 map[string]interface{}, _a1 map[string]interface{}, _a2 error) *MockRenderParser_Parse_Call {
+	_c.Call.Return(_a0, _a1, _a2)
 	return _c
 }
 
-func (_c *MockRenderParser_Parse_Call) RunAndReturn(run func([]byte) (map[string]interface{}, error)) *MockRenderParser_Parse_Call {
+func (_c *MockRenderParser_Parse_Call) RunAndReturn(run func([]byte) (map[string]interface{}, map[string]interface{}, error)) *MockRenderParser_Parse_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// Render provides a mock function with given fields: w, reqID, params
-func (_m *MockRenderParser) Render(w io.Writer, reqID int64, params map[string]interface{}) error {
-	ret := _m.Called(w, reqID, params)
+// Render provides a mock function with given fields: w, reqID, params, deps
+func (_m *MockRenderParser) Render(w io.Writer, reqID int64, params map[string]interface{}, deps map[string]interface{}) error {
+	ret := _m.Called(w, reqID, params, deps)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Render")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(io.Writer, int64, map[string]interface{}) error); ok {
-		r0 = rf(w, reqID, params)
+	if rf, ok := ret.Get(0).(func(io.Writer, int64, map[string]interface{}, map[string]interface{}) error); ok {
+		r0 = rf(w, reqID, params, deps)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -108,13 +162,14 @@ type MockRenderParser_Render_Call struct {
 //   - w io.Writer
 //   - reqID int64
 //   - params map[string]interface{}
-func (_e *MockRenderParser_Expecter) Render(w interface{}, reqID interface{}, params interface{}) *MockRenderParser_Render_Call {
-	return &MockRenderParser_Render_Call{Call: _e.mock.On("Render", w, reqID, params)}
+//   - deps map[string]interface{}
+func (_e *MockRenderParser_Expecter) Render(w interface{}, reqID interface{}, params interface{}, deps interface{}) *MockRenderParser_Render_Call {
+	return &MockRenderParser_Render_Call{Call: _e.mock.On("Render", w, reqID, params, deps)}
 }
 
-func (_c *MockRenderParser_Render_Call) Run(run func(w io.Writer, reqID int64, params map[string]interface{})) *MockRenderParser_Render_Call {
+func (_c *MockRenderParser_Render_Call) Run(run func(w io.Writer, reqID int64, params map[string]interface{}, deps map[string]interface{})) *MockRenderParser_Render_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(io.Writer), args[1].(int64), args[2].(map[string]interface{}))
+		run(args[0].(io.Writer), args[1].(int64), args[2].(map[string]interface{}), args[3].(map[string]interface{}))
 	})
 	return _c
 }
@@ -124,7 +179,7 @@ func (_c *MockRenderParser_Render_Call) Return(_a0 error) *MockRenderParser_Rend
 	return _c
 }
 
-func (_c *MockRenderParser_Render_Call) RunAndReturn(run func(io.Writer, int64, map[string]interface{}) error) *MockRenderParser_Render_Call {
+func (_c *MockRenderParser_Render_Call) RunAndReturn(run func(io.Writer, int64, map[string]interface{}, map[string]interface{}) error) *MockRenderParser_Render_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -2,6 +2,9 @@ server:
   listen: ":8080"
 deriv:
   endpoint: "wss://ws.derivws.com/websockets/v3"
+etcd:
+  servers: ["localhost:2379"]
+  dialTimeoutSeconds: 5
 api:
   calls:
     - method: "aggregate"
@@ -11,8 +14,8 @@ api:
       backend:
         - response_body: "landing_company"
           allow: 
-            - financial_company
-            - gaming_company
+            - virtual_company
+            - name
           fields_map:
             financial_company: "financial"
             gaming_company: "gaming"
@@ -30,4 +33,28 @@ api:
               "website_status": 1,
               "req_id": {{ .ReqID }}
             }
-      
+    - method: "chain"
+      backend:
+        - response_body: "landing_company"
+          depends_on: 
+            - "website_status"
+          allow: 
+            - virtual_company
+            - name
+          fields_map:
+            financial_company: "financial"
+            gaming_company: "gaming"
+          request_template: |
+            {
+              "landing_company": "{{ index .Resp "website_status" "clients_country" }}",
+              "req_id": {{ .ReqID }}
+            }
+        - response_body: "website_status"
+          allow: 
+            - api_call_limits
+            - clients_country
+          request_template: |
+            {
+              "website_status": 1,
+              "req_id": {{ .ReqID }}
+            }
