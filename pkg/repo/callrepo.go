@@ -99,11 +99,11 @@ func (r *CallsRepository) GetCall(method string) core.Handler {
 // Each BackendConfig element must have a unique ResponseBody and a list of dependencies specified in DependsOn.
 func topSortDFS(be []BackendConfig) ([]BackendConfig, error) {
 	graph := createDepGraph(be)
-	visited := make(map[string]bool)
-	recStack := make(map[string]bool)
-	sorted := []BackendConfig{}
+	visited := make(map[string]bool, len(be))
+	recStack := make(map[string]bool, len(be))
+	sorted := make([]BackendConfig, 0, len(be))
 
-	indexMap := make(map[string]int)
+	indexMap := make(map[string]int, len(be))
 	for i, b := range be {
 		indexMap[b.ResponseBody] = i
 	}
@@ -134,8 +134,8 @@ func topSortDFS(be []BackendConfig) ([]BackendConfig, error) {
 		return nil
 	}
 
-	for k := range graph {
-		if err := dfs(k); err != nil {
+	for _, b := range be {
+		if err := dfs(b.ResponseBody); err != nil {
 			return nil, err
 		}
 	}
