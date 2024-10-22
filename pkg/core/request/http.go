@@ -10,10 +10,10 @@ import (
 
 type HTTPReq struct {
 	ctx     context.Context
+	headers map[string][]string
 	url     string
 	method  string
 	body    []byte
-	headers map[string][]string
 }
 
 // NewHTTPReq creates a new HTTPReq instance with the specified method, URL, and body.
@@ -43,6 +43,7 @@ func (r *HTTPReq) AddHeader(key, value string) {
 // It returns an error if the http.NewRequestWithContext call fails, such as when the method or URL is invalid.
 func (r *HTTPReq) ToHTTPRequest() (*http.Request, error) {
 	bodyReader := bytes.NewReader(r.body)
+
 	req, err := http.NewRequestWithContext(r.ctx, r.method, r.url, bodyReader)
 	if err != nil {
 		return nil, err

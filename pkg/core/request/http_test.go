@@ -45,8 +45,10 @@ func TestToHTTPRequest(t *testing.T) {
 	assert.Equal(t, url, httpReq.URL.String())
 	assert.Equal(t, "application/json", httpReq.Header.Get("Content-Type"))
 
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(httpReq.Body)
+	buf := bytes.NewBuffer(nil)
+	_, err = buf.ReadFrom(httpReq.Body)
+	assert.NoError(t, err)
+
 	assert.Equal(t, body, buf.Bytes())
 }
 
@@ -82,9 +84,12 @@ func TestData(t *testing.T) {
 
 func TestWithContext(t *testing.T) {
 	ctx := context.Background()
-	newCtx := context.WithValue(ctx, "key", "value")
+
+	newCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	req := NewHTTPReq(ctx, "GET", "http://example.com", nil)
 
-	req = req.WithContext(newCtx).(*HTTPReq)
-	assert.Equal(t, newCtx, req.Context())
+	req1 := req.WithContext(newCtx)
+	assert.Equal(t, newCtx, req1.Context())
 }
