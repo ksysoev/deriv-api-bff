@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/backend"
@@ -22,6 +23,10 @@ func NewService() *Service {
 	s.handler = backend.NewBackend(s.requestFactory)
 
 	return s
+}
+
+func (s *Service) Handle(conn *core.Conn, req *request.HTTPReq) error {
+	return s.handler.Handle(conn, req)
 }
 
 // requestFactory creates an HTTP request from a wasabi.Request.
