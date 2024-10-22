@@ -22,8 +22,8 @@ func TestRequestFactory(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name        string
 		request     wasabi.Request
+		name        string
 		expectError bool
 	}{
 		{
