@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/mocks"
@@ -53,4 +54,21 @@ func TestRequestFactory(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestService_Handle(t *testing.T) {
+	service := NewService()
+	ctx := context.Background()
+	mockConn := mocks.NewMockConnection(t)
+	conn := core.NewConnection(mockConn, func(_ string) {})
+	mockRequest := request.NewHTTPReq(ctx, "GET", "http://localhost/", nil)
+
+	mockHandler := mocks.NewMockRequestHandler(t)
+	mockHandler.EXPECT().Handle(conn, mockRequest).Return(assert.AnError)
+
+	service.handler = mockHandler
+
+	err := service.Handle(conn, mockRequest)
+
+	assert.ErrorIs(t, err, assert.AnError)
 }
