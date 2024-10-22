@@ -15,10 +15,14 @@ packages:
       CallsRepo:
       Handler:
       ConnRegistry:
-      DerivAPI:
+      APIProvider:
   github.com/ksysoev/deriv-api-bff/pkg/api:
     interfaces:
       BFFService:
+  github.com/ksysoev/deriv-api-bff/pkg/prov/router:
+    interfaces:
+      DerivAPI:
+      HTTPAPI:
   github.com/ksysoev/deriv-api-bff/pkg/repo:
     interfaces:
       Etcd:

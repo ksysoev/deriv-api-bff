@@ -13,7 +13,7 @@ import (
 
 func TestNewService(t *testing.T) {
 	mockCallsRepo := NewMockCallsRepo(t)
-	mockDerivAPI := NewMockDerivAPI(t)
+	mockDerivAPI := NewMockAPIProvider(t)
 	mockConnRegistry := NewMockConnRegistry(t)
 
 	svc := NewService(mockCallsRepo, mockDerivAPI, mockConnRegistry)
@@ -26,7 +26,7 @@ func TestNewService(t *testing.T) {
 
 func TestService_PassThrough(t *testing.T) {
 	mockCallsRepo := NewMockCallsRepo(t)
-	mockDerivAPI := NewMockDerivAPI(t)
+	mockDerivAPI := NewMockAPIProvider(t)
 	mockConnRegistry := NewMockConnRegistry(t)
 
 	svc := NewService(mockCallsRepo, mockDerivAPI, mockConnRegistry)
@@ -46,7 +46,7 @@ func TestService_PassThrough(t *testing.T) {
 
 func TestService_ProcessRequest(t *testing.T) {
 	mockCallsRepo := NewMockCallsRepo(t)
-	mockDerivAPI := NewMockDerivAPI(t)
+	mockDerivAPI := NewMockAPIProvider(t)
 	mockConnRegistry := NewMockConnRegistry(t)
 
 	svc := NewService(mockCallsRepo, mockDerivAPI, mockConnRegistry)
@@ -81,7 +81,7 @@ func TestService_ProcessRequest(t *testing.T) {
 
 func TestService_ProcessRequest_UnsupportedMethod(t *testing.T) {
 	mockCallsRepo := NewMockCallsRepo(t)
-	mockDerivAPI := NewMockDerivAPI(t)
+	mockDerivAPI := NewMockAPIProvider(t)
 	mockConnRegistry := NewMockConnRegistry(t)
 
 	svc := NewService(mockCallsRepo, mockDerivAPI, mockConnRegistry)
@@ -103,7 +103,7 @@ func TestService_ProcessRequest_UnsupportedMethod(t *testing.T) {
 
 func TestService_ProcessRequest_HandlerError(t *testing.T) {
 	mockCallsRepo := NewMockCallsRepo(t)
-	mockDerivAPI := NewMockDerivAPI(t)
+	mockDerivAPI := NewMockAPIProvider(t)
 	mockConnRegistry := NewMockConnRegistry(t)
 
 	svc := NewService(mockCallsRepo, mockDerivAPI, mockConnRegistry)
@@ -134,7 +134,7 @@ func TestService_ProcessRequest_HandlerError(t *testing.T) {
 
 func TestService_ProcessRequest_APIError(t *testing.T) {
 	mockCallsRepo := NewMockCallsRepo(t)
-	mockDerivAPI := NewMockDerivAPI(t)
+	mockDerivAPI := NewMockAPIProvider(t)
 	mockConnRegistry := NewMockConnRegistry(t)
 
 	svc := NewService(mockCallsRepo, mockDerivAPI, mockConnRegistry)

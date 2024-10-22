@@ -5,8 +5,6 @@ import (
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
-	"github.com/ksysoev/deriv-api-bff/pkg/prov/http"
-	"github.com/ksysoev/wasabi"
 )
 
 type DerivAPI interface {
@@ -22,15 +20,20 @@ type Router struct {
 	httpProv  HTTPAPI
 }
 
-func New(derivApi DerivAPI) *Router {
+// New creates a new instance of Router with the provided DerivAPI service.
+// It takes derivProv of type DerivAPI.
+// It returns a pointer to a Router instance.
+func New(derivProv DerivAPI, httpProv HTTPAPI) *Router {
 	return &Router{
-		derivProv: derivApi,
-		httpProv:  http.NewService(),
+		derivProv: derivProv,
+		httpProv:  httpProv,
 	}
 }
 
-// TODO introduce core interface for requests objects
-func (r *Router) Handle(conn *core.Conn, req wasabi.Request) error {
+// Handle processes a request and delegates it to the appropriate provider based on the request type.
+// It takes conn of type *core.Conn and req of type core.Request.
+// It returns an error if the request type is unsupported or if the underlying provider's Handle method returns an error.
+func (r *Router) Handle(conn *core.Conn, req core.Request) error {
 	switch t := req.(type) {
 	case *request.Request:
 		return r.derivProv.Handle(conn, t)

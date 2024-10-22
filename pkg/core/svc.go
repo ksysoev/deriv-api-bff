@@ -8,6 +8,11 @@ import (
 	"github.com/ksysoev/wasabi"
 )
 
+type Request interface {
+	Context() context.Context
+	RoutingKey() string
+}
+
 type Sender func(context.Context, []byte) error
 type Waiter func() (reqID int64, respChan <-chan []byte)
 
@@ -23,12 +28,12 @@ type ConnRegistry interface {
 	GetConnection(wasabi.Connection) *Conn
 }
 
-type DerivAPI interface {
-	Handle(*Conn, *request.Request) error
+type APIProvider interface {
+	Handle(*Conn, Request) error
 }
 
 type Service struct {
-	be       DerivAPI
+	be       APIProvider
 	ch       CallsRepo
 	registry ConnRegistry
 }
@@ -37,7 +42,7 @@ type Service struct {
 // It takes cfg of type *Config, wsBackend of type DerivAPI, and connRegistry of type ConnRegistry.
 // It returns a pointer to Service and an error.
 // It returns an error if the call handler creation fails.
-func NewService(callRepo CallsRepo, wsBackend DerivAPI, connRegistry ConnRegistry) *Service {
+func NewService(callRepo CallsRepo, wsBackend APIProvider, connRegistry ConnRegistry) *Service {
 	return &Service{
 		be:       wsBackend,
 		ch:       callRepo,
