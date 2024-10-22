@@ -25,6 +25,7 @@ func createResponse(req *Request, resp map[string]any, err error) ([]byte, error
 	}
 
 	resp["echo"] = json.RawMessage(req.Data())
+	resp["msg_type"] = req.RoutingKey()
 
 	data, err := json.Marshal(resp)
 	if err != nil {
