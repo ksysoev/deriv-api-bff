@@ -58,3 +58,14 @@ api:
               "website_status": 1,
               "req_id": {{ .ReqID }}
             }
+    - method: "config_country"
+      params:
+        country: 
+          type: "string"
+      backend:
+        - method: "GET"
+          url_patter: 'http://localhost:8081/contry/{{ index .Params "country" }}.json'
+          allow: 
+            - body
+          fields_map:
+            title: "title"
