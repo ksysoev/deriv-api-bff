@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ksysoev/deriv-api-bff/pkg/core"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/backend"
 )
@@ -22,7 +22,7 @@ func NewService() *Service {
 }
 
 func (s *Service) requestFactory(r wasabi.Request) (*http.Request, error) {
-	req, ok := r.(*core.Request)
+	req, ok := r.(*request.Request)
 	if !ok {
 		return nil, fmt.Errorf("invalid request type %T", r)
 	}

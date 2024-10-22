@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	"github.com/ksysoev/wasabi"
 )
 
@@ -23,7 +24,7 @@ type ConnRegistry interface {
 }
 
 type DerivAPI interface {
-	Handle(*Conn, *Request) error
+	Handle(*Conn, *request.Request) error
 }
 
 type Service struct {
@@ -47,7 +48,7 @@ func NewService(callRepo CallsRepo, wsBackend DerivAPI, connRegistry ConnRegistr
 // PassThrough forwards a request to the backend service using the provided client connection.
 // It takes clientConn of type wasabi.Connection and req of type *Request.
 // It returns an error if the backend service fails to handle the request.
-func (s *Service) PassThrough(clientConn wasabi.Connection, req *Request) error {
+func (s *Service) PassThrough(clientConn wasabi.Connection, req *request.Request) error {
 	conn := s.registry.GetConnection(clientConn)
 
 	return s.be.Handle(conn, req)
@@ -57,7 +58,7 @@ func (s *Service) PassThrough(clientConn wasabi.Connection, req *Request) error 
 // It takes a client connection of type wasabi.Connection and a request of type *Request.
 // It returns an error if the request method is unsupported, if the handler fails to process the request, or if the response cannot be marshaled to JSON.
 // If the handler returns an APIError, it encodes the error in the response.
-func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *Request) error {
+func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *request.Request) error {
 	conn := s.registry.GetConnection(clientConn)
 
 	handler := s.ch.GetCall(req.Method)
@@ -71,11 +72,7 @@ func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *Request) err
 		req.Params,
 		conn.WaitResponse,
 		func(ctx context.Context, data []byte) error {
-			return s.be.Handle(conn, &Request{
-				Method: TextMessage,
-				data:   data,
-				ctx:    ctx,
-			})
+			return s.be.Handle(conn, request.NewRequest(ctx, request.TextMessage, data))
 		},
 	)
 
