@@ -3,7 +3,6 @@ package repo
 import (
 	"fmt"
 	"html/template"
-	"log/slog"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/composer"
@@ -107,23 +106,12 @@ func (r *CallsRepository) GetCall(method string) core.Handler {
 // The current implementation will completely overwrite the old config with new config.
 // It returns an error to if any while building the handlers, otherwise it returns nil.
 func (r *CallsRepository) UpdateCalls(calls *CallsConfig) error {
-	existingCallHandlerMap := r.calls
-
 	r.calls = make(map[string]core.Handler)
 
 	for _, call := range calls.Calls {
-		if existingCallHandlerMap[call.Method] != nil {
-			slog.Warn(fmt.Sprintf("Replacing already existing method: %s in call config", call.Method))
-
-			err := createHandler(call, r)
-			if err != nil {
-				return err
-			}
-		} else {
-			err := createHandler(call, r)
-			if err != nil {
-				return err
-			}
+		err := createHandler(call, r)
+		if err != nil {
+			return err
 		}
 	}
 

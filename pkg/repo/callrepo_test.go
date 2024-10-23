@@ -370,3 +370,34 @@ func TestUpdateCalls_NewMethod_Success(t *testing.T) {
 	assert.Nil(t, callsRepo.GetCall("testMethod"), "testMethod handler does not exist anymore")
 	assert.NotEqualValues(t, oldHandler, newHandler, "old handler and new handler must be different")
 }
+
+func TestUpdateCalls_Failure(t *testing.T) {
+	oldCallsConfig := &CallsConfig{}
+
+	callsRepo, err := NewCallsRepository(oldCallsConfig)
+	if err != nil {
+		t.Errorf("Unexpected Error: %v", err)
+	}
+
+	newCallsConfig := &CallsConfig{
+		Calls: []CallConfig{
+			{
+				Method: "testMethod",
+				Params: validator.Config{"param1": {Type: "value1"}},
+				Backend: []BackendConfig{
+					{
+						FieldsMap:       map[string]string{"field1": "value1"},
+						ResponseBody:    "responseBody1",
+						RequestTemplate: "{{.InvalidTemplate",
+						Allow:           []string{"allow1"},
+					},
+				},
+			},
+		},
+	}
+
+	err = callsRepo.UpdateCalls(newCallsConfig)
+	if err.Error() != "failed to create validator: unknown type value1 for field param1" {
+		t.Errorf("Unexpected Error: %v", err)
+	}
+}
