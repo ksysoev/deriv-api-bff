@@ -63,7 +63,7 @@ func putCallConfigToEtcd(ctx context.Context, etcdHandler repo.Etcd, configPath 
 		return err
 	}
 
-	cli, err := etcdHandler.Client(cfg.Etcd)
+	cli, err := etcdHandler.Client()
 
 	if err != nil {
 		return err

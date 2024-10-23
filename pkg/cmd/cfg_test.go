@@ -76,10 +76,7 @@ func TestPutCallConfig_Success(t *testing.T) {
 	cli := clientv3.NewCtxClient(ctx)
 
 	mockEtcd.EXPECT().Put(ctx, cli, "CallConfig", "null").Return(nil)
-	mockEtcd.EXPECT().Client(repo.EtcdConfig{
-		Servers:            []string{"host1:port1", "host2:port2"},
-		DialTimeoutSeconds: 1,
-	}).Return(cli, nil)
+	mockEtcd.EXPECT().Client().Return(cli, nil)
 
 	err := putCallConfigToEtcd(ctx, mockEtcd, configPath)
 
@@ -96,10 +93,7 @@ func TestPutCallConfig_Fail_OnPut(t *testing.T) {
 	cli := clientv3.NewCtxClient(ctx)
 
 	mockEtcd.EXPECT().Put(ctx, cli, "CallConfig", "null").Return(expectedErr)
-	mockEtcd.EXPECT().Client(repo.EtcdConfig{
-		Servers:            []string{"host1:port1", "host2:port2"},
-		DialTimeoutSeconds: 1,
-	}).Return(cli, nil)
+	mockEtcd.EXPECT().Client().Return(cli, nil)
 
 	err := putCallConfigToEtcd(ctx, mockEtcd, configPath)
 
@@ -114,10 +108,7 @@ func TestPutCallConfig_Fail_OnClient(t *testing.T) {
 	ctx := context.Background()
 	expectedErr := errors.New("test error")
 
-	mockEtcd.EXPECT().Client(repo.EtcdConfig{
-		Servers:            []string{"host1:port1", "host2:port2"},
-		DialTimeoutSeconds: 1,
-	}).Return(nil, expectedErr)
+	mockEtcd.EXPECT().Client().Return(nil, expectedErr)
 
 	err := putCallConfigToEtcd(ctx, mockEtcd, configPath)
 

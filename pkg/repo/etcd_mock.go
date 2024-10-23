@@ -25,9 +25,9 @@ func (_m *MockEtcd) EXPECT() *MockEtcd_Expecter {
 	return &MockEtcd_Expecter{mock: &_m.Mock}
 }
 
-// Client provides a mock function with given fields: cfg
-func (_m *MockEtcd) Client(cfg EtcdConfig) (*clientv3.Client, error) {
-	ret := _m.Called(cfg)
+// Client provides a mock function with given fields:
+func (_m *MockEtcd) Client() (*clientv3.Client, error) {
+	ret := _m.Called()
 
 	if len(ret) == 0 {
 		panic("no return value specified for Client")
@@ -35,19 +35,19 @@ func (_m *MockEtcd) Client(cfg EtcdConfig) (*clientv3.Client, error) {
 
 	var r0 *clientv3.Client
 	var r1 error
-	if rf, ok := ret.Get(0).(func(EtcdConfig) (*clientv3.Client, error)); ok {
-		return rf(cfg)
+	if rf, ok := ret.Get(0).(func() (*clientv3.Client, error)); ok {
+		return rf()
 	}
-	if rf, ok := ret.Get(0).(func(EtcdConfig) *clientv3.Client); ok {
-		r0 = rf(cfg)
+	if rf, ok := ret.Get(0).(func() *clientv3.Client); ok {
+		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*clientv3.Client)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(EtcdConfig) error); ok {
-		r1 = rf(cfg)
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -61,14 +61,13 @@ type MockEtcd_Client_Call struct {
 }
 
 // Client is a helper method to define mock.On call
-//   - cfg EtcdConfig
-func (_e *MockEtcd_Expecter) Client(cfg interface{}) *MockEtcd_Client_Call {
-	return &MockEtcd_Client_Call{Call: _e.mock.On("Client", cfg)}
+func (_e *MockEtcd_Expecter) Client() *MockEtcd_Client_Call {
+	return &MockEtcd_Client_Call{Call: _e.mock.On("Client")}
 }
 
-func (_c *MockEtcd_Client_Call) Run(run func(cfg EtcdConfig)) *MockEtcd_Client_Call {
+func (_c *MockEtcd_Client_Call) Run(run func()) *MockEtcd_Client_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(EtcdConfig))
+		run()
 	})
 	return _c
 }
@@ -78,7 +77,7 @@ func (_c *MockEtcd_Client_Call) Return(_a0 *clientv3.Client, _a1 error) *MockEtc
 	return _c
 }
 
-func (_c *MockEtcd_Client_Call) RunAndReturn(run func(EtcdConfig) (*clientv3.Client, error)) *MockEtcd_Client_Call {
+func (_c *MockEtcd_Client_Call) RunAndReturn(run func() (*clientv3.Client, error)) *MockEtcd_Client_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -128,6 +127,68 @@ func (_c *MockEtcd_Put_Call) Return(_a0 error) *MockEtcd_Put_Call {
 }
 
 func (_c *MockEtcd_Put_Call) RunAndReturn(run func(context.Context, *clientv3.Client, string, string) error) *MockEtcd_Put_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Watch provides a mock function with given fields: ctx, cli, key
+func (_m *MockEtcd) Watch(ctx context.Context, cli *clientv3.Client, key string) (clientv3.WatchChan, context.CancelFunc) {
+	ret := _m.Called(ctx, cli, key)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Watch")
+	}
+
+	var r0 clientv3.WatchChan
+	var r1 context.CancelFunc
+	if rf, ok := ret.Get(0).(func(context.Context, *clientv3.Client, string) (clientv3.WatchChan, context.CancelFunc)); ok {
+		return rf(ctx, cli, key)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *clientv3.Client, string) clientv3.WatchChan); ok {
+		r0 = rf(ctx, cli, key)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(clientv3.WatchChan)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *clientv3.Client, string) context.CancelFunc); ok {
+		r1 = rf(ctx, cli, key)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(context.CancelFunc)
+		}
+	}
+
+	return r0, r1
+}
+
+// MockEtcd_Watch_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Watch'
+type MockEtcd_Watch_Call struct {
+	*mock.Call
+}
+
+// Watch is a helper method to define mock.On call
+//   - ctx context.Context
+//   - cli *clientv3.Client
+//   - key string
+func (_e *MockEtcd_Expecter) Watch(ctx interface{}, cli interface{}, key interface{}) *MockEtcd_Watch_Call {
+	return &MockEtcd_Watch_Call{Call: _e.mock.On("Watch", ctx, cli, key)}
+}
+
+func (_c *MockEtcd_Watch_Call) Run(run func(ctx context.Context, cli *clientv3.Client, key string)) *MockEtcd_Watch_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*clientv3.Client), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockEtcd_Watch_Call) Return(_a0 clientv3.WatchChan, _a1 context.CancelFunc) *MockEtcd_Watch_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockEtcd_Watch_Call) RunAndReturn(run func(context.Context, *clientv3.Client, string) (clientv3.WatchChan, context.CancelFunc)) *MockEtcd_Watch_Call {
 	_c.Call.Return(run)
 	return _c
 }

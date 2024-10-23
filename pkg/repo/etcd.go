@@ -11,18 +11,27 @@ import (
 
 type Etcd interface {
 	Put(ctx context.Context, cli *clientv3.Client, key string, value string) error
-	Client(cfg EtcdConfig) (*clientv3.Client, error)
+
+	Client() (*clientv3.Client, error)
+
+	Watch(ctx context.Context, cli *clientv3.Client, key string) (clientv3.WatchChan, context.CancelFunc)
 }
 
 type EtcdHandler struct {
 	Conf *clientv3.Config
 }
 
-func (etcdHandler EtcdHandler) Client(cfg EtcdConfig) (*clientv3.Client, error) {
-	return clientv3.New(clientv3.Config{
-		Endpoints:   cfg.Servers,
-		DialTimeout: time.Duration(cfg.DialTimeoutSeconds * int(time.Second)),
-	})
+func (etcdHandler EtcdHandler) Watch(ctx context.Context, cli *clientv3.Client, key string) (clientv3.WatchChan, context.CancelFunc) {
+	defer cli.Close()
+
+	watchCtx, cancel := context.WithCancel(ctx)
+	watchRespChan := cli.Watcher.Watch(watchCtx, key)
+
+	return watchRespChan, cancel
+}
+
+func (etcdHandler EtcdHandler) Client() (*clientv3.Client, error) {
+	return clientv3.New(*etcdHandler.Conf)
 }
 
 func (etcdHandler EtcdHandler) Put(ctx context.Context, cli *clientv3.Client, key, value string) error {
