@@ -12,48 +12,57 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	etcd := NewEtcdHandler(EtcdConfig{
+	cfg := EtcdConfig{
 		Servers:            []string{"localhost:7000"},
 		DialTimeoutSeconds: 1,
-	})
+	}
+	ctx := context.Background()
+	etcd, err := NewEtcdHandler(ctx, cfg)
+
+	if err != nil {
+		t.Errorf("Unexpected err: %v", err)
+	}
 
 	assert.NotEmpty(t, etcd)
 	assert.Implements(t, (*Etcd)(nil), etcd)
 }
 
-func TestClient(t *testing.T) {
-	cfg := EtcdConfig{
-		Servers:            []string{"localhost:7000"},
-		DialTimeoutSeconds: 1,
-	}
-	etcd := NewEtcdHandler(cfg)
-
-	cli, err := etcd.Client()
-
-	if err != nil {
-		t.Errorf("Unexpected err: %s", err)
-	}
-
-	assert.ElementsMatch(t, []string{"localhost:7000"}, cli.Endpoints())
-}
-
-func TestPut_Success(t *testing.T) {
-	etcd := NewEtcdHandler(EtcdConfig{})
-	mockKV := NewMockKV(t)
-	mockLease := NewMockLease(t)
-	mockWatcher := NewMockWatcher(t)
+func TestClose(t *testing.T) {
 	ctx := context.Background()
 	cli := clientv3.NewCtxClient(ctx)
+	etcd := newEtcdHandlerWithCli(ctx, cli)
 
-	cli.KV = mockKV
+	mockLease := NewMockLease(t)
+	mockWatcher := NewMockWatcher(t)
+
 	cli.Lease = mockLease
 	cli.Watcher = mockWatcher
 
-	mockKV.EXPECT().Put(mock.Anything, mock.Anything, mock.Anything).Return(&clientv3.PutResponse{}, nil)
 	mockWatcher.EXPECT().Close().Return(nil)
 	mockLease.EXPECT().Close().Return(nil)
 
-	err := etcd.Put(ctx, cli, "key", "value")
+	err := etcd.Close()
+
+	if err.Error() != "context canceled" {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	assert.Equal(t, 1, len(mockWatcher.Calls))
+	assert.Equal(t, 1, len(mockLease.Calls))
+}
+
+func TestPut_Success(t *testing.T) {
+	ctx := context.Background()
+	cli := clientv3.NewCtxClient(ctx)
+	etcd := newEtcdHandlerWithCli(context.Background(), cli)
+
+	mockKV := NewMockKV(t)
+
+	cli.KV = mockKV
+
+	mockKV.EXPECT().Put(mock.Anything, mock.Anything, mock.Anything).Return(&clientv3.PutResponse{}, nil)
+
+	err := etcd.Put("key", "value")
 
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err)
@@ -61,23 +70,17 @@ func TestPut_Success(t *testing.T) {
 }
 
 func TestPut_Error(t *testing.T) {
-	etcd := NewEtcdHandler(EtcdConfig{})
 	mockKV := NewMockKV(t)
-	mockLease := NewMockLease(t)
-	mockWatcher := NewMockWatcher(t)
 	ctx := context.Background()
 	cli := clientv3.NewCtxClient(ctx)
 	expectedErr := errors.New("test error")
+	etcd := newEtcdHandlerWithCli(ctx, cli)
 
 	cli.KV = mockKV
-	cli.Lease = mockLease
-	cli.Watcher = mockWatcher
 
 	mockKV.EXPECT().Put(mock.Anything, mock.Anything, mock.Anything).Return(nil, expectedErr)
-	mockWatcher.EXPECT().Close().Return(nil)
-	mockLease.EXPECT().Close().Return(nil)
 
-	err := etcd.Put(ctx, cli, "key", "value")
+	err := etcd.Put("key", "value")
 
 	if err != expectedErr {
 		t.Errorf("Unexpected error: %s", err)
@@ -85,15 +88,11 @@ func TestPut_Error(t *testing.T) {
 }
 
 func TestWatch_Success(t *testing.T) {
-	etcd := NewEtcdHandler(EtcdConfig{})
-	mockKV := NewMockKV(t)
-	mockLease := NewMockLease(t)
 	mockWatcher := NewMockWatcher(t)
 	ctx := context.Background()
 	cli := clientv3.NewCtxClient(ctx)
+	etcd := newEtcdHandlerWithCli(ctx, cli)
 
-	cli.KV = mockKV
-	cli.Lease = mockLease
 	cli.Watcher = mockWatcher
 
 	watchRespChan := make(chan clientv3.WatchResponse)
@@ -122,10 +121,8 @@ func TestWatch_Success(t *testing.T) {
 	}()
 
 	mockWatcher.EXPECT().Watch(mock.Anything, mock.Anything).Return(watchRespChan)
-	mockWatcher.EXPECT().Close().Return(nil)
-	mockLease.EXPECT().Close().Return(nil)
 
-	watchChan, cancel := etcd.Watch(ctx, cli, "key")
+	watchChan, cancel := etcd.Watch("key")
 
 	expectedMap := make(map[int]string)
 	expectedMap[0] = "value"
@@ -140,4 +137,12 @@ func TestWatch_Success(t *testing.T) {
 	}
 
 	cancel()
+}
+
+func newEtcdHandlerWithCli(ctx context.Context, cli *clientv3.Client) Etcd {
+	return &EtcdHandler{
+		conf: clientv3.Config{},
+		cli:  cli,
+		ctx:  ctx,
+	}
 }

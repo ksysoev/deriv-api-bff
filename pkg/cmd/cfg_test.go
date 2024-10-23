@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"errors"
 	"os"
 	"strings"
@@ -9,7 +8,6 @@ import (
 
 	"github.com/ksysoev/deriv-api-bff/pkg/repo"
 	"github.com/stretchr/testify/assert"
-	"go.etcd.io/etcd/clientv3"
 )
 
 var validConfig = `
@@ -72,13 +70,10 @@ func TestInitConfig_Missing(t *testing.T) {
 func TestPutCallConfig_Success(t *testing.T) {
 	configPath := createTempConfigFile(t, validConfig)
 	mockEtcd := repo.NewMockEtcd(t)
-	ctx := context.Background()
-	cli := clientv3.NewCtxClient(ctx)
 
-	mockEtcd.EXPECT().Put(ctx, cli, "CallConfig", "null").Return(nil)
-	mockEtcd.EXPECT().Client().Return(cli, nil)
+	mockEtcd.EXPECT().Put("CallConfig", "null").Return(nil)
 
-	err := putCallConfigToEtcd(ctx, mockEtcd, configPath)
+	err := putCallConfigToEtcd(mockEtcd, configPath)
 
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err)
@@ -88,29 +83,11 @@ func TestPutCallConfig_Success(t *testing.T) {
 func TestPutCallConfig_Fail_OnPut(t *testing.T) {
 	configPath := createTempConfigFile(t, validConfig)
 	mockEtcd := repo.NewMockEtcd(t)
-	ctx := context.Background()
-	expectedErr := errors.New("test error")
-	cli := clientv3.NewCtxClient(ctx)
-
-	mockEtcd.EXPECT().Put(ctx, cli, "CallConfig", "null").Return(expectedErr)
-	mockEtcd.EXPECT().Client().Return(cli, nil)
-
-	err := putCallConfigToEtcd(ctx, mockEtcd, configPath)
-
-	if err != expectedErr {
-		t.Errorf("Unexpected error: %s", err)
-	}
-}
-
-func TestPutCallConfig_Fail_OnClient(t *testing.T) {
-	configPath := createTempConfigFile(t, validConfig)
-	mockEtcd := repo.NewMockEtcd(t)
-	ctx := context.Background()
 	expectedErr := errors.New("test error")
 
-	mockEtcd.EXPECT().Client().Return(nil, expectedErr)
+	mockEtcd.EXPECT().Put("CallConfig", "null").Return(expectedErr)
 
-	err := putCallConfigToEtcd(ctx, mockEtcd, configPath)
+	err := putCallConfigToEtcd(mockEtcd, configPath)
 
 	if err != expectedErr {
 		t.Errorf("Unexpected error: %s", err)
@@ -120,10 +97,9 @@ func TestPutCallConfig_Fail_OnClient(t *testing.T) {
 func TestPutCallConfig_Fail_OnConfigRead(t *testing.T) {
 	configPath := createTempConfigFile(t, "invalid content")
 	mockEtcd := repo.NewMockEtcd(t)
-	ctx := context.Background()
 	expectedErr := "failed to read config:"
 
-	err := putCallConfigToEtcd(ctx, mockEtcd, configPath)
+	err := putCallConfigToEtcd(mockEtcd, configPath)
 
 	if !strings.HasPrefix(err.Error(), expectedErr) {
 		t.Errorf("Unexpected error: %s", err)

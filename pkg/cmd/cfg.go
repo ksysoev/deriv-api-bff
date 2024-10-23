@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -48,7 +47,7 @@ func initConfig(configPath string) (*config, error) {
 // The function also accepts etcd settings like host and dial timeout.
 // The function will return the Etcd key it had used to put the CallConfig
 // The function may return empty key and an error in case of any errors.
-func putCallConfigToEtcd(ctx context.Context, etcdHandler repo.Etcd, configPath string) error {
+func putCallConfigToEtcd(etcdHandler repo.Etcd, configPath string) error {
 	cfg, err := initConfig(configPath)
 
 	if err != nil {
@@ -63,13 +62,7 @@ func putCallConfigToEtcd(ctx context.Context, etcdHandler repo.Etcd, configPath 
 		return err
 	}
 
-	cli, err := etcdHandler.Client()
-
-	if err != nil {
-		return err
-	}
-
-	err = etcdHandler.Put(ctx, cli, "CallConfig", string(callConfigJSON))
+	err = etcdHandler.Put("CallConfig", string(callConfigJSON))
 
 	if err != nil {
 		return err
