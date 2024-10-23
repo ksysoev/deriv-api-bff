@@ -251,3 +251,122 @@ func TestTopSortDFS(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateCalls_ExistingMethod_Success(t *testing.T) {
+	oldCallsConfig := &CallsConfig{
+		Calls: []CallConfig{
+			{
+				Method: "testMethod",
+				Params: validator.Config{"param1": {Type: "string"}},
+				Backend: []BackendConfig{
+					{
+						FieldsMap:       map[string]string{"field1": "value1"},
+						ResponseBody:    "responseBody1",
+						RequestTemplate: "template1",
+						Allow:           []string{"allow1"},
+					},
+				},
+			},
+		},
+	}
+
+	callsRepo, err := NewCallsRepository(oldCallsConfig)
+	if err != nil {
+		t.Errorf("Unexpected Error: %v", err)
+	}
+
+	oldHandler := callsRepo.GetCall("testMethod")
+
+	newCallsConfig := &CallsConfig{
+		Calls: []CallConfig{
+			{
+				Method: "testMethod",
+				Params: validator.Config{"param1": {Type: "string"}},
+				Backend: []BackendConfig{
+					{
+						FieldsMap:       map[string]string{"field1": "value1"},
+						ResponseBody:    "responseBody1",
+						RequestTemplate: "template1",
+						DependsOn:       []string{"responseBody2"},
+						Allow:           []string{"allow1"},
+					},
+					{
+						FieldsMap:       map[string]string{"field2": "value2"},
+						ResponseBody:    "responseBody2",
+						RequestTemplate: "template2",
+						Allow:           []string{"allow2"},
+					},
+				},
+			},
+		},
+	}
+
+	err = callsRepo.UpdateCalls(newCallsConfig)
+	if err != nil {
+		t.Errorf("Unexpected Error: %v", err)
+	}
+
+	newHandler := callsRepo.GetCall("testMethod")
+
+	assert.NotEqualValues(t, oldHandler, newHandler, "old handler and new handler must be different")
+}
+
+func TestUpdateCalls_NewMethod_Success(t *testing.T) {
+	oldCallsConfig := &CallsConfig{
+		Calls: []CallConfig{
+			{
+				Method: "testMethod",
+				Params: validator.Config{"param1": {Type: "string"}},
+				Backend: []BackendConfig{
+					{
+						FieldsMap:       map[string]string{"field1": "value1"},
+						ResponseBody:    "responseBody1",
+						RequestTemplate: "template1",
+						Allow:           []string{"allow1"},
+					},
+				},
+			},
+		},
+	}
+
+	callsRepo, err := NewCallsRepository(oldCallsConfig)
+	if err != nil {
+		t.Errorf("Unexpected Error: %v", err)
+	}
+
+	oldHandler := callsRepo.GetCall("testMethod")
+
+	newCallsConfig := &CallsConfig{
+		Calls: []CallConfig{
+			{
+				Method: "testMethodNew",
+				Params: validator.Config{"param1": {Type: "string"}},
+				Backend: []BackendConfig{
+					{
+						FieldsMap:       map[string]string{"field1": "value1"},
+						ResponseBody:    "responseBody1",
+						RequestTemplate: "template1",
+						DependsOn:       []string{"responseBody2"},
+						Allow:           []string{"allow1"},
+					},
+					{
+						FieldsMap:       map[string]string{"field2": "value2"},
+						ResponseBody:    "responseBody2",
+						RequestTemplate: "template2",
+						Allow:           []string{"allow2"},
+					},
+				},
+			},
+		},
+	}
+
+	err = callsRepo.UpdateCalls(newCallsConfig)
+	if err != nil {
+		t.Errorf("Unexpected Error: %v", err)
+	}
+
+	newHandler := callsRepo.GetCall("testMethodNew")
+
+	assert.Nil(t, callsRepo.GetCall("testMethod"), "testMethod handler does not exist anymore")
+	assert.NotEqualValues(t, oldHandler, newHandler, "old handler and new handler must be different")
+}
