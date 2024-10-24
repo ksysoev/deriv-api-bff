@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"errors"
-	"sync"
 	"testing"
 
 	"github.com/coreos/etcd/mvcc/mvccpb"
@@ -12,7 +11,7 @@ import (
 	"go.etcd.io/etcd/clientv3"
 )
 
-func TestNew(t *testing.T) {
+func TestNew_Success(t *testing.T) {
 	cfg := EtcdConfig{
 		Servers:            []string{"localhost:7000"},
 		DialTimeoutSeconds: 1,
@@ -26,6 +25,18 @@ func TestNew(t *testing.T) {
 
 	assert.NotEmpty(t, etcd)
 	assert.Implements(t, (*Etcd)(nil), etcd)
+}
+
+func TestNew_Error(t *testing.T) {
+	cfg := EtcdConfig{}
+	ctx := context.Background()
+	etcd, err := NewEtcdHandler(ctx, cfg)
+
+	if err.Error() != "etcdclient: no available endpoints" {
+		t.Errorf("Unexpected err: %v", err)
+	}
+
+	assert.Empty(t, etcd)
 }
 
 func TestClose(t *testing.T) {
@@ -142,7 +153,6 @@ func TestWatch_Success(t *testing.T) {
 
 func newEtcdHandlerWithCli(ctx context.Context, cli *clientv3.Client) Etcd {
 	return &EtcdHandler{
-		mu:   &sync.RWMutex{},
 		conf: clientv3.Config{},
 		cli:  cli,
 		ctx:  ctx,

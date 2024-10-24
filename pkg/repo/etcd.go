@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sync"
 	"time"
 
 	"go.etcd.io/etcd/clientv3"
@@ -20,7 +19,6 @@ type Etcd interface {
 
 type EtcdHandler struct {
 	cli  *clientv3.Client
-	mu   *sync.RWMutex
 	ctx  context.Context
 	conf clientv3.Config
 }
@@ -33,9 +31,6 @@ func (etcdHandler *EtcdHandler) Watch(key string) (clientv3.WatchChan, context.C
 }
 
 func (etcdHandler *EtcdHandler) Put(key, value string) error {
-	etcdHandler.mu.Lock()
-	defer etcdHandler.mu.Unlock()
-
 	ctx, cancel := context.WithTimeout(etcdHandler.ctx, etcdHandler.conf.DialTimeout)
 	res, err := etcdHandler.cli.Put(ctx, key, value)
 
@@ -69,6 +64,5 @@ func NewEtcdHandler(ctx context.Context, etcdConfig EtcdConfig) (Etcd, error) {
 		conf: conf,
 		cli:  cli,
 		ctx:  ctx,
-		mu:   &sync.RWMutex{},
 	}, nil
 }
