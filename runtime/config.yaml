@@ -64,7 +64,7 @@ api:
           type: "string"
       backend:
         - method: "GET"
-          url_patter: 'http://localhost:8081/contry/{{ index .Params "country" }}.json'
+          url_template: 'http://localhost:8081/contry/{{ index .Params "country" }}.json'
           allow: 
             - body
           fields_map:
