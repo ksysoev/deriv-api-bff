@@ -18,6 +18,6 @@ type Config struct {
 	Allow        []string
 }
 
-func New(cfg *Config) Processor {
-	return NewDeriv(cfg)
+func New(cfg *Config) (Processor, error) {
+	return NewDeriv(cfg), nil
 }
