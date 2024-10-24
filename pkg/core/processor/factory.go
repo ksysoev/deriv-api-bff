@@ -23,13 +23,14 @@ type Config struct {
 }
 
 func New(cfg *Config) (Processor, error) {
-	if isDerivConfig(cfg) && isHTTPConfig(cfg) {
+	switch {
+	case isDerivConfig(cfg) && isHTTPConfig(cfg):
 		return nil, fmt.Errorf("ambiguous processor configuration")
-	} else if isDerivConfig(cfg) {
+	case isDerivConfig(cfg):
 		return NewDeriv(cfg), nil
-	} else if isHTTPConfig(cfg) {
+	case isHTTPConfig(cfg):
 		return NewHTTP(cfg), nil
-	} else {
+	default:
 		return nil, fmt.Errorf("invalid processor configuration")
 	}
 }

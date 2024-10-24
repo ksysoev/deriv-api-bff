@@ -32,7 +32,7 @@ func (p *HTTPProc) Name() string {
 	return p.name
 }
 
-func (p *HTTPProc) Render(w io.Writer, reqID int64, params, deps map[string]any) error {
+func (p *HTTPProc) Render(_ io.Writer, _ int64, _, _ map[string]any) error {
 	return fmt.Errorf("http processor not implemented")
 }
 
