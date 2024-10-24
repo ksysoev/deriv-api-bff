@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -115,7 +116,7 @@ func TestConfigCommand(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestReadConfigCommand(t *testing.T) {
+func TestReadConfigCommand_ValidConfig(t *testing.T) {
 	configPath := createTempConfigFile(t, validConfig)
 
 	arg := &args{
@@ -133,15 +134,36 @@ func TestReadConfigCommand(t *testing.T) {
 	assert.Equal(t, "Read config and push call config to etcd", cmd.Short)
 	assert.Equal(t, "Read config and push call config to etcd for hot reloads. Also sets up a watcher for the config", cmd.Long)
 
-	ctx, cancel := context.WithCancel(context.Background())
-
-	err := cmd.ExecuteContext(ctx)
+	err := cmd.ExecuteContext(cmd.Context())
 
 	if err.Error() != "context deadline exceeded" {
 		t.Errorf("Unexpected error: %s", err)
 	}
+}
 
-	cancel()
+func TestReadConfigCommand_InvalidConfig(t *testing.T) {
+	configPath := createTempConfigFile(t, "invalid content")
+
+	arg := &args{
+		build:      "test-build",
+		version:    "test-version",
+		ConfigPath: configPath,
+		LogLevel:   "debug",
+		TextFormat: true,
+	}
+
+	cmd := ReadConfigCommand(arg)
+
+	assert.NotNil(t, cmd)
+	assert.Equal(t, "upload", cmd.Use)
+	assert.Equal(t, "Read config and push call config to etcd", cmd.Short)
+	assert.Equal(t, "Read config and push call config to etcd for hot reloads. Also sets up a watcher for the config", cmd.Long)
+
+	err := cmd.ExecuteContext(cmd.Context())
+
+	if !strings.HasPrefix(err.Error(), "failed to read config: While parsing config: yaml: unmarshal errors:") {
+		t.Errorf("Unexpected error: %s", err)
+	}
 }
 
 func TestInitCommands_BindPFlags(t *testing.T) {

@@ -3,6 +3,8 @@ package repo
 import (
 	"fmt"
 	"html/template"
+	"log/slog"
+	"sync"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/composer"
@@ -35,6 +37,7 @@ type BackendConfig struct {
 }
 
 type CallsRepository struct {
+	mu    *sync.Mutex
 	calls map[string]core.Handler
 }
 
@@ -43,54 +46,88 @@ type CallsRepository struct {
 // It returns a pointer to CallsRepository and an error if the repository creation fails.
 // It returns an error if the validator creation fails or if there is an error parsing the request template.
 func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
-	r := &CallsRepository{
-		calls: make(map[string]core.Handler),
-	}
+	handlerMap := make(map[string]core.Handler)
 
 	for _, call := range cfg.Calls {
-		valid, err := validator.New(call.Params)
+		err := createHandler(call, handlerMap)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create validator: %w", err)
+			return nil, err
 		}
+	}
 
-		procs := make([]handler.RenderParser, 0, len(call.Backend))
-
-		graph := createDepGraph(call.Backend)
-
-		call.Backend, err = topSortDFS(call.Backend)
-		if err != nil {
-			return nil, fmt.Errorf("failed to sort backends: %w", err)
-		}
-
-		for _, req := range call.Backend {
-			tmplt, err := template.New("request").Parse(req.RequestTemplate)
-			if err != nil {
-				return nil, err
-			}
-
-			procs = append(procs, processor.New(&processor.Config{
-				Tmplt:        tmplt,
-				FieldMap:     req.FieldsMap,
-				ResponseBody: req.ResponseBody,
-				Allow:        req.Allow,
-			}))
-		}
-
-		factory := func(waiter core.Waiter) handler.WaitComposer {
-			return composer.New(graph, waiter)
-		}
-
-		r.calls[call.Method] = handler.New(valid, procs, factory)
+	r := &CallsRepository{
+		calls: handlerMap,
+		mu:    &sync.Mutex{},
 	}
 
 	return r, nil
+}
+
+func createHandler(call CallConfig, handlerMap map[string]core.Handler) error {
+	valid, err := validator.New(call.Params)
+	if err != nil {
+		return fmt.Errorf("failed to create validator: %w", err)
+	}
+
+	procs := make([]handler.RenderParser, 0, len(call.Backend))
+	graph := createDepGraph(call.Backend)
+
+	call.Backend, err = topSortDFS(call.Backend)
+	if err != nil {
+		return fmt.Errorf("failed to sort backends: %w", err)
+	}
+
+	for _, req := range call.Backend {
+		tmplt, err := template.New("request").Parse(req.RequestTemplate)
+		if err != nil {
+			return err
+		}
+
+		procs = append(procs, processor.New(&processor.Config{
+			Tmplt:        tmplt,
+			FieldMap:     req.FieldsMap,
+			ResponseBody: req.ResponseBody,
+			Allow:        req.Allow,
+		}))
+	}
+
+	factory := func(waiter core.Waiter) handler.WaitComposer {
+		return composer.New(graph, waiter)
+	}
+
+	handlerMap[call.Method] = handler.New(valid, procs, factory)
+
+	return nil
 }
 
 // GetCall retrieves a CallRunConfig based on the provided method name.
 // It takes a single parameter method of type string, which specifies the method name.
 // It returns a pointer to a CallRunConfig if the method exists in the repository, otherwise it returns nil.
 func (r *CallsRepository) GetCall(method string) core.Handler {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	return r.calls[method]
+}
+
+// UpdateCalls refreshes the CallsConfig and rebuilds the handlers for calls accordingly
+// It takes a single parameter that is pointer to the new calls config.
+// The current implementation will completely overwrite the old config with new config.
+// It returns an error to if any while building the handlers, otherwise it returns nil.
+func (r *CallsRepository) UpdateCalls(calls *CallsConfig) {
+	newHandlerMap := make(map[string]core.Handler)
+
+	for _, call := range calls.Calls {
+		err := createHandler(call, newHandlerMap)
+		if err != nil {
+			slog.Error(fmt.Sprintf("Error while updating calls config: %v", err))
+			return
+		}
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.calls = newHandlerMap
 }
 
 // topSortDFS performs a topological sort on a slice of BackendConfig using Depth-First Search (DFS).

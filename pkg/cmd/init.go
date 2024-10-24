@@ -118,9 +118,13 @@ func ReadConfigCommand(arg *args) *cobra.Command {
 				return err
 			}
 
-			etcd := repo.NewEtcdHandler(cfg.Etcd)
+			etcd, err := repo.NewEtcdHandler(cmd.Context(), cfg.Etcd)
 
-			return putCallConfigToEtcd(cmd.Context(), etcd, arg.ConfigPath)
+			if err != nil {
+				return err
+			}
+
+			return putCallConfigToEtcd(etcd, arg.ConfigPath)
 		},
 	}
 }
