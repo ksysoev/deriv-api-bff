@@ -28,12 +28,12 @@ type CallConfig struct {
 
 type BackendConfig struct {
 	FieldsMap       map[string]string `mapstructure:"fields_map"`
-	DependsOn       []string          `mapstructure:"depends_on"`
 	ResponseBody    string            `mapstructure:"response_body"`
 	RequestTemplate string            `mapstructure:"request_template"`
-	Allow           []string          `mapstructure:"allow"`
 	Method          string            `mapstructure:"method"`
 	URLTemplate     string            `mapstructure:"url_template"`
+	DependsOn       []string          `mapstructure:"depends_on"`
+	Allow           []string          `mapstructure:"allow"`
 }
 
 type CallsRepository struct {
