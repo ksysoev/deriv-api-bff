@@ -7,6 +7,8 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/api"
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/prov/deriv"
+	"github.com/ksysoev/deriv-api-bff/pkg/prov/http"
+	"github.com/ksysoev/deriv-api-bff/pkg/prov/router"
 	"github.com/ksysoev/deriv-api-bff/pkg/repo"
 )
 
@@ -23,7 +25,8 @@ func runServer(ctx context.Context, cfg *config) error {
 		return fmt.Errorf("failed to create calls repo: %w", err)
 	}
 
-	requestHandler := core.NewService(calls, derivAPI, connRegistry)
+	beRouter := router.New(derivAPI, http.NewService())
+	requestHandler := core.NewService(calls, beRouter, connRegistry)
 
 	server := api.NewSevice(&cfg.Server, requestHandler)
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	"github.com/ksysoev/deriv-api-bff/pkg/middleware"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/backend"
@@ -43,7 +44,7 @@ func NewService(cfg *Config) *Service {
 // Handle processes a request using the provided connection and request objects.
 // It takes conn of type *core.Conn and req of type *core.Request.
 // It returns an error if the handler fails to process the request.
-func (s *Service) Handle(conn *core.Conn, req *core.Request) error {
+func (s *Service) Handle(conn *core.Conn, req *request.Request) error {
 	return s.handler.Handle(conn, req)
 }
 
@@ -52,9 +53,9 @@ func (s *Service) Handle(conn *core.Conn, req *core.Request) error {
 // It returns a wasabi.MessageType, a byte slice containing the message data, and an error if the request type is unsupported.
 func (s *Service) createMessage(r wasabi.Request) (wasabi.MessageType, []byte, error) {
 	switch r.RoutingKey() {
-	case core.TextMessage:
+	case request.TextMessage:
 		return wasabi.MsgTypeText, r.Data(), nil
-	case core.BinaryMessage:
+	case request.BinaryMessage:
 		return wasabi.MsgTypeBinary, r.Data(), nil
 	default:
 		var t wasabi.MessageType

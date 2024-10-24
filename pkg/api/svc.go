@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/ksysoev/deriv-api-bff/pkg/core"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	"github.com/ksysoev/deriv-api-bff/pkg/middleware"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/channel"
@@ -18,8 +18,8 @@ const (
 )
 
 type BFFService interface {
-	PassThrough(clientConn wasabi.Connection, req *core.Request) error
-	ProcessRequest(clientConn wasabi.Connection, req *core.Request) error
+	PassThrough(clientConn wasabi.Connection, req *request.Request) error
+	ProcessRequest(clientConn wasabi.Connection, req *request.Request) error
 }
 
 type Config struct {
@@ -79,13 +79,13 @@ func (s *Service) Run(ctx context.Context) error {
 // If the request type is core.TextMessage or core.BinaryMessage, it passes the request through to the handler.
 // For other request types, it processes the request using the handler.
 func (s *Service) Handle(conn wasabi.Connection, r wasabi.Request) error {
-	req, ok := r.(*core.Request)
+	req, ok := r.(*request.Request)
 	if !ok {
 		return fmt.Errorf("unsupported request type: %T", req)
 	}
 
 	switch req.RoutingKey() {
-	case core.TextMessage, core.BinaryMessage:
+	case request.TextMessage, request.BinaryMessage:
 		return s.handler.PassThrough(conn, req)
 	case "":
 		return fmt.Errorf("empty request type: %v", req)
@@ -103,13 +103,13 @@ func parse(_ wasabi.Connection, ctx context.Context, msgType wasabi.MessageType,
 
 	switch msgType {
 	case wasabi.MsgTypeText:
-		coreMsgType = core.TextMessage
+		coreMsgType = request.TextMessage
 	case wasabi.MsgTypeBinary:
-		coreMsgType = core.BinaryMessage
+		coreMsgType = request.BinaryMessage
 	default:
 		slog.Error("unsupported message type", "type", msgType)
 		return nil
 	}
 
-	return core.NewRequest(ctx, coreMsgType, data)
+	return request.NewRequest(ctx, coreMsgType, data)
 }

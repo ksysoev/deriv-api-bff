@@ -23,14 +23,17 @@ type EtcdConfig struct {
 type CallConfig struct {
 	Method  string           `mapstructure:"method"`
 	Params  validator.Config `mapstructure:"params"`
-	Backend []BackendConfig  `mapstructure:"backend"`
+	Backend []*BackendConfig `mapstructure:"backend"`
 }
 
 type BackendConfig struct {
+	Name            string            `mapstructure:"name"`
 	FieldsMap       map[string]string `mapstructure:"fields_map"`
-	DependsOn       []string          `mapstructure:"depends_on"`
 	ResponseBody    string            `mapstructure:"response_body"`
 	RequestTemplate string            `mapstructure:"request_template"`
+	Method          string            `mapstructure:"method"`
+	URLTemplate     string            `mapstructure:"url_template"`
+	DependsOn       []string          `mapstructure:"depends_on"`
 	Allow           []string          `mapstructure:"allow"`
 }
 
@@ -68,12 +71,18 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 				return nil, err
 			}
 
-			procs = append(procs, processor.New(&processor.Config{
+			p, err := processor.New(&processor.Config{
 				Tmplt:        tmplt,
 				FieldMap:     req.FieldsMap,
 				ResponseBody: req.ResponseBody,
 				Allow:        req.Allow,
-			}))
+			})
+
+			if err != nil {
+				return nil, fmt.Errorf("failed to create processor: %w", err)
+			}
+
+			procs = append(procs, p)
 		}
 
 		factory := func(waiter core.Waiter) handler.WaitComposer {
@@ -97,11 +106,11 @@ func (r *CallsRepository) GetCall(method string) core.Handler {
 // It takes a slice of BackendConfig as input and returns a sorted slice of BackendConfig and an error.
 // It returns an error if a circular dependency is detected among the BackendConfig elements.
 // Each BackendConfig element must have a unique ResponseBody and a list of dependencies specified in DependsOn.
-func topSortDFS(be []BackendConfig) ([]BackendConfig, error) {
+func topSortDFS(be []*BackendConfig) ([]*BackendConfig, error) {
 	graph := createDepGraph(be)
 	visited := make(map[string]bool, len(be))
 	recStack := make(map[string]bool, len(be))
-	sorted := make([]BackendConfig, 0, len(be))
+	sorted := make([]*BackendConfig, 0, len(be))
 
 	indexMap := make(map[string]int, len(be))
 	for i, b := range be {
@@ -146,7 +155,7 @@ func topSortDFS(be []BackendConfig) ([]BackendConfig, error) {
 // createDepGraph constructs a dependency graph from a slice of BackendConfig.
 // It takes a single parameter be which is a slice of BackendConfig.
 // It returns a map where the keys are response bodies and the values are slices of dependencies.
-func createDepGraph(be []BackendConfig) map[string][]string {
+func createDepGraph(be []*BackendConfig) map[string][]string {
 	graph := make(map[string][]string)
 
 	for _, b := range be {

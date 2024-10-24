@@ -11,6 +11,7 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/backend"
 	"github.com/ksysoev/wasabi/mocks"
@@ -93,14 +94,14 @@ func TestService_createMessage(t *testing.T) {
 	}{
 		{
 			name:         "TextMessage",
-			requestType:  core.TextMessage,
+			requestType:  request.TextMessage,
 			requestData:  []byte("text data"),
 			expectedType: wasabi.MsgTypeText,
 			expectedData: []byte("text data"),
 		},
 		{
 			name:         "BinaryMessage",
-			requestType:  core.BinaryMessage,
+			requestType:  request.BinaryMessage,
 			requestData:  []byte{0x01, 0x02, 0x03},
 			expectedType: wasabi.MsgTypeBinary,
 			expectedData: []byte{0x01, 0x02, 0x03},
@@ -170,20 +171,20 @@ func TestService_Handle(t *testing.T) {
 	tests := []struct {
 		name          string
 		conn          *core.Conn
-		req           *core.Request
+		req           *request.Request
 		handlerReturn error
 		expectedError string
 	}{
 		{
 			name:          "Handler returns no error",
 			conn:          &core.Conn{},
-			req:           &core.Request{},
+			req:           &request.Request{},
 			handlerReturn: nil,
 		},
 		{
 			name:          "Handler returns an error",
 			conn:          &core.Conn{},
-			req:           &core.Request{},
+			req:           &request.Request{},
 			handlerReturn: fmt.Errorf("handler error"),
 			expectedError: "handler error",
 		},

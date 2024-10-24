@@ -21,7 +21,7 @@ func TestNew(t *testing.T) {
 		Allow:        []string{"key1", "key2"},
 	}
 
-	processor := New(cfg)
+	processor := NewDeriv(cfg)
 
 	assert.NotNil(t, processor)
 	assert.Equal(t, tmpl, processor.tmpl)
@@ -82,7 +82,7 @@ func TestProcessor_Render(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rp := &Processor{
+			rp := &DerivProc{
 				tmpl: tmpl,
 			}
 
@@ -124,7 +124,7 @@ func TestProcessor_parse_Success(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rp := &Processor{
+			rp := &DerivProc{
 				responseBody: tt.responseBody,
 			}
 
@@ -136,7 +136,7 @@ func TestProcessor_parse_Success(t *testing.T) {
 }
 
 func TestProcessor_parse_Error(t *testing.T) {
-	rp := &Processor{
+	rp := &DerivProc{
 		responseBody: "data",
 	}
 
@@ -147,7 +147,7 @@ func TestProcessor_parse_Error(t *testing.T) {
 }
 
 func TestProcessor_parse_ResponseBodyNotFound(t *testing.T) {
-	rp := &Processor{
+	rp := &DerivProc{
 		responseBody: "data",
 	}
 
@@ -158,7 +158,7 @@ func TestProcessor_parse_ResponseBodyNotFound(t *testing.T) {
 }
 
 func TestProcessor_parse_UnexpectedFormat(t *testing.T) {
-	rp := &Processor{
+	rp := &DerivProc{
 		responseBody: "data",
 	}
 
@@ -205,7 +205,7 @@ func TestProcessor_Parse_Success(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rp := &Processor{
+			rp := &DerivProc{
 				responseBody: tt.responseBody,
 				fieldMap:     tt.fieldMap,
 				allow:        tt.allow,
@@ -219,7 +219,7 @@ func TestProcessor_Parse_Success(t *testing.T) {
 }
 
 func TestProcessor_Parse_Error(t *testing.T) {
-	rp := &Processor{
+	rp := &DerivProc{
 		responseBody: "data",
 	}
 
@@ -248,7 +248,7 @@ func TestProcessor_Name(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rp := &Processor{
+			rp := &DerivProc{
 				responseBody: tt.responseBody,
 			}
 

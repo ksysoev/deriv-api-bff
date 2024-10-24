@@ -20,7 +20,7 @@ func TestNewCallsRepository(t *testing.T) {
 					{
 						Method: "testMethod",
 						Params: validator.Config{"param1": {Type: "string"}},
-						Backend: []BackendConfig{
+						Backend: []*BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
 								ResponseBody:    "responseBody1",
@@ -40,7 +40,7 @@ func TestNewCallsRepository(t *testing.T) {
 					{
 						Method: "testMethod",
 						Params: validator.Config{"param1": {Type: "value1"}},
-						Backend: []BackendConfig{
+						Backend: []*BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
 								ResponseBody:    "responseBody1",
@@ -60,7 +60,7 @@ func TestNewCallsRepository(t *testing.T) {
 					{
 						Method: "testMethod",
 						Params: validator.Config{"param1": {Type: "string"}},
-						Backend: []BackendConfig{
+						Backend: []*BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
 								ResponseBody:    "responseBody1",
@@ -88,7 +88,7 @@ func TestNewCallsRepository(t *testing.T) {
 					{
 						Method: "testMethod",
 						Params: validator.Config{"param1": {Type: "string"}},
-						Backend: []BackendConfig{
+						Backend: []*BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
 								ResponseBody:    "responseBody1",
@@ -130,7 +130,7 @@ func TestGetCall(t *testing.T) {
 			{
 				Method: "testMethod",
 				Params: validator.Config{"param1": {Type: "string"}},
-				Backend: []BackendConfig{
+				Backend: []*BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
@@ -176,17 +176,17 @@ func TestGetCall(t *testing.T) {
 func TestTopSortDFS(t *testing.T) {
 	tests := []struct {
 		name    string
-		input   []BackendConfig
-		want    []BackendConfig
+		input   []*BackendConfig
+		want    []*BackendConfig
 		wantErr bool
 	}{
 		{
 			name: "no dependencies",
-			input: []BackendConfig{
+			input: []*BackendConfig{
 				{ResponseBody: "response1"},
 				{ResponseBody: "response2"},
 			},
-			want: []BackendConfig{
+			want: []*BackendConfig{
 				{ResponseBody: "response1"},
 				{ResponseBody: "response2"},
 			},
@@ -194,11 +194,11 @@ func TestTopSortDFS(t *testing.T) {
 		},
 		{
 			name: "simple dependency",
-			input: []BackendConfig{
+			input: []*BackendConfig{
 				{ResponseBody: "response1", DependsOn: []string{"response2"}},
 				{ResponseBody: "response2"},
 			},
-			want: []BackendConfig{
+			want: []*BackendConfig{
 				{ResponseBody: "response2"},
 				{ResponseBody: "response1", DependsOn: []string{"response2"}},
 			},
@@ -206,7 +206,7 @@ func TestTopSortDFS(t *testing.T) {
 		},
 		{
 			name: "circular dependency",
-			input: []BackendConfig{
+			input: []*BackendConfig{
 				{ResponseBody: "response1", DependsOn: []string{"response2"}},
 				{ResponseBody: "response2", DependsOn: []string{"response1"}},
 			},
@@ -215,12 +215,12 @@ func TestTopSortDFS(t *testing.T) {
 		},
 		{
 			name: "complex dependency",
-			input: []BackendConfig{
+			input: []*BackendConfig{
 				{ResponseBody: "response1", DependsOn: []string{"response3"}},
 				{ResponseBody: "response2", DependsOn: []string{"response1"}},
 				{ResponseBody: "response3"},
 			},
-			want: []BackendConfig{
+			want: []*BackendConfig{
 				{ResponseBody: "response3"},
 				{ResponseBody: "response1", DependsOn: []string{"response3"}},
 				{ResponseBody: "response2", DependsOn: []string{"response1"}},
@@ -229,7 +229,7 @@ func TestTopSortDFS(t *testing.T) {
 		},
 		{
 			name: "complex cicular dependency",
-			input: []BackendConfig{
+			input: []*BackendConfig{
 				{ResponseBody: "response1", DependsOn: []string{"response3"}},
 				{ResponseBody: "response2", DependsOn: []string{"response1"}},
 				{ResponseBody: "response3", DependsOn: []string{"response2"}},
