@@ -6,8 +6,8 @@ import (
 
 func TestNew(t *testing.T) {
 	tests := []struct {
-		name    string
 		cfg     *Config
+		name    string
 		wantErr bool
 	}{
 		{
@@ -53,8 +53,8 @@ func TestNew(t *testing.T) {
 
 func TestIsDerivConfig(t *testing.T) {
 	tests := []struct {
-		name string
 		cfg  *Config
+		name string
 		want bool
 	}{
 		{
@@ -82,8 +82,8 @@ func TestIsDerivConfig(t *testing.T) {
 
 func TestIsHTTPConfig(t *testing.T) {
 	tests := []struct {
-		name string
 		cfg  *Config
+		name string
 		want bool
 	}{
 		{
