@@ -37,7 +37,7 @@ type BackendConfig struct {
 }
 
 type CallsRepository struct {
-	mu    *sync.RWMutex
+	mu    *sync.Mutex
 	calls map[string]core.Handler
 }
 
@@ -57,7 +57,7 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 
 	r := &CallsRepository{
 		calls: handlerMap,
-		mu:    &sync.RWMutex{},
+		mu:    &sync.Mutex{},
 	}
 
 	return r, nil
@@ -104,8 +104,8 @@ func createHandler(call CallConfig, handlerMap map[string]core.Handler) error {
 // It takes a single parameter method of type string, which specifies the method name.
 // It returns a pointer to a CallRunConfig if the method exists in the repository, otherwise it returns nil.
 func (r *CallsRepository) GetCall(method string) core.Handler {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	return r.calls[method]
 }
