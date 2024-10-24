@@ -37,7 +37,7 @@ type BackendConfig struct {
 }
 
 type CallsRepository struct {
-	mu    *sync.Mutex
+	mu    *sync.RWMutex
 	calls map[string]core.Handler
 }
 
@@ -46,25 +46,24 @@ type CallsRepository struct {
 // It returns a pointer to CallsRepository and an error if the repository creation fails.
 // It returns an error if the validator creation fails or if there is an error parsing the request template.
 func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
-	r := &CallsRepository{
-		calls: make(map[string]core.Handler),
-		mu:    &sync.Mutex{},
-	}
-
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	handlerMap := make(map[string]core.Handler)
 
 	for _, call := range cfg.Calls {
-		err := createHandler(call, r)
+		err := createHandler(call, handlerMap)
 		if err != nil {
 			return nil, err
 		}
 	}
 
+	r := &CallsRepository{
+		calls: handlerMap,
+		mu:    &sync.RWMutex{},
+	}
+
 	return r, nil
 }
 
-func createHandler(call CallConfig, r *CallsRepository) error {
+func createHandler(call CallConfig, handlerMap map[string]core.Handler) error {
 	valid, err := validator.New(call.Params)
 	if err != nil {
 		return fmt.Errorf("failed to create validator: %w", err)
@@ -96,7 +95,7 @@ func createHandler(call CallConfig, r *CallsRepository) error {
 		return composer.New(graph, waiter)
 	}
 
-	r.calls[call.Method] = handler.New(valid, procs, factory)
+	handlerMap[call.Method] = handler.New(valid, procs, factory)
 
 	return nil
 }
@@ -105,6 +104,9 @@ func createHandler(call CallConfig, r *CallsRepository) error {
 // It takes a single parameter method of type string, which specifies the method name.
 // It returns a pointer to a CallRunConfig if the method exists in the repository, otherwise it returns nil.
 func (r *CallsRepository) GetCall(method string) core.Handler {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
 	return r.calls[method]
 }
 
@@ -113,23 +115,19 @@ func (r *CallsRepository) GetCall(method string) core.Handler {
 // The current implementation will completely overwrite the old config with new config.
 // It returns an error to if any while building the handlers, otherwise it returns nil.
 func (r *CallsRepository) UpdateCalls(calls *CallsConfig) {
-	r.mu.Lock()
-
-	currentConfig := r.calls
-
-	r.calls = make(map[string]core.Handler)
-	defer r.mu.Unlock()
+	newHandlerMap := make(map[string]core.Handler)
 
 	for _, call := range calls.Calls {
-		err := createHandler(call, r)
+		err := createHandler(call, newHandlerMap)
 		if err != nil {
 			slog.Error(fmt.Sprintf("Error while updating calls config: %v", err))
-
-			r.calls = currentConfig
-
-			break
+			return
 		}
 	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.calls = newHandlerMap
 }
 
 // topSortDFS performs a topological sort on a slice of BackendConfig using Depth-First Search (DFS).
