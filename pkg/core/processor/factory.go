@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"fmt"
 	"html/template"
 	"io"
 )
@@ -12,6 +13,9 @@ type Processor interface {
 }
 
 type Config struct {
+	Name         string
+	Method       string
+	URLTemplate  string
 	Tmplt        *template.Template
 	FieldMap     map[string]string
 	ResponseBody string
@@ -19,5 +23,21 @@ type Config struct {
 }
 
 func New(cfg *Config) (Processor, error) {
-	return NewDeriv(cfg), nil
+	if isDerivConfig(cfg) && isHTTPConfig(cfg) {
+		return nil, fmt.Errorf("ambiguous processor configuration")
+	} else if isDerivConfig(cfg) {
+		return NewDeriv(cfg), nil
+	} else if isHTTPConfig(cfg) {
+		return NewHTTP(cfg), nil
+	} else {
+		return nil, fmt.Errorf("invalid processor configuration")
+	}
+}
+
+func isDerivConfig(cfg *Config) bool {
+	return cfg.ResponseBody != ""
+}
+
+func isHTTPConfig(cfg *Config) bool {
+	return cfg.Method != "" && cfg.URLTemplate != ""
 }

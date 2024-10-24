@@ -9,6 +9,7 @@ import (
 )
 
 type DerivProc struct {
+	name         string
 	tmpl         *template.Template
 	fieldMap     map[string]string
 	responseBody string
@@ -26,6 +27,7 @@ type templateData struct {
 // It returns a pointer to a Processor struct initialized with the values from the Config.
 func NewDeriv(cfg *Config) *DerivProc {
 	return &DerivProc{
+		name:         cfg.Name,
 		tmpl:         cfg.Tmplt,
 		fieldMap:     cfg.FieldMap,
 		responseBody: cfg.ResponseBody,
@@ -37,6 +39,10 @@ func NewDeriv(cfg *Config) *DerivProc {
 // It does not take any parameters.
 // It returns a string which is the response body of the Processor.
 func (p *DerivProc) Name() string {
+	if p.name != "" {
+		return p.name
+	}
+
 	return p.responseBody
 }
 
