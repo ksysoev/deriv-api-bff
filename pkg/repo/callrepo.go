@@ -33,6 +33,7 @@ type BackendConfig struct {
 	RequestTemplate string            `mapstructure:"request_template"`
 	Allow           []string          `mapstructure:"allow"`
 	Method          string            `mapstructure:"method"`
+	URLTemplate     string            `mapstructure:"url_template"`
 }
 
 type CallsRepository struct {
