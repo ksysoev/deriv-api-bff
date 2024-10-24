@@ -133,15 +133,11 @@ func TestReadConfigCommand(t *testing.T) {
 	assert.Equal(t, "Read config and push call config to etcd", cmd.Short)
 	assert.Equal(t, "Read config and push call config to etcd for hot reloads. Also sets up a watcher for the config", cmd.Long)
 
-	ctx, cancel := context.WithCancel(context.Background())
-
-	err := cmd.ExecuteContext(ctx)
+	err := cmd.ExecuteContext(cmd.Context())
 
 	if err.Error() != "context deadline exceeded" {
 		t.Errorf("Unexpected error: %s", err)
 	}
-
-	cancel()
 }
 
 func TestInitCommands_BindPFlags(t *testing.T) {

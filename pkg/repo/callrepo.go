@@ -3,6 +3,8 @@ package repo
 import (
 	"fmt"
 	"html/template"
+	"log/slog"
+	"sync"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/composer"
@@ -35,6 +37,7 @@ type BackendConfig struct {
 }
 
 type CallsRepository struct {
+	mu    *sync.Mutex
 	calls map[string]core.Handler
 }
 
@@ -45,7 +48,11 @@ type CallsRepository struct {
 func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 	r := &CallsRepository{
 		calls: make(map[string]core.Handler),
+		mu:    &sync.Mutex{},
 	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	for _, call := range cfg.Calls {
 		err := createHandler(call, r)
@@ -105,17 +112,24 @@ func (r *CallsRepository) GetCall(method string) core.Handler {
 // It takes a single parameter that is pointer to the new calls config.
 // The current implementation will completely overwrite the old config with new config.
 // It returns an error to if any while building the handlers, otherwise it returns nil.
-func (r *CallsRepository) UpdateCalls(calls *CallsConfig) error {
+func (r *CallsRepository) UpdateCalls(calls *CallsConfig) {
+	r.mu.Lock()
+
+	currentConfig := r.calls
+
 	r.calls = make(map[string]core.Handler)
+	defer r.mu.Unlock()
 
 	for _, call := range calls.Calls {
 		err := createHandler(call, r)
 		if err != nil {
-			return err
+			slog.Error(fmt.Sprintf("Error while updating calls config: %v", err))
+
+			r.calls = currentConfig
+
+			break
 		}
 	}
-
-	return nil
 }
 
 // topSortDFS performs a topological sort on a slice of BackendConfig using Depth-First Search (DFS).

@@ -3,6 +3,7 @@ package repo
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/coreos/etcd/mvcc/mvccpb"
@@ -141,6 +142,7 @@ func TestWatch_Success(t *testing.T) {
 
 func newEtcdHandlerWithCli(ctx context.Context, cli *clientv3.Client) Etcd {
 	return &EtcdHandler{
+		mu:   &sync.RWMutex{},
 		conf: clientv3.Config{},
 		cli:  cli,
 		ctx:  ctx,
