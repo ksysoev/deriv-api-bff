@@ -119,6 +119,10 @@ func (p *HTTPProc) parse(data []byte) (map[string]any, error) {
 
 	switch respBody := rdata.(type) {
 	case map[string]any:
+		if errData, ok := respBody["error"]; ok {
+			return nil, NewAPIError(errData)
+		}
+
 		return respBody, nil
 	case []any:
 		return map[string]any{"list": respBody}, nil

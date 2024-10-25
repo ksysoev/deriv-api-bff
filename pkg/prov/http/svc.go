@@ -2,7 +2,6 @@ package http
 
 import (
 	"fmt"
-	"log/slog"
 	"net/http"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
@@ -30,7 +29,6 @@ func NewService() *Service {
 func (s *Service) Handle(conn *core.Conn, req *request.HTTPReq) error {
 	connWrap := channel.NewConnectionWrapper(conn, channel.WithSendWrapper(
 		func(c wasabi.Connection, msgType wasabi.MessageType, msg []byte) error {
-			slog.Info("Sending message to client", slog.String("msg", string(msg)))
 			if ok := conn.DoneRequest(req.ID(), msg); !ok {
 				return fmt.Errorf("Request ID %d not found is cancelled", req.ID())
 			}
