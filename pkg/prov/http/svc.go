@@ -28,9 +28,9 @@ func NewService() *Service {
 
 func (s *Service) Handle(conn *core.Conn, req *request.HTTPReq) error {
 	connWrap := channel.NewConnectionWrapper(conn, channel.WithSendWrapper(
-		func(c wasabi.Connection, msgType wasabi.MessageType, msg []byte) error {
+		func(_ wasabi.Connection, _ wasabi.MessageType, msg []byte) error {
 			if ok := conn.DoneRequest(req.ID(), msg); !ok {
-				return fmt.Errorf("Request ID %d not found is cancelled", req.ID())
+				return fmt.Errorf("request ID %d not found is cancelled", req.ID())
 			}
 
 			return nil

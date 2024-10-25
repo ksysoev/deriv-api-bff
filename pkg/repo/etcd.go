@@ -10,26 +10,29 @@ import (
 )
 
 type Etcd interface {
-	Put(ctx context.Context, cli *clientv3.Client, key string, value string) error
-	Client(cfg EtcdConfig) (*clientv3.Client, error)
+	Put(key string, value string) error
+
+	Watch(key string) (clientv3.WatchChan, context.CancelFunc)
+
+	Close() error
 }
 
 type EtcdHandler struct {
-	Conf *clientv3.Config
+	cli  *clientv3.Client
+	ctx  context.Context
+	conf clientv3.Config
 }
 
-func (etcdHandler EtcdHandler) Client(cfg EtcdConfig) (*clientv3.Client, error) {
-	return clientv3.New(clientv3.Config{
-		Endpoints:   cfg.Servers,
-		DialTimeout: time.Duration(cfg.DialTimeoutSeconds * int(time.Second)),
-	})
+func (etcdHandler *EtcdHandler) Watch(key string) (clientv3.WatchChan, context.CancelFunc) {
+	watchCtx, cancel := context.WithCancel(etcdHandler.ctx)
+	watchRespChan := etcdHandler.cli.Watcher.Watch(watchCtx, key)
+
+	return watchRespChan, cancel
 }
 
-func (etcdHandler EtcdHandler) Put(ctx context.Context, cli *clientv3.Client, key, value string) error {
-	defer cli.Close()
-
-	ctx, cancel := context.WithTimeout(ctx, etcdHandler.Conf.DialTimeout)
-	res, err := cli.Put(ctx, key, value)
+func (etcdHandler *EtcdHandler) Put(key, value string) error {
+	ctx, cancel := context.WithTimeout(etcdHandler.ctx, etcdHandler.conf.DialTimeout)
+	res, err := etcdHandler.cli.Put(ctx, key, value)
 
 	cancel()
 
@@ -42,11 +45,24 @@ func (etcdHandler EtcdHandler) Put(ctx context.Context, cli *clientv3.Client, ke
 	return nil
 }
 
-func NewEtcdHandler(etcdConfig EtcdConfig) Etcd {
-	return &EtcdHandler{
-		Conf: &clientv3.Config{
-			Endpoints:   etcdConfig.Servers,
-			DialTimeout: time.Duration(etcdConfig.DialTimeoutSeconds * int(time.Second)),
-		},
+func (etcdHandler *EtcdHandler) Close() error {
+	return etcdHandler.cli.Close()
+}
+
+func NewEtcdHandler(ctx context.Context, etcdConfig EtcdConfig) (Etcd, error) {
+	conf := clientv3.Config{
+		Endpoints:   etcdConfig.Servers,
+		DialTimeout: time.Duration(etcdConfig.DialTimeoutSeconds * int(time.Second)),
 	}
+	cli, err := clientv3.New(conf)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &EtcdHandler{
+		conf: conf,
+		cli:  cli,
+		ctx:  ctx,
+	}, nil
 }
