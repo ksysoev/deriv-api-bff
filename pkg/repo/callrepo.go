@@ -71,11 +71,22 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 				return nil, err
 			}
 
+			var urlTmpl *template.Template
+			if req.URLTemplate != "" {
+				urlTmpl, err = template.New("url").Parse(req.URLTemplate)
+				if err != nil {
+					return nil, err
+				}
+			}
+
 			p, err := processor.New(&processor.Config{
+				Name:         req.Name,
 				Tmplt:        tmplt,
 				FieldMap:     req.FieldsMap,
 				ResponseBody: req.ResponseBody,
 				Allow:        req.Allow,
+				Method:       req.Method,
+				URLTemplate:  urlTmpl,
 			})
 
 			if err != nil {
