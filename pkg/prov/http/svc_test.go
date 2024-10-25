@@ -9,6 +9,7 @@ import (
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestNewService(t *testing.T) {
@@ -64,7 +65,7 @@ func TestService_Handle(t *testing.T) {
 	mockRequest := request.NewHTTPReq(ctx, "GET", "http://localhost/", nil, 1)
 
 	mockHandler := mocks.NewMockRequestHandler(t)
-	mockHandler.EXPECT().Handle(conn, mockRequest).Return(assert.AnError)
+	mockHandler.EXPECT().Handle(mock.Anything, mockRequest).Return(assert.AnError)
 
 	service.handler = mockHandler
 
