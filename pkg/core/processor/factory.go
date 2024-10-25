@@ -17,7 +17,7 @@ type Processor interface {
 type Config struct {
 	Name         string
 	Method       string
-	URLTemplate  string
+	URLTemplate  *template.Template
 	Tmplt        *template.Template
 	FieldMap     map[string]string
 	ResponseBody string
@@ -52,5 +52,5 @@ func isDerivConfig(cfg *Config) bool {
 // It takes a single parameter cfg of type *Config.
 // It returns a boolean value: true if both Method and URLTemplate fields of cfg are non-empty, otherwise false.
 func isHTTPConfig(cfg *Config) bool {
-	return cfg.Method != "" && cfg.URLTemplate != ""
+	return cfg.Method != "" && cfg.URLTemplate != nil
 }

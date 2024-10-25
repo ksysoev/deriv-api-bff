@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"html/template"
 	"testing"
 )
 
@@ -21,7 +22,7 @@ func TestNew(t *testing.T) {
 			name: "Valid HTTP Config",
 			cfg: &Config{
 				Method:      "GET",
-				URLTemplate: "http://example.com",
+				URLTemplate: template.Must(template.New("test").Parse("/test/url")),
 			},
 			wantErr: false,
 		},
@@ -29,7 +30,7 @@ func TestNew(t *testing.T) {
 			name: "Ambiguous Config",
 			cfg: &Config{
 				Method:       "GET",
-				URLTemplate:  "http://example.com",
+				URLTemplate:  template.Must(template.New("test").Parse("/test/url")),
 				ResponseBody: "some response",
 			},
 			wantErr: true,
@@ -90,7 +91,7 @@ func TestIsHTTPConfig(t *testing.T) {
 			name: "HTTP Config",
 			cfg: &Config{
 				Method:      "GET",
-				URLTemplate: "http://example.com",
+				URLTemplate: template.Must(template.New("test").Parse("/test/url")),
 			},
 			want: true,
 		},

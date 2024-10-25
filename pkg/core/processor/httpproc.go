@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -14,7 +15,7 @@ import (
 type HTTPProc struct {
 	name        string
 	method      string
-	urlTemplate string
+	urlTemplate *template.Template
 	tmpl        *template.Template
 	fieldMap    map[string]string
 	allow       []string
@@ -44,10 +45,30 @@ func (p *HTTPProc) Name() string {
 // Render processes the HTTP request and writes the response.
 // It takes an io.Writer, an int64, and two maps of string to any type as parameters.
 // It returns an error indicating that the HTTP processor is not implemented.
-func (p *HTTPProc) Render(ctx context.Context, _ int64, _, _ map[string]any) (core.Request, error) {
-	var body []byte
+func (p *HTTPProc) Render(ctx context.Context, ReqID int64, param, deps map[string]any) (core.Request, error) {
+	tmplData := templateData{
+		Params: param,
+		Resp:   deps,
+		ReqID:  ReqID,
+	}
 
-	return request.NewHTTPReq(ctx, p.method, p.urlTemplate, body), fmt.Errorf("HTTP processor not implemented")
+	urlBuf := bytes.NewBuffer(nil)
+
+	if err := p.urlTemplate.Execute(urlBuf, tmplData); err != nil {
+		return nil, fmt.Errorf("fail to execute URL template %s: %w", p.name, err)
+	}
+
+	if p.tmpl == nil {
+		return request.NewHTTPReq(ctx, p.method, urlBuf.String(), nil), nil
+	}
+
+	bodyBuf := bytes.NewBuffer(nil)
+
+	if err := p.tmpl.Execute(bodyBuf, tmplData); err != nil {
+		return nil, fmt.Errorf("fail to execute request template %s: %w", p.name, err)
+	}
+
+	return request.NewHTTPReq(ctx, p.method, urlBuf.String(), bodyBuf.Bytes()), nil
 }
 
 // Parse processes the input data and filters the response based on allowed keys.

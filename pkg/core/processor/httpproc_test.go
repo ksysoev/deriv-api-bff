@@ -176,7 +176,7 @@ func TestNewHTTP(t *testing.T) {
 			cfg: &Config{
 				Name:        "TestProcessor",
 				Method:      "GET",
-				URLTemplate: "/test/url",
+				URLTemplate: template.Must(template.New("test").Parse("/test/url")),
 				Tmplt:       template.Must(template.New("test").Parse("test template")),
 				FieldMap:    map[string]string{"key1": "mappedKey1"},
 				Allow:       []string{"key1", "key2"},
@@ -184,7 +184,7 @@ func TestNewHTTP(t *testing.T) {
 			want: &HTTPProc{
 				name:        "TestProcessor",
 				method:      "GET",
-				urlTemplate: "/test/url",
+				urlTemplate: template.Must(template.New("test").Parse("/test/url")),
 				tmpl:        template.Must(template.New("test").Parse("test template")),
 				fieldMap:    map[string]string{"key1": "mappedKey1"},
 				allow:       []string{"key1", "key2"},
@@ -196,7 +196,7 @@ func TestNewHTTP(t *testing.T) {
 			want: &HTTPProc{
 				name:        "",
 				method:      "",
-				urlTemplate: "",
+				urlTemplate: nil,
 				tmpl:        nil,
 				fieldMap:    nil,
 				allow:       nil,
