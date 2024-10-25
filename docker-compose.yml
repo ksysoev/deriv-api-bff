@@ -21,4 +21,12 @@ services:
       "--config", 
       "/runtime/config.yaml", 
       ]
-    
+    depends_on:
+      - nginx
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8081:80"
+    volumes:
+      - ./samples/static:/var/www
+      - ./samples/nginx.conf:/etc/nginx/conf.d/default.conf
