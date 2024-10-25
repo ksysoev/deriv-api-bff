@@ -1,11 +1,15 @@
 package processor
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"io"
 	"log/slog"
+
+	"github.com/ksysoev/deriv-api-bff/pkg/core"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 )
 
 type DerivProc struct {
@@ -51,7 +55,7 @@ func (p *DerivProc) Name() string {
 // and two maps params and deps of type map[string]any.
 // It returns an error if the template execution fails.
 // If deps or params are nil, they are initialized as empty maps before template execution.
-func (p *DerivProc) Render(w io.Writer, reqID int64, params, deps map[string]any) error {
+func (p *DerivProc) Render(ctx context.Context, reqID int64, params, deps map[string]any) (core.Request, error) {
 	if deps == nil {
 		deps = make(map[string]any)
 	}
@@ -66,7 +70,13 @@ func (p *DerivProc) Render(w io.Writer, reqID int64, params, deps map[string]any
 		Resp:   deps,
 	}
 
-	return p.tmpl.Execute(w, data)
+	buf := bytes.NewBuffer(nil)
+
+	if err := p.tmpl.Execute(buf, data); err != nil {
+		return nil, fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return request.NewRequest(ctx, request.TextMessage, buf.Bytes()), nil
 }
 
 // Parse processes the input data and filters the response based on allowed keys.

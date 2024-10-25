@@ -1,11 +1,14 @@
 package processor
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"io"
 	"log/slog"
+
+	"github.com/ksysoev/deriv-api-bff/pkg/core"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 )
 
 type HTTPProc struct {
@@ -41,8 +44,10 @@ func (p *HTTPProc) Name() string {
 // Render processes the HTTP request and writes the response.
 // It takes an io.Writer, an int64, and two maps of string to any type as parameters.
 // It returns an error indicating that the HTTP processor is not implemented.
-func (p *HTTPProc) Render(_ io.Writer, _ int64, _, _ map[string]any) error {
-	return fmt.Errorf("http processor not implemented")
+func (p *HTTPProc) Render(ctx context.Context, _ int64, _, _ map[string]any) (core.Request, error) {
+	var body []byte
+
+	return request.NewHTTPReq(ctx, p.method, p.urlTemplate, body), fmt.Errorf("HTTP processor not implemented")
 }
 
 // Parse processes the input data and filters the response based on allowed keys.

@@ -1,7 +1,7 @@
 package processor
 
 import (
-	"bytes"
+	"context"
 	"html/template"
 	"testing"
 
@@ -86,11 +86,11 @@ func TestProcessor_Render(t *testing.T) {
 				tmpl: tmpl,
 			}
 
-			var buf bytes.Buffer
+			ctx := context.Background()
+			req, err := rp.Render(ctx, tt.reqID, tt.params, tt.deps)
 
-			err := rp.Render(&buf, tt.reqID, tt.params, tt.deps)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, buf.String())
+			assert.Equal(t, tt.expected, string(req.Data()))
 		})
 	}
 }

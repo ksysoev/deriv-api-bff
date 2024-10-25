@@ -16,6 +16,7 @@ packages:
       Handler:
       ConnRegistry:
       APIProvider:
+      Request:
   github.com/ksysoev/deriv-api-bff/pkg/api:
     interfaces:
       BFFService:
@@ -26,8 +27,8 @@ packages:
   github.com/ksysoev/deriv-api-bff/pkg/repo:
     interfaces:
       Etcd:
-  go.etcd.io/etcd/clientv3:
-    interfaces:
-      KV:
-      Lease:
-      Watcher:
+  # go.etcd.io/etcd/clientv3:
+  #   interfaces:
+  #     KV:
+  #     Lease:
+  #     Watcher:

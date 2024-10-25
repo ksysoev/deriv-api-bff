@@ -11,9 +11,10 @@ import (
 type Request interface {
 	Context() context.Context
 	RoutingKey() string
+	Data() []byte
 }
 
-type Sender func(context.Context, []byte) error
+type Sender func(Request) error
 type Waiter func() (reqID int64, respChan <-chan []byte)
 
 type CallsRepo interface {
@@ -76,8 +77,8 @@ func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *request.Requ
 		req.Context(),
 		req.Params,
 		conn.WaitResponse,
-		func(ctx context.Context, data []byte) error {
-			return s.be.Handle(conn, request.NewRequest(ctx, request.TextMessage, data))
+		func(req Request) error {
+			return s.be.Handle(conn, req)
 		},
 	)
 
