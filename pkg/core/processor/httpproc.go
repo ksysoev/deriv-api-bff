@@ -45,11 +45,11 @@ func (p *HTTPProc) Name() string {
 // Render processes the HTTP request and writes the response.
 // It takes an io.Writer, an int64, and two maps of string to any type as parameters.
 // It returns an error indicating that the HTTP processor is not implemented.
-func (p *HTTPProc) Render(ctx context.Context, ReqID int64, param, deps map[string]any) (core.Request, error) {
+func (p *HTTPProc) Render(ctx context.Context, reqID int64, param, deps map[string]any) (core.Request, error) {
 	tmplData := templateData{
 		Params: param,
 		Resp:   deps,
-		ReqID:  ReqID,
+		ReqID:  reqID,
 	}
 
 	urlBuf := bytes.NewBuffer(nil)
