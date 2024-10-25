@@ -2,12 +2,14 @@ package http
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/backend"
+	"github.com/ksysoev/wasabi/channel"
 )
 
 type Service struct {
@@ -26,7 +28,18 @@ func NewService() *Service {
 }
 
 func (s *Service) Handle(conn *core.Conn, req *request.HTTPReq) error {
-	return s.handler.Handle(conn, req)
+	connWrap := channel.NewConnectionWrapper(conn, channel.WithSendWrapper(
+		func(c wasabi.Connection, msgType wasabi.MessageType, msg []byte) error {
+			slog.Info("Sending message to client", slog.String("msg", string(msg)))
+			if ok := conn.DoneRequest(req.ID(), msg); !ok {
+				return fmt.Errorf("Request ID %d not found is cancelled", req.ID())
+			}
+
+			return nil
+		},
+	))
+
+	return s.handler.Handle(connWrap, req)
 }
 
 // requestFactory creates an HTTP request from a wasabi.Request.

@@ -64,8 +64,14 @@ api:
           type: "string"
       backend:
         - method: "GET"
-          url_template: 'http://nginx/contry/{{ index .Params "country" }}.json'
+          url_template: 'http://nginx/country/{{ index .Params "country" }}.json'
           allow: 
-            - body
+            - region
+            - subregion
+            - name
+            - alpha2Code
+            - alpha3Code
+            - callingCodes
+            - capital
           fields_map:
             title: "title"

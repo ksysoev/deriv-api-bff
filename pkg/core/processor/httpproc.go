@@ -59,7 +59,7 @@ func (p *HTTPProc) Render(ctx context.Context, reqID int64, param, deps map[stri
 	}
 
 	if p.tmpl == nil {
-		return request.NewHTTPReq(ctx, p.method, urlBuf.String(), nil), nil
+		return request.NewHTTPReq(ctx, p.method, urlBuf.String(), nil, reqID), nil
 	}
 
 	bodyBuf := bytes.NewBuffer(nil)
@@ -68,7 +68,7 @@ func (p *HTTPProc) Render(ctx context.Context, reqID int64, param, deps map[stri
 		return nil, fmt.Errorf("fail to execute request template %s: %w", p.name, err)
 	}
 
-	return request.NewHTTPReq(ctx, p.method, urlBuf.String(), bodyBuf.Bytes()), nil
+	return request.NewHTTPReq(ctx, p.method, urlBuf.String(), bodyBuf.Bytes(), reqID), nil
 }
 
 // Parse processes the input data and filters the response based on allowed keys.

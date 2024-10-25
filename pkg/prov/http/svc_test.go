@@ -29,7 +29,7 @@ func TestRequestFactory(t *testing.T) {
 	}{
 		{
 			name:        "Valid HTTPReq",
-			request:     request.NewHTTPReq(ctx, "GET", "http://localhost/", nil),
+			request:     request.NewHTTPReq(ctx, "GET", "http://localhost/", nil, 1),
 			expectError: false,
 		},
 		{
@@ -39,7 +39,7 @@ func TestRequestFactory(t *testing.T) {
 		},
 		{
 			name:        "HTTPReq with Error",
-			request:     request.NewHTTPReq(ctx, "/invalid", "test", nil), // Assuming HTTPReq can be invalid
+			request:     request.NewHTTPReq(ctx, "/invalid", "test", nil, 1), // Assuming HTTPReq can be invalid
 			expectError: true,
 		},
 	}
@@ -61,7 +61,7 @@ func TestService_Handle(t *testing.T) {
 	ctx := context.Background()
 	mockConn := mocks.NewMockConnection(t)
 	conn := core.NewConnection(mockConn, func(_ string) {})
-	mockRequest := request.NewHTTPReq(ctx, "GET", "http://localhost/", nil)
+	mockRequest := request.NewHTTPReq(ctx, "GET", "http://localhost/", nil, 1)
 
 	mockHandler := mocks.NewMockRequestHandler(t)
 	mockHandler.EXPECT().Handle(conn, mockRequest).Return(assert.AnError)
