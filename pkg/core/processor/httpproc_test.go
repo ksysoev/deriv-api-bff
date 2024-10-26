@@ -1,66 +1,12 @@
 package processor
 
 import (
+	"context"
 	"html/template"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-func TestHTTPProc_parse(t *testing.T) {
-	tests := []struct {
-		want    map[string]any
-		name    string
-		data    []byte
-		wantErr bool
-	}{
-		{
-			name:    "Valid JSON object",
-			data:    []byte(`{"key1": "value1", "key2": 2}`),
-			want:    map[string]any{"key1": "value1", "key2": 2.0},
-			wantErr: false,
-		},
-		{
-			name:    "Valid JSON array",
-			data:    []byte(`[{"key1": "value1"}, {"key2": 2}]`),
-			want:    map[string]any{"list": []any{map[string]any{"key1": "value1"}, map[string]any{"key2": 2.0}}},
-			wantErr: false,
-		},
-		{
-			name:    "Valid single JSON value",
-			data:    []byte(`"singleValue"`),
-			want:    map[string]any{"value": "singleValue"},
-			wantErr: false,
-		},
-		{
-			name:    "Invalid JSON",
-			data:    []byte(`{"key1": "value1", "key2": 2`),
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name:    "Unexpected format",
-			data:    []byte(`123`),
-			want:    map[string]any{"value": 123.0},
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := &HTTPProc{}
-			got, err := p.parse(tt.data)
-
-			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Nil(t, got)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.want, got)
-			}
-		})
-	}
-}
 
 func TestHTTPProc_Parse(t *testing.T) {
 	tests := []struct {
@@ -213,6 +159,160 @@ func TestNewHTTP(t *testing.T) {
 			assert.Equal(t, tt.want.tmpl, got.tmpl)
 			assert.Equal(t, tt.want.fieldMap, got.fieldMap)
 			assert.Equal(t, tt.want.allow, got.allow)
+		})
+	}
+}
+
+func TestHTTPProc_Render(t *testing.T) {
+	tests := []struct {
+		proc          *HTTPProc
+		param         map[string]any
+		deps          map[string]any
+		name          string
+		wantRoutinKey string
+		wantBody      []byte
+		reqID         int64
+		wantErr       bool
+	}{
+		{
+			name: "Valid URL and body template",
+			proc: &HTTPProc{
+				name:        "TestProcessor",
+				method:      "POST",
+				urlTemplate: template.Must(template.New("url").Parse("http://example.com/{{.ReqID}}")),
+				tmpl:        template.Must(template.New("body").Parse(`{"param": "{{.Params.param}}"}`)),
+			},
+			reqID:         123,
+			param:         map[string]any{"param": "value"},
+			deps:          map[string]any{},
+			wantRoutinKey: "POST http://example.com/123",
+			wantBody:      []byte(`{"param": "value"}`),
+			wantErr:       false,
+		},
+		{
+			name: "Valid URL template, no body template",
+			proc: &HTTPProc{
+				name:        "TestProcessor",
+				method:      "GET",
+				urlTemplate: template.Must(template.New("url").Parse("http://example.com/{{.ReqID}}")),
+				tmpl:        nil,
+			},
+			reqID:         123,
+			param:         map[string]any{"param": "value"},
+			deps:          map[string]any{},
+			wantRoutinKey: "GET http://example.com/123",
+			wantBody:      nil,
+			wantErr:       false,
+		},
+		{
+			name: "Invalid URL template",
+			proc: &HTTPProc{
+				name:        "TestProcessor",
+				method:      "GET",
+				urlTemplate: template.Must(template.New("url").Parse("http://example.com/{{.InvalidField}}")),
+				tmpl:        nil,
+			},
+			reqID:         123,
+			param:         map[string]any{"param": "value"},
+			deps:          map[string]any{},
+			wantRoutinKey: "",
+			wantBody:      nil,
+			wantErr:       true,
+		},
+		{
+			name: "Invalid body template",
+			proc: &HTTPProc{
+				name:        "TestProcessor",
+				method:      "POST",
+				urlTemplate: template.Must(template.New("url").Parse("http://example.com/{{.ReqID}}")),
+				tmpl:        template.Must(template.New("body").Parse(`{"param": "{{.InvalidField}}"}`)),
+			},
+			reqID:         123,
+			param:         map[string]any{"param": "value"},
+			deps:          map[string]any{},
+			wantRoutinKey: "POST http://example.com/123",
+			wantBody:      nil,
+			wantErr:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotReq, err := tt.proc.Render(context.Background(), tt.reqID, tt.param, tt.deps)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, gotReq)
+			} else {
+				assert.Equal(t, tt.wantRoutinKey, gotReq.RoutingKey())
+
+				if tt.wantBody == nil {
+					assert.Nil(t, gotReq.Data())
+				} else {
+					assert.Equal(t, tt.wantBody, gotReq.Data())
+				}
+			}
+		})
+	}
+}
+
+func TestHTTPProc_parse(t *testing.T) {
+	tests := []struct {
+		want    map[string]any
+		name    string
+		data    []byte
+		wantErr bool
+	}{
+		{
+			name:    "Valid JSON object",
+			data:    []byte(`{"key1": "value1", "key2": 2}`),
+			want:    map[string]any{"key1": "value1", "key2": 2.0},
+			wantErr: false,
+		},
+		{
+			name:    "Valid JSON array",
+			data:    []byte(`[{"key1": "value1"}, {"key2": 2}]`),
+			want:    map[string]any{"list": []any{map[string]any{"key1": "value1"}, map[string]any{"key2": 2.0}}},
+			wantErr: false,
+		},
+		{
+			name:    "Valid single JSON value",
+			data:    []byte(`"singleValue"`),
+			want:    map[string]any{"value": "singleValue"},
+			wantErr: false,
+		},
+		{
+			name:    "Invalid JSON",
+			data:    []byte(`{"key1": "value1", "key2": 2`),
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "Unexpected format",
+			data:    []byte(`123`),
+			want:    map[string]any{"value": 123.0},
+			wantErr: false,
+		},
+		{
+			name:    "JSON object with error key",
+			data:    []byte(`{"error": "some error"}`),
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &HTTPProc{}
+			got, err := p.parse(tt.data)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, got)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
 		})
 	}
 }
