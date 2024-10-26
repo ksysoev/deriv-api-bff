@@ -228,27 +228,38 @@ func TestProcessor_Parse_Error(t *testing.T) {
 	_, _, err := rp.Parse([]byte(jsonData))
 	assert.Error(t, err)
 }
+
 func TestProcessor_Name(t *testing.T) {
 	tests := []struct {
-		name         string
-		responseBody string
-		expected     string
+		name          string
+		processorName string
+		responseBody  string
+		expected      string
 	}{
 		{
-			name:         "non-empty response body",
-			responseBody: "testResponse",
-			expected:     "testResponse",
+			name:          "non-empty processor name",
+			processorName: "testProcessor",
+			responseBody:  "testResponse",
+			expected:      "testProcessor",
 		},
 		{
-			name:         "empty response body",
-			responseBody: "",
-			expected:     "",
+			name:          "empty processor name, non-empty response body",
+			processorName: "",
+			responseBody:  "testResponse",
+			expected:      "testResponse",
+		},
+		{
+			name:          "empty processor name and response body",
+			processorName: "",
+			responseBody:  "",
+			expected:      "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rp := &DerivProc{
+				name:         tt.processorName,
 				responseBody: tt.responseBody,
 			}
 
