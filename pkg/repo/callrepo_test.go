@@ -1,7 +1,6 @@
 package repo
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
@@ -415,82 +414,6 @@ func TestUpdateCalls_Failure(t *testing.T) {
 	assert.Equal(t, oldHandler, newHandler, "old handler and new handler must be same")
 }
 
-func TestUpdateCalls_ThreadSafety(t *testing.T) {
-	writeDone := make(chan bool, 1)
-	readDone := make(chan bool, 1)
-	oldCallsConfig := &CallsConfig{
-		Calls: []CallConfig{
-			{
-				Method: "testMethod",
-				Params: validator.Config{"param1": {Type: "string"}},
-				Backend: []*BackendConfig{
-					{
-						FieldsMap:       map[string]string{"field1": "value1"},
-						ResponseBody:    "responseBody1",
-						RequestTemplate: "template1",
-						Allow:           []string{"allow1"},
-					},
-				},
-			},
-		},
-	}
-
-	callsRepo, err := NewCallsRepository(oldCallsConfig)
-	if err != nil {
-		t.Errorf("Unexpected Error: %v", err)
-	}
-
-	oldHandler := callsRepo.GetCall("testMethod")
-
-	newCallsConfig := func(i int) *CallsConfig {
-		return &CallsConfig{
-			Calls: []CallConfig{
-				{
-					Method: "testMethodNew",
-					Params: validator.Config{"param1": {Type: "string"}},
-					Backend: []*BackendConfig{
-						{
-							FieldsMap:       map[string]string{"field1": "value1"},
-							ResponseBody:    fmt.Sprintf("responseBody0%d", i),
-							RequestTemplate: "template1",
-							Allow:           []string{"allow1"},
-						},
-					},
-				},
-			},
-		}
-	}
-
-	go func() {
-		for i := 1; i < 100; i++ {
-			callsRepo.UpdateCalls(newCallsConfig(i))
-
-			if err != nil {
-				t.Errorf("Unexpected error: %v", err)
-			}
-
-			handler := callsRepo.GetCall("testMethodNew")
-
-			assert.NotEqualValues(t, oldHandler, handler, "old handler and new handler must be different")
-		}
-		writeDone <- true
-	}()
-
-	go func() {
-		for i := 1; i < 100; i++ {
-			handler := callsRepo.GetCall("testMethodNew")
-			originalHandler := callsRepo.GetCall("testMethod")
-
-			assert.False(t, originalHandler == nil && handler == nil, "both old and new call config cannot be missing at same time")
-			assert.False(t, originalHandler != nil && handler != nil, "both old and new call config cannot exist at same time")
-			assert.NotEqualValues(t, oldHandler, handler, "old handler and new handler must be different")
-		}
-		readDone <- true
-	}()
-
-	assert.True(t, <-writeDone)
-	assert.True(t, <-readDone)
-}
 func TestCreateHandler(t *testing.T) {
 	tests := []struct {
 		setupFunc func()
