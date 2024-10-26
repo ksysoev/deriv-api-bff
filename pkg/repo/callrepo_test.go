@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/validator"
 	"github.com/stretchr/testify/assert"
 )
@@ -489,4 +490,158 @@ func TestUpdateCalls_ThreadSafety(t *testing.T) {
 
 	assert.True(t, <-writeDone)
 	assert.True(t, <-readDone)
+}
+func TestCreateHandler(t *testing.T) {
+	tests := []struct {
+		setupFunc func()
+		name      string
+		call      CallConfig
+		wantErr   bool
+	}{
+		{
+			name: "valid deriv handler creation",
+			call: CallConfig{
+				Method: "testMethod",
+				Params: validator.Config{"param1": {Type: "string"}},
+				Backend: []*BackendConfig{
+					{
+						Name:            "backend1",
+						FieldsMap:       map[string]string{"field1": "value1"},
+						ResponseBody:    "responseBody1",
+						RequestTemplate: "template1",
+						Allow:           []string{"allow1"},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid http handler creation",
+			call: CallConfig{
+				Method: "testMethod",
+				Params: validator.Config{"param1": {Type: "string"}},
+				Backend: []*BackendConfig{
+					{
+						Name:            "backend1",
+						FieldsMap:       map[string]string{"field1": "value1"},
+						URLTemplate:     "http://localhost/",
+						Method:          "GET",
+						RequestTemplate: "template1",
+						Allow:           []string{"allow1"},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid processor configuration",
+			call: CallConfig{
+				Method: "testMethod",
+				Params: validator.Config{"param1": {Type: "string"}},
+				Backend: []*BackendConfig{
+					{
+						Name:            "backend1",
+						FieldsMap:       map[string]string{"field1": "value1"},
+						URLTemplate:     "http://localhost/",
+						Method:          "GET",
+						ResponseBody:    "responseBody1",
+						RequestTemplate: "template1",
+						Allow:           []string{"allow1"},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid validator config",
+			call: CallConfig{
+				Method: "testMethod",
+				Params: validator.Config{"param1": {Type: "invalidType"}},
+				Backend: []*BackendConfig{
+					{
+						Name:            "backend1",
+						FieldsMap:       map[string]string{"field1": "value1"},
+						ResponseBody:    "responseBody1",
+						RequestTemplate: "template1",
+						Allow:           []string{"allow1"},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid request template",
+			call: CallConfig{
+				Method: "testMethod",
+				Params: validator.Config{"param1": {Type: "string"}},
+				Backend: []*BackendConfig{
+					{
+						Name:            "backend1",
+						FieldsMap:       map[string]string{"field1": "value1"},
+						ResponseBody:    "responseBody1",
+						RequestTemplate: "{{.InvalidTemplate",
+						Allow:           []string{"allow1"},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid url template",
+			call: CallConfig{
+				Method: "testMethod",
+				Params: validator.Config{"param1": {Type: "string"}},
+				Backend: []*BackendConfig{
+					{
+						Name:         "backend1",
+						FieldsMap:    map[string]string{"field1": "value1"},
+						ResponseBody: "responseBody1",
+						URLTemplate:  "{{.InvalidTemplate",
+						Allow:        []string{"allow1"},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "circular dependency",
+			call: CallConfig{
+				Method: "testMethod",
+				Params: validator.Config{"param1": {Type: "string"}},
+				Backend: []*BackendConfig{
+					{
+						Name:            "backend1",
+						FieldsMap:       map[string]string{"field1": "value1"},
+						ResponseBody:    "responseBody1",
+						RequestTemplate: "template1",
+						DependsOn:       []string{"responseBody2"},
+						Allow:           []string{"allow1"},
+					},
+					{
+						Name:            "backend2",
+						FieldsMap:       map[string]string{"field2": "value2"},
+						ResponseBody:    "responseBody2",
+						RequestTemplate: "template2",
+						DependsOn:       []string{"responseBody1"},
+						Allow:           []string{"allow2"},
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handlerMap := make(map[string]core.Handler)
+			err := createHandler(tt.call, handlerMap)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Contains(t, handlerMap, tt.call.Method)
+			}
+		})
+	}
 }
