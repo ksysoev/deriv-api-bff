@@ -96,21 +96,26 @@ func (c *Conn) Send(msgType wasabi.MessageType, msg []byte) error {
 		return c.clientConn.Send(msgType, msg)
 	}
 
-	c.mu.Lock()
-	ch, ok := c.requests[respID.ReqID]
-	delete(c.requests, respID.ReqID)
-	c.mu.Unlock()
-
-	if !ok {
+	if !c.DoneRequest(respID.ReqID, msg) {
 		return c.clientConn.Send(msgType, msg)
 	}
 
-	buffer := make([]byte, len(msg))
-	copy(buffer, msg)
-
-	ch <- buffer
-
 	return nil
+}
+
+func (c *Conn) DoneRequest(reqID int64, resp []byte) bool {
+	c.mu.Lock()
+	ch, ok := c.requests[reqID]
+	delete(c.requests, reqID)
+	c.mu.Unlock()
+
+	if !ok {
+		return false
+	}
+
+	ch <- resp
+
+	return true
 }
 
 // Close terminates the connection with a given status code and reason.

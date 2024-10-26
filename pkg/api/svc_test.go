@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	core "github.com/ksysoev/deriv-api-bff/pkg/core"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	wasabi "github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/mocks"
 	"github.com/stretchr/testify/assert"
@@ -68,13 +68,13 @@ func TestParse(t *testing.T) {
 			name:     "TextMessage",
 			msgType:  wasabi.MsgTypeText,
 			data:     []byte("test text message"),
-			expected: core.NewRequest(context.Background(), core.TextMessage, []byte("test text message")),
+			expected: request.NewRequest(context.Background(), request.TextMessage, []byte("test text message")),
 		},
 		{
 			name:     "BinaryMessage",
 			msgType:  wasabi.MsgTypeBinary,
 			data:     []byte{0x01, 0x02, 0x03},
-			expected: core.NewRequest(context.Background(), core.BinaryMessage, []byte{0x01, 0x02, 0x03}),
+			expected: request.NewRequest(context.Background(), request.BinaryMessage, []byte{0x01, 0x02, 0x03}),
 		},
 		{
 			name:     "UnsupportedMessageType",
@@ -106,22 +106,22 @@ func TestService_Handle(t *testing.T) {
 	}{
 		{
 			name:        "PassThrough TextMessage",
-			request:     core.NewRequest(context.Background(), core.TextMessage, []byte("test text message")),
+			request:     request.NewRequest(context.Background(), request.TextMessage, []byte("test text message")),
 			expectError: false,
 		},
 		{
 			name:        "PassThrough BinaryMessage",
-			request:     core.NewRequest(context.Background(), core.BinaryMessage, []byte{0x01, 0x02, 0x03}),
+			request:     request.NewRequest(context.Background(), request.BinaryMessage, []byte{0x01, 0x02, 0x03}),
 			expectError: false,
 		},
 		{
 			name:        "Empty Request Type",
-			request:     core.NewRequest(context.Background(), "", []byte("empty request type")),
+			request:     request.NewRequest(context.Background(), "", []byte("empty request type")),
 			expectError: true,
 		},
 		{
 			name:        "ProcessRequest CustomMessage",
-			request:     core.NewRequest(context.Background(), "customMessage", []byte("custom message")),
+			request:     request.NewRequest(context.Background(), "customMessage", []byte("custom message")),
 			expectError: false,
 		},
 		{

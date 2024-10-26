@@ -1,8 +1,10 @@
 package core
 
 import (
+	"context"
 	"testing"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/mocks"
 	"github.com/stretchr/testify/assert"
@@ -11,7 +13,7 @@ import (
 
 func TestNewService(t *testing.T) {
 	mockCallsRepo := NewMockCallsRepo(t)
-	mockDerivAPI := NewMockDerivAPI(t)
+	mockDerivAPI := NewMockAPIProvider(t)
 	mockConnRegistry := NewMockConnRegistry(t)
 
 	svc := NewService(mockCallsRepo, mockDerivAPI, mockConnRegistry)
@@ -24,13 +26,13 @@ func TestNewService(t *testing.T) {
 
 func TestService_PassThrough(t *testing.T) {
 	mockCallsRepo := NewMockCallsRepo(t)
-	mockDerivAPI := NewMockDerivAPI(t)
+	mockDerivAPI := NewMockAPIProvider(t)
 	mockConnRegistry := NewMockConnRegistry(t)
 
 	svc := NewService(mockCallsRepo, mockDerivAPI, mockConnRegistry)
 
 	mockConn := mocks.NewMockConnection(t)
-	mockRequest := &Request{}
+	mockRequest := &request.Request{}
 
 	conn := NewConnection(mockConn, func(_ string) {})
 
@@ -44,21 +46,16 @@ func TestService_PassThrough(t *testing.T) {
 
 func TestService_ProcessRequest(t *testing.T) {
 	mockCallsRepo := NewMockCallsRepo(t)
-	mockDerivAPI := NewMockDerivAPI(t)
+	mockDerivAPI := NewMockAPIProvider(t)
 	mockConnRegistry := NewMockConnRegistry(t)
 
 	svc := NewService(mockCallsRepo, mockDerivAPI, mockConnRegistry)
 
-	reqID := 1
+	ctx := context.Background()
 	mockConn := mocks.NewMockConnection(t)
-	mockRequest := &Request{
-		Method: "testMethod",
-		Params: map[string]any{"key": "value"},
-		ID:     &reqID,
-		data:   []byte(`{"req_id":1,"method":"testMethod","params":{"key":"value"}}`),
-	}
+	mockRequest := request.NewRequest(ctx, request.TextMessage, []byte(`{"req_id":1,"method":"testMethod","params":{"key":"value"}}`))
 
-	expectedResp := []byte(`{"echo":{"req_id":1,"method":"testMethod","params":{"key":"value"}},"req_id":1,"result":"success"}`)
+	expectedResp := []byte(`{"echo":{"req_id":1,"method":"testMethod","params":{"key":"value"}},"msg_type":"testMethod","req_id":1,"result":"success"}`)
 
 	conn := NewConnection(mockConn, func(_ string) {})
 
@@ -84,13 +81,13 @@ func TestService_ProcessRequest(t *testing.T) {
 
 func TestService_ProcessRequest_UnsupportedMethod(t *testing.T) {
 	mockCallsRepo := NewMockCallsRepo(t)
-	mockDerivAPI := NewMockDerivAPI(t)
+	mockDerivAPI := NewMockAPIProvider(t)
 	mockConnRegistry := NewMockConnRegistry(t)
 
 	svc := NewService(mockCallsRepo, mockDerivAPI, mockConnRegistry)
 
 	mockConn := mocks.NewMockConnection(t)
-	mockRequest := &Request{
+	mockRequest := &request.Request{
 		Method: "unsupportedMethod",
 	}
 
@@ -106,13 +103,13 @@ func TestService_ProcessRequest_UnsupportedMethod(t *testing.T) {
 
 func TestService_ProcessRequest_HandlerError(t *testing.T) {
 	mockCallsRepo := NewMockCallsRepo(t)
-	mockDerivAPI := NewMockDerivAPI(t)
+	mockDerivAPI := NewMockAPIProvider(t)
 	mockConnRegistry := NewMockConnRegistry(t)
 
 	svc := NewService(mockCallsRepo, mockDerivAPI, mockConnRegistry)
 
 	mockConn := mocks.NewMockConnection(t)
-	mockRequest := &Request{
+	mockRequest := &request.Request{
 		Method: "testMethod",
 		Params: map[string]any{"key": "value"},
 	}
@@ -137,19 +134,15 @@ func TestService_ProcessRequest_HandlerError(t *testing.T) {
 
 func TestService_ProcessRequest_APIError(t *testing.T) {
 	mockCallsRepo := NewMockCallsRepo(t)
-	mockDerivAPI := NewMockDerivAPI(t)
+	mockDerivAPI := NewMockAPIProvider(t)
 	mockConnRegistry := NewMockConnRegistry(t)
 
 	svc := NewService(mockCallsRepo, mockDerivAPI, mockConnRegistry)
 
 	mockConn := mocks.NewMockConnection(t)
-	mockRequest := &Request{
-		Method: "testMethod",
-		Params: map[string]any{"key": "value"},
-		data:   []byte(`{"method":"testMethod","params":{"key":"value"}}`),
-	}
+	mockRequest := request.NewRequest(context.Background(), request.TextMessage, []byte(`{"method":"testMethod","params":{"key":"value"}}`))
 
-	expectedResp := []byte(`{"echo":{"method":"testMethod","params":{"key":"value"}},"error":{"code":"BadRequest","message":"Bad Request"}}`)
+	expectedResp := []byte(`{"echo":{"method":"testMethod","params":{"key":"value"}},"error":{"code":"BadRequest","message":"Bad Request"},"msg_type":"testMethod"}`)
 
 	conn := NewConnection(mockConn, func(_ string) {})
 

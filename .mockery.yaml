@@ -15,15 +15,20 @@ packages:
       CallsRepo:
       Handler:
       ConnRegistry:
-      DerivAPI:
+      APIProvider:
+      Request:
   github.com/ksysoev/deriv-api-bff/pkg/api:
     interfaces:
       BFFService:
+  github.com/ksysoev/deriv-api-bff/pkg/prov/router:
+    interfaces:
+      DerivAPI:
+      HTTPAPI:
   github.com/ksysoev/deriv-api-bff/pkg/repo:
     interfaces:
       Etcd:
-  go.etcd.io/etcd/clientv3:
-    interfaces:
-      KV:
-      Lease:
-      Watcher:
+  # go.etcd.io/etcd/clientv3:
+  #   interfaces:
+  #     KV:
+  #     Lease:
+  #     Watcher:

@@ -28,12 +28,15 @@ func TestHandle_Success(t *testing.T) {
 	expectedParams := map[string]any{"key": "value"}
 	expectedCallName := "test"
 
+	mockReq := core.NewMockRequest(t)
+	mockReq.EXPECT().Data().Return([]byte("data"))
+
 	validator := NewMockValidator(t)
 	validator.EXPECT().Validate(expectedParams).Return(nil)
 
 	renderParser := NewMockRenderParser(t)
 	renderParser.EXPECT().Name().Return(expectedCallName)
-	renderParser.EXPECT().Render(mock.Anything, mock.Anything, expectedParams, make(map[string]any)).Return(nil)
+	renderParser.EXPECT().Render(mock.Anything, mock.Anything, expectedParams, make(map[string]any)).Return(mockReq, nil)
 
 	waitComposer := NewMockWaitComposer(t)
 	waitComposer.EXPECT().Compose().Return(expectedParams, nil)
@@ -50,8 +53,8 @@ func TestHandle_Success(t *testing.T) {
 		return 1, echoChan
 	}
 
-	sender := func(_ context.Context, data []byte) error {
-		echoChan <- data
+	sender := func(req core.Request) error {
+		echoChan <- req.Data()
 		return nil
 	}
 
@@ -80,8 +83,8 @@ func TestHandle_ValidationError(t *testing.T) {
 		return 1, echoChan
 	}
 
-	sender := func(_ context.Context, data []byte) error {
-		echoChan <- data
+	sender := func(req core.Request) error {
+		echoChan <- req.Data()
 		return nil
 	}
 
@@ -97,8 +100,10 @@ func TestHandle_SendError(t *testing.T) {
 	validator := NewMockValidator(t)
 	validator.EXPECT().Validate(expectedParams).Return(nil)
 
+	mockReq := core.NewMockRequest(t)
+
 	renderParser := NewMockRenderParser(t)
-	renderParser.EXPECT().Render(mock.Anything, mock.Anything, expectedParams, make(map[string]any)).Return(nil)
+	renderParser.EXPECT().Render(mock.Anything, mock.Anything, expectedParams, make(map[string]any)).Return(mockReq, nil)
 	renderParser.EXPECT().Name().Return(expectedCallName)
 
 	waitComposer := NewMockWaitComposer(t)
@@ -115,7 +120,7 @@ func TestHandle_SendError(t *testing.T) {
 		return 1, echoChan
 	}
 
-	sender := func(_ context.Context, _ []byte) error {
+	sender := func(_ core.Request) error {
 		return assert.AnError
 	}
 
@@ -147,7 +152,7 @@ func TestHandle_CancelledContext(t *testing.T) {
 		return 1, echoChan
 	}
 
-	sender := func(_ context.Context, _ []byte) error {
+	sender := func(_ core.Request) error {
 		return nil
 	}
 
@@ -181,7 +186,7 @@ func TestHandle_PrepareError(t *testing.T) {
 		return 1, echoChan
 	}
 
-	sender := func(_ context.Context, _ []byte) error {
+	sender := func(_ core.Request) error {
 		return nil
 	}
 

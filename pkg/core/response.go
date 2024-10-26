@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 )
 
-func createResponse(req *Request, resp map[string]any, err error) ([]byte, error) {
+func createResponse(req *request.Request, resp map[string]any, err error) ([]byte, error) {
 	var apiErr *APIError
 
 	if errors.As(err, &apiErr) {
@@ -25,6 +27,7 @@ func createResponse(req *Request, resp map[string]any, err error) ([]byte, error
 	}
 
 	resp["echo"] = json.RawMessage(req.Data())
+	resp["msg_type"] = req.RoutingKey()
 
 	data, err := json.Marshal(resp)
 	if err != nil {

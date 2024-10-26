@@ -1,18 +1,16 @@
 package processor
 
 import (
-	"bytes"
+	"context"
 	"html/template"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNew(t *testing.T) {
+func TestNewDeriv(t *testing.T) {
 	tmpl, err := template.New("test").Parse("Params: {{.Params}}, ReqID: {{.ReqID}}")
-	if err != nil {
-		t.Fatalf("failed to parse template: %v", err)
-	}
+	assert.NoError(t, err)
 
 	cfg := &Config{
 		Tmplt:        tmpl,
@@ -21,7 +19,7 @@ func TestNew(t *testing.T) {
 		Allow:        []string{"key1", "key2"},
 	}
 
-	processor := New(cfg)
+	processor := NewDeriv(cfg)
 
 	assert.NotNil(t, processor)
 	assert.Equal(t, tmpl, processor.tmpl)
@@ -32,16 +30,19 @@ func TestNew(t *testing.T) {
 
 func TestProcessor_Render(t *testing.T) {
 	tmpl, err := template.New("test").Parse("Params: {{.Params}}, ReqID: {{.ReqID}}, Resp: {{.Resp}}")
-	if err != nil {
-		t.Fatalf("failed to parse template: %v", err)
-	}
+	assert.NoError(t, err)
+
+	tmpl1, err := template.New("test").Parse("Params: {{index .Params \"key1\" \"key2\"}}")
+	assert.NoError(t, err)
 
 	tests := []struct {
 		params   map[string]any
 		deps     map[string]any
+		tmpl     *template.Template
 		name     string
 		expected string
 		reqID    int64
+		wantErr  bool
 	}{
 		{
 			name:     "with params and deps",
@@ -49,6 +50,7 @@ func TestProcessor_Render(t *testing.T) {
 			deps:     map[string]any{"dep1": "value1"},
 			reqID:    12345,
 			expected: "Params: map[key1:value1], ReqID: 12345, Resp: map[dep1:value1]",
+			wantErr:  false,
 		},
 		{
 			name:     "with nil params and deps",
@@ -56,6 +58,7 @@ func TestProcessor_Render(t *testing.T) {
 			deps:     nil,
 			reqID:    12345,
 			expected: "Params: map[], ReqID: 12345, Resp: map[]",
+			wantErr:  false,
 		},
 		{
 			name:     "with empty params and deps",
@@ -63,6 +66,7 @@ func TestProcessor_Render(t *testing.T) {
 			deps:     map[string]any{},
 			reqID:    12345,
 			expected: "Params: map[], ReqID: 12345, Resp: map[]",
+			wantErr:  false,
 		},
 		{
 			name:     "with only params",
@@ -70,6 +74,7 @@ func TestProcessor_Render(t *testing.T) {
 			deps:     nil,
 			reqID:    12345,
 			expected: "Params: map[key1:value1], ReqID: 12345, Resp: map[]",
+			wantErr:  false,
 		},
 		{
 			name:     "with only deps",
@@ -77,20 +82,39 @@ func TestProcessor_Render(t *testing.T) {
 			deps:     map[string]any{"dep1": "value1"},
 			reqID:    12345,
 			expected: "Params: map[], ReqID: 12345, Resp: map[dep1:value1]",
+			wantErr:  false,
+		},
+		{
+			name:     "with error",
+			params:   nil,
+			deps:     nil,
+			reqID:    12345,
+			tmpl:     tmpl1,
+			expected: "",
+			wantErr:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rp := &Processor{
+			rp := &DerivProc{
 				tmpl: tmpl,
 			}
 
-			var buf bytes.Buffer
+			if tt.tmpl != nil {
+				rp.tmpl = tt.tmpl
+			}
 
-			err := rp.Render(&buf, tt.reqID, tt.params, tt.deps)
+			ctx := context.Background()
+			req, err := rp.Render(ctx, tt.reqID, tt.params, tt.deps)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, buf.String())
+			assert.Equal(t, tt.expected, string(req.Data()))
 		})
 	}
 }
@@ -124,7 +148,7 @@ func TestProcessor_parse_Success(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rp := &Processor{
+			rp := &DerivProc{
 				responseBody: tt.responseBody,
 			}
 
@@ -136,7 +160,7 @@ func TestProcessor_parse_Success(t *testing.T) {
 }
 
 func TestProcessor_parse_Error(t *testing.T) {
-	rp := &Processor{
+	rp := &DerivProc{
 		responseBody: "data",
 	}
 
@@ -147,7 +171,7 @@ func TestProcessor_parse_Error(t *testing.T) {
 }
 
 func TestProcessor_parse_ResponseBodyNotFound(t *testing.T) {
-	rp := &Processor{
+	rp := &DerivProc{
 		responseBody: "data",
 	}
 
@@ -158,7 +182,7 @@ func TestProcessor_parse_ResponseBodyNotFound(t *testing.T) {
 }
 
 func TestProcessor_parse_UnexpectedFormat(t *testing.T) {
-	rp := &Processor{
+	rp := &DerivProc{
 		responseBody: "data",
 	}
 
@@ -205,7 +229,7 @@ func TestProcessor_Parse_Success(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rp := &Processor{
+			rp := &DerivProc{
 				responseBody: tt.responseBody,
 				fieldMap:     tt.fieldMap,
 				allow:        tt.allow,
@@ -219,7 +243,7 @@ func TestProcessor_Parse_Success(t *testing.T) {
 }
 
 func TestProcessor_Parse_Error(t *testing.T) {
-	rp := &Processor{
+	rp := &DerivProc{
 		responseBody: "data",
 	}
 
@@ -228,27 +252,38 @@ func TestProcessor_Parse_Error(t *testing.T) {
 	_, _, err := rp.Parse([]byte(jsonData))
 	assert.Error(t, err)
 }
+
 func TestProcessor_Name(t *testing.T) {
 	tests := []struct {
-		name         string
-		responseBody string
-		expected     string
+		name          string
+		processorName string
+		responseBody  string
+		expected      string
 	}{
 		{
-			name:         "non-empty response body",
-			responseBody: "testResponse",
-			expected:     "testResponse",
+			name:          "non-empty processor name",
+			processorName: "testProcessor",
+			responseBody:  "testResponse",
+			expected:      "testProcessor",
 		},
 		{
-			name:         "empty response body",
-			responseBody: "",
-			expected:     "",
+			name:          "empty processor name, non-empty response body",
+			processorName: "",
+			responseBody:  "testResponse",
+			expected:      "testResponse",
+		},
+		{
+			name:          "empty processor name and response body",
+			processorName: "",
+			responseBody:  "",
+			expected:      "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rp := &Processor{
+			rp := &DerivProc{
+				name:         tt.processorName,
 				responseBody: tt.responseBody,
 			}
 

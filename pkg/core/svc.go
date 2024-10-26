@@ -4,10 +4,17 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	"github.com/ksysoev/wasabi"
 )
 
-type Sender func(context.Context, []byte) error
+type Request interface {
+	Context() context.Context
+	RoutingKey() string
+	Data() []byte
+}
+
+type Sender func(Request) error
 type Waiter func() (reqID int64, respChan <-chan []byte)
 
 type CallsRepo interface {
@@ -22,12 +29,12 @@ type ConnRegistry interface {
 	GetConnection(wasabi.Connection) *Conn
 }
 
-type DerivAPI interface {
-	Handle(*Conn, *Request) error
+type APIProvider interface {
+	Handle(*Conn, Request) error
 }
 
 type Service struct {
-	be       DerivAPI
+	be       APIProvider
 	ch       CallsRepo
 	registry ConnRegistry
 }
@@ -36,7 +43,7 @@ type Service struct {
 // It takes cfg of type *Config, wsBackend of type DerivAPI, and connRegistry of type ConnRegistry.
 // It returns a pointer to Service and an error.
 // It returns an error if the call handler creation fails.
-func NewService(callRepo CallsRepo, wsBackend DerivAPI, connRegistry ConnRegistry) *Service {
+func NewService(callRepo CallsRepo, wsBackend APIProvider, connRegistry ConnRegistry) *Service {
 	return &Service{
 		be:       wsBackend,
 		ch:       callRepo,
@@ -47,7 +54,7 @@ func NewService(callRepo CallsRepo, wsBackend DerivAPI, connRegistry ConnRegistr
 // PassThrough forwards a request to the backend service using the provided client connection.
 // It takes clientConn of type wasabi.Connection and req of type *Request.
 // It returns an error if the backend service fails to handle the request.
-func (s *Service) PassThrough(clientConn wasabi.Connection, req *Request) error {
+func (s *Service) PassThrough(clientConn wasabi.Connection, req *request.Request) error {
 	conn := s.registry.GetConnection(clientConn)
 
 	return s.be.Handle(conn, req)
@@ -57,7 +64,7 @@ func (s *Service) PassThrough(clientConn wasabi.Connection, req *Request) error 
 // It takes a client connection of type wasabi.Connection and a request of type *Request.
 // It returns an error if the request method is unsupported, if the handler fails to process the request, or if the response cannot be marshaled to JSON.
 // If the handler returns an APIError, it encodes the error in the response.
-func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *Request) error {
+func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *request.Request) error {
 	conn := s.registry.GetConnection(clientConn)
 
 	handler := s.ch.GetCall(req.Method)
@@ -70,12 +77,8 @@ func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *Request) err
 		req.Context(),
 		req.Params,
 		conn.WaitResponse,
-		func(ctx context.Context, data []byte) error {
-			return s.be.Handle(conn, &Request{
-				Method: TextMessage,
-				data:   data,
-				ctx:    ctx,
-			})
+		func(req Request) error {
+			return s.be.Handle(conn, req)
 		},
 	)
 
