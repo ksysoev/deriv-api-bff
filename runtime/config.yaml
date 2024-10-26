@@ -19,20 +19,14 @@ api:
           fields_map:
             financial_company: "financial"
             gaming_company: "gaming"
-          request_template: |
-            {
-              "landing_company": "{{ index .Params "country" }}",
-              "req_id": {{ .ReqID }}
-            }
+          request_template: 
+            landing_company: "${params.country}"
         - response_body: "website_status"
           allow: 
             - api_call_limits
             - clients_country
-          request_template: |
-            {
-              "website_status": 1,
-              "req_id": {{ .ReqID }}
-            }
+          request_template:
+            website_status: 1
     - method: "chain"
       backend:
         - response_body: "landing_company"
@@ -44,27 +38,21 @@ api:
           fields_map:
             financial_company: "financial"
             gaming_company: "gaming"
-          request_template: |
-            {
-              "landing_company": "{{ index .Resp "website_status" "clients_country" }}",
-              "req_id": {{ .ReqID }}
-            }
+          request_template:
+            landing_company: '${resp.website_status.clients_country}'
         - response_body: "website_status"
           allow: 
             - api_call_limits
             - clients_country
-          request_template: |
-            {
-              "website_status": 1,
-              "req_id": {{ .ReqID }}
-            }
+          request_template: 
+            website_status: 1
     - method: "config_country"
       params:
         country: 
           type: "string"
       backend:
         - method: "GET"
-          url_template: 'http://nginx/country/{{ index .Params "country" }}.json'
+          url_template: 'http://nginx/country/${params.country}.json'
           allow: 
             - region
             - subregion
