@@ -10,13 +10,14 @@ import (
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
+	"github.com/wolfeidau/jsontemplate"
 )
 
 type HTTPProc struct {
 	name        string
 	method      string
 	urlTemplate *template.Template
-	tmpl        *template.Template
+	tmpl        *jsontemplate.Template
 	fieldMap    map[string]string
 	allow       []string
 }
@@ -24,15 +25,25 @@ type HTTPProc struct {
 // NewHTTP creates a new instance of HTTPProc based on the provided configuration.
 // It takes a single parameter cfg of type *Config which contains the necessary configuration details.
 // It returns a pointer to an HTTPProc initialized with the values from the configuration.
-func NewHTTP(cfg *Config) *HTTPProc {
+func NewHTTP(cfg *Config) (*HTTPProc, error) {
+	rawTmpl, err := json.Marshal(cfg.Tmplt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request template: %w", err)
+	}
+
+	tmpl, err := jsontemplate.NewTemplate(string(rawTmpl))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse request template: %w", err)
+	}
+
 	return &HTTPProc{
 		name:        cfg.Name,
 		method:      cfg.Method,
 		urlTemplate: cfg.URLTemplate,
-		tmpl:        cfg.Tmplt,
+		tmpl:        tmpl,
 		fieldMap:    cfg.FieldMap,
 		allow:       cfg.Allow,
-	}
+	}, nil
 }
 
 // Name returns the name of the HTTPProc instance.
@@ -46,7 +57,7 @@ func (p *HTTPProc) Name() string {
 // It takes an io.Writer, an int64, and two maps of string to any type as parameters.
 // It returns an error indicating that the HTTP processor is not implemented.
 func (p *HTTPProc) Render(ctx context.Context, reqID int64, param, deps map[string]any) (core.Request, error) {
-	tmplData := templateData{
+	data := templateData{
 		Params: param,
 		Resp:   deps,
 		ReqID:  reqID,
@@ -54,7 +65,7 @@ func (p *HTTPProc) Render(ctx context.Context, reqID int64, param, deps map[stri
 
 	urlBuf := bytes.NewBuffer(nil)
 
-	if err := p.urlTemplate.Execute(urlBuf, tmplData); err != nil {
+	if err := p.urlTemplate.Execute(urlBuf, data); err != nil {
 		return nil, fmt.Errorf("fail to execute URL template %s: %w", p.name, err)
 	}
 
@@ -64,7 +75,12 @@ func (p *HTTPProc) Render(ctx context.Context, reqID int64, param, deps map[stri
 
 	bodyBuf := bytes.NewBuffer(nil)
 
-	if err := p.tmpl.Execute(bodyBuf, tmplData); err != nil {
+	tmplData, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("fail to marshal request template %s: %w", p.name, err)
+	}
+
+	if _, err := p.tmpl.Execute(bodyBuf, tmplData); err != nil {
 		return nil, fmt.Errorf("fail to execute request template %s: %w", p.name, err)
 	}
 

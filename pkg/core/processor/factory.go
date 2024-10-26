@@ -18,7 +18,7 @@ type Config struct {
 	Name         string
 	Method       string
 	URLTemplate  *template.Template
-	Tmplt        *template.Template
+	Tmplt        map[string]any
 	FieldMap     map[string]string
 	ResponseBody string
 	Allow        []string
@@ -33,9 +33,9 @@ func New(cfg *Config) (Processor, error) {
 	case isDerivConfig(cfg) && isHTTPConfig(cfg):
 		return nil, fmt.Errorf("ambiguous processor configuration")
 	case isDerivConfig(cfg):
-		return NewDeriv(cfg), nil
+		return NewDeriv(cfg)
 	case isHTTPConfig(cfg):
-		return NewHTTP(cfg), nil
+		return NewHTTP(cfg)
 	default:
 		return nil, fmt.Errorf("invalid processor configuration")
 	}
