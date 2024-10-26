@@ -10,9 +10,7 @@ import (
 
 func TestNewDeriv(t *testing.T) {
 	tmpl, err := template.New("test").Parse("Params: {{.Params}}, ReqID: {{.ReqID}}")
-	if err != nil {
-		t.Fatalf("failed to parse template: %v", err)
-	}
+	assert.NoError(t, err)
 
 	cfg := &Config{
 		Tmplt:        tmpl,
@@ -32,16 +30,19 @@ func TestNewDeriv(t *testing.T) {
 
 func TestProcessor_Render(t *testing.T) {
 	tmpl, err := template.New("test").Parse("Params: {{.Params}}, ReqID: {{.ReqID}}, Resp: {{.Resp}}")
-	if err != nil {
-		t.Fatalf("failed to parse template: %v", err)
-	}
+	assert.NoError(t, err)
+
+	tmpl1, err := template.New("test").Parse("Params: {{index .Params \"key1\" \"key2\"}}")
+	assert.NoError(t, err)
 
 	tests := []struct {
 		params   map[string]any
 		deps     map[string]any
+		tmpl     *template.Template
 		name     string
 		expected string
 		reqID    int64
+		wantErr  bool
 	}{
 		{
 			name:     "with params and deps",
@@ -49,6 +50,7 @@ func TestProcessor_Render(t *testing.T) {
 			deps:     map[string]any{"dep1": "value1"},
 			reqID:    12345,
 			expected: "Params: map[key1:value1], ReqID: 12345, Resp: map[dep1:value1]",
+			wantErr:  false,
 		},
 		{
 			name:     "with nil params and deps",
@@ -56,6 +58,7 @@ func TestProcessor_Render(t *testing.T) {
 			deps:     nil,
 			reqID:    12345,
 			expected: "Params: map[], ReqID: 12345, Resp: map[]",
+			wantErr:  false,
 		},
 		{
 			name:     "with empty params and deps",
@@ -63,6 +66,7 @@ func TestProcessor_Render(t *testing.T) {
 			deps:     map[string]any{},
 			reqID:    12345,
 			expected: "Params: map[], ReqID: 12345, Resp: map[]",
+			wantErr:  false,
 		},
 		{
 			name:     "with only params",
@@ -70,6 +74,7 @@ func TestProcessor_Render(t *testing.T) {
 			deps:     nil,
 			reqID:    12345,
 			expected: "Params: map[key1:value1], ReqID: 12345, Resp: map[]",
+			wantErr:  false,
 		},
 		{
 			name:     "with only deps",
@@ -77,6 +82,16 @@ func TestProcessor_Render(t *testing.T) {
 			deps:     map[string]any{"dep1": "value1"},
 			reqID:    12345,
 			expected: "Params: map[], ReqID: 12345, Resp: map[dep1:value1]",
+			wantErr:  false,
+		},
+		{
+			name:     "with error",
+			params:   nil,
+			deps:     nil,
+			reqID:    12345,
+			tmpl:     tmpl1,
+			expected: "",
+			wantErr:  true,
 		},
 	}
 
@@ -86,8 +101,17 @@ func TestProcessor_Render(t *testing.T) {
 				tmpl: tmpl,
 			}
 
+			if tt.tmpl != nil {
+				rp.tmpl = tt.tmpl
+			}
+
 			ctx := context.Background()
 			req, err := rp.Render(ctx, tt.reqID, tt.params, tt.deps)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, string(req.Data()))
