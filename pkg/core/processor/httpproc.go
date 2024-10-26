@@ -10,14 +10,14 @@ import (
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
-	"github.com/wolfeidau/jsontemplate"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/tmpl"
 )
 
 type HTTPProc struct {
 	name        string
 	method      string
 	urlTemplate *template.Template
-	tmpl        *jsontemplate.Template
+	tmpl        *tmpl.Tmpl
 	fieldMap    map[string]string
 	allow       []string
 }
@@ -31,7 +31,7 @@ func NewHTTP(cfg *Config) (*HTTPProc, error) {
 		return nil, fmt.Errorf("failed to marshal request template: %w", err)
 	}
 
-	tmpl, err := jsontemplate.NewTemplate(string(rawTmpl))
+	tmpl, err := tmpl.New(string(rawTmpl))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse request template: %w", err)
 	}
@@ -73,18 +73,12 @@ func (p *HTTPProc) Render(ctx context.Context, reqID int64, param, deps map[stri
 		return request.NewHTTPReq(ctx, p.method, urlBuf.String(), nil, reqID), nil
 	}
 
-	bodyBuf := bytes.NewBuffer(nil)
-
-	tmplData, err := json.Marshal(data)
+	body, err := p.tmpl.Execute(data)
 	if err != nil {
-		return nil, fmt.Errorf("fail to marshal request template %s: %w", p.name, err)
-	}
-
-	if _, err := p.tmpl.Execute(bodyBuf, tmplData); err != nil {
 		return nil, fmt.Errorf("fail to execute request template %s: %w", p.name, err)
 	}
 
-	return request.NewHTTPReq(ctx, p.method, urlBuf.String(), bodyBuf.Bytes(), reqID), nil
+	return request.NewHTTPReq(ctx, p.method, urlBuf.String(), body, reqID), nil
 }
 
 // Parse processes the input data and filters the response based on allowed keys.

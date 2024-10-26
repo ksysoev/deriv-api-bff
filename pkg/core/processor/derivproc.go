@@ -1,7 +1,6 @@
 package processor
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,12 +8,12 @@ import (
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
-	"github.com/wolfeidau/jsontemplate"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/tmpl"
 )
 
 type DerivProc struct {
 	name         string
-	tmpl         *jsontemplate.Template
+	tmpl         *tmpl.Tmpl
 	fieldMap     map[string]string
 	responseBody string
 	allow        []string
@@ -33,15 +32,12 @@ func NewDeriv(cfg *Config) (*DerivProc, error) {
 	t := cfg.Tmplt
 	t["req_id"] = "${req_id}"
 
-	rawTmpl, err := json.Marshal(cfg.Tmplt)
+	rawTmpl, err := json.Marshal(t)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request template: %w", err)
 	}
 
-	tmpl, err := jsontemplate.NewTemplate(string(rawTmpl))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse request template: %w", err)
-	}
+	tmpl, err := tmpl.New(string(rawTmpl))
 
 	return &DerivProc{
 		name:         cfg.Name,
@@ -83,18 +79,12 @@ func (p *DerivProc) Render(ctx context.Context, reqID int64, params, deps map[st
 		Resp:   deps,
 	}
 
-	tmplData, err := json.Marshal(data)
+	req, err := p.tmpl.Execute(data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal template data: %w", err)
-	}
-
-	buf := bytes.NewBuffer(nil)
-
-	if _, err := p.tmpl.Execute(buf, tmplData); err != nil {
 		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
 
-	return request.NewRequest(ctx, request.TextMessage, buf.Bytes()), nil
+	return request.NewRequest(ctx, request.TextMessage, req), nil
 }
 
 // Parse processes the input data and filters the response based on allowed keys.
