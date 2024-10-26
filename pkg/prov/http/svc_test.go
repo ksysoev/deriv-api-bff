@@ -73,3 +73,52 @@ func TestService_Handle(t *testing.T) {
 
 	assert.ErrorIs(t, err, assert.AnError)
 }
+
+func TestSendWrapper(t *testing.T) {
+	mockConn := mocks.NewMockConnection(t)
+
+	conn := core.NewConnection(mockConn, func(_ string) {})
+
+	tests := []struct {
+		name        string
+		msg         []byte
+		doneRequest bool
+		expectError bool
+	}{
+		{
+			name:        "Successful Send",
+			msg:         []byte("response message"),
+			doneRequest: true,
+			expectError: false,
+		},
+		{
+			name:        "Request Not Found",
+			msg:         []byte("response message"),
+			doneRequest: false,
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var reqID int64
+
+			if !tt.expectError {
+				reqID, _ = conn.WaitResponse()
+			}
+
+			req := request.NewHTTPReq(context.Background(), "GET", "http://localhost/", nil, reqID)
+
+			sendFunc := sendWrapper(conn, req)
+			err := sendFunc(nil, wasabi.MsgTypeText, tt.msg)
+
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			mockConn.AssertExpectations(t)
+		})
+	}
+}

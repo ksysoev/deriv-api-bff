@@ -27,15 +27,7 @@ func NewService() *Service {
 }
 
 func (s *Service) Handle(conn *core.Conn, req *request.HTTPReq) error {
-	connWrap := channel.NewConnectionWrapper(conn, channel.WithSendWrapper(
-		func(_ wasabi.Connection, _ wasabi.MessageType, msg []byte) error {
-			if ok := conn.DoneRequest(req.ID(), msg); !ok {
-				return fmt.Errorf("request ID %d not found is cancelled", req.ID())
-			}
-
-			return nil
-		},
-	))
+	connWrap := channel.NewConnectionWrapper(conn, channel.WithSendWrapper(sendWrapper(conn, req)))
 
 	return s.handler.Handle(connWrap, req)
 }
@@ -56,4 +48,14 @@ func (s *Service) requestFactory(r wasabi.Request) (*http.Request, error) {
 	}
 
 	return httpReq, nil
+}
+
+func sendWrapper(conn *core.Conn, req *request.HTTPReq) channel.SendWrapper {
+	return func(_ wasabi.Connection, _ wasabi.MessageType, msg []byte) error {
+		if ok := conn.DoneRequest(req.ID(), msg); !ok {
+			return fmt.Errorf("request ID %d not found is cancelled", req.ID())
+		}
+
+		return nil
+	}
 }
