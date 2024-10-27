@@ -22,7 +22,6 @@ import (
 
 func createTestWSEchoServer(_ *testing.T) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("ws echo server")
 		c, err := websocket.Accept(w, r, nil)
 		if err != nil {
 			return
@@ -36,25 +35,28 @@ func createTestWSEchoServer(_ *testing.T) http.HandlerFunc {
 				if err == io.EOF {
 					return
 				}
+
 				assert.NoError(nil, err)
+
 				return
 			}
 
 			wsw, err := c.Writer(r.Context(), websocket.MessageText)
 			if err != nil {
 				assert.NoError(nil, err)
+
 				return
 			}
 
-			_, err = io.Copy(wsw, wsr)
-			if err != nil {
+			if _, err := io.Copy(wsw, wsr); err != nil {
 				assert.NoError(nil, err)
+
 				return
 			}
 
-			err = wsw.Close()
-			if err != nil {
+			if err := wsw.Close(); err != nil {
 				assert.NoError(nil, err)
+
 				return
 			}
 		}
@@ -89,7 +91,10 @@ func TestPassthrough(t *testing.T) {
 
 	go func() {
 		close(ready)
-		server.Run(ctx)
+
+		err := server.Run(ctx)
+		assert.NoError(t, err)
+
 		close(done)
 	}()
 
@@ -104,8 +109,12 @@ func TestPassthrough(t *testing.T) {
 
 	wsURL := fmt.Sprintf("ws://%s/?app_id=1", server.Addr())
 
-	c, _, err := websocket.Dial(ctx, wsURL, nil)
+	c, r, err := websocket.Dial(ctx, wsURL, nil)
 	assert.NoError(t, err)
+
+	if r.Body != nil {
+		r.Body.Close()
+	}
 
 	defer c.Close(websocket.StatusNormalClosure, "")
 
