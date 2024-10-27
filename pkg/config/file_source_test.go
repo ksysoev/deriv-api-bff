@@ -67,7 +67,7 @@ func TestFileSource_onFileChange(t *testing.T) {
 	// Setup
 	viper.Reset()
 
-	configFile := createTempConfigFile(t, validConfig)
+	configFile := createTempConfigFile(t, "")
 	fileSource := NewFileSource(configFile)
 
 	err := fileSource.Init()
@@ -75,6 +75,12 @@ func TestFileSource_onFileChange(t *testing.T) {
 	assert.NoError(t, err)
 
 	fileSource.watchKeyPrefixSet = &map[string]struct{}{".API": {}}
+
+	oldConfig, err := fileSource.GetConfigurations()
+
+	assert.NoError(t, err)
+	assert.Empty(t, oldConfig.Deriv.Endpoint)
+	assert.Empty(t, oldConfig.API.Calls)
 
 	createTempConfigFile(t, validConfig)
 
@@ -89,7 +95,8 @@ func TestFileSource_onFileChange(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, config)
 	assert.NotNil(t, config.API.Calls)
-	assert.NotNil(t, config.Deriv.Endpoint)
+	assert.NotEmpty(t, config.Deriv.Endpoint)
+	assert.Equal(t, "wss://localhost/", config.Deriv.Endpoint)
 }
 
 func TestFileSource_GetPriority(t *testing.T) {
