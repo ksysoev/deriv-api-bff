@@ -36,6 +36,7 @@ func Must(tmplRaw string) *Tmpl {
 	if err != nil {
 		panic(err)
 	}
+
 	return tmpl
 }
 

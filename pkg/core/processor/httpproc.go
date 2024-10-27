@@ -31,7 +31,7 @@ func NewHTTP(cfg *Config) (*HTTPProc, error) {
 		return nil, fmt.Errorf("failed to marshal request template: %w", err)
 	}
 
-	tmpl, err := tmpl.New(string(rawTmpl))
+	reqTmpl, err := tmpl.New(string(rawTmpl))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse request template: %w", err)
 	}
@@ -40,7 +40,7 @@ func NewHTTP(cfg *Config) (*HTTPProc, error) {
 		name:        cfg.Name,
 		method:      cfg.Method,
 		urlTemplate: cfg.URLTemplate,
-		tmpl:        tmpl,
+		tmpl:        reqTmpl,
 		fieldMap:    cfg.FieldMap,
 		allow:       cfg.Allow,
 	}, nil

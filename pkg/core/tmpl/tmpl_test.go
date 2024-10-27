@@ -22,6 +22,7 @@ func TestNew_InvalidTemplate(t *testing.T) {
 
 func TestMust(t *testing.T) {
 	tmplRaw := `{"key": "${value}"}`
+
 	assert.NotPanics(t, func() {
 		tmpl := Must(tmplRaw)
 		assert.NotNil(t, tmpl)
@@ -30,6 +31,7 @@ func TestMust(t *testing.T) {
 
 func TestMust_Panic(t *testing.T) {
 	tmplRaw := `{"key": "${value"`
+
 	assert.Panics(t, func() {
 		Must(tmplRaw)
 	})

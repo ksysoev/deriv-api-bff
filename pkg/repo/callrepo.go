@@ -81,8 +81,8 @@ func createHandler(call CallConfig, handlerMap map[string]core.Handler) error {
 	}
 
 	for _, req := range call.Backend {
-
 		var urlTmpl *template.Template
+
 		if req.URLTemplate != "" {
 			urlTmpl, err = template.New("url").Parse(req.URLTemplate)
 			if err != nil {
