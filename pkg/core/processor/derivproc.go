@@ -37,11 +37,11 @@ func NewDeriv(cfg *Config) (*DerivProc, error) {
 		return nil, fmt.Errorf("failed to marshal request template: %w", err)
 	}
 
-	tmpl, err := tmpl.New(string(rawTmpl))
+	template, err := tmpl.New(string(rawTmpl))
 
 	return &DerivProc{
 		name:         cfg.Name,
-		tmpl:         tmpl,
+		tmpl:         template,
 		fieldMap:     cfg.FieldMap,
 		responseBody: cfg.ResponseBody,
 		allow:        cfg.Allow,
