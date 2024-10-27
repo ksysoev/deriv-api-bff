@@ -24,11 +24,3 @@ const (
 	P1
 	P2
 )
-
-type EventType int8
-
-const (
-	INSERT EventType = iota + 1
-	UPDATE
-	DELETE
-)
