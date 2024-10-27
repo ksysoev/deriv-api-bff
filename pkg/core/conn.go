@@ -113,7 +113,10 @@ func (c *Conn) DoneRequest(reqID int64, resp []byte) bool {
 		return false
 	}
 
-	ch <- resp
+	respCopy := make([]byte, len(resp))
+	copy(respCopy, resp)
+
+	ch <- respCopy
 
 	return true
 }

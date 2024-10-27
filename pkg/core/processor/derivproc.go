@@ -136,7 +136,7 @@ func (p *DerivProc) parse(data []byte) (map[string]any, error) {
 
 	err := json.Unmarshal(data, &rdata)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
 	if errData, ok := rdata["error"]; ok {
