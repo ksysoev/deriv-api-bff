@@ -4,15 +4,41 @@ import (
 	"reflect"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/api"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/validator"
 	"github.com/ksysoev/deriv-api-bff/pkg/prov/deriv"
-	"github.com/ksysoev/deriv-api-bff/pkg/repo"
 )
 
 type Config struct {
-	Server api.Config       `mapstructure:"server"`
-	Deriv  deriv.Config     `mapstructure:"deriv"`
-	API    repo.CallsConfig `mapstructure:"api"`
-	Etcd   repo.EtcdConfig  `mapstructure:"etcd"`
+	Server api.Config   `mapstructure:"server"`
+	Deriv  deriv.Config `mapstructure:"deriv"`
+	API    CallsConfig  `mapstructure:"api"`
+	Etcd   EtcdConfig   `mapstructure:"etcd"`
+}
+
+type CallsConfig struct {
+	Calls []CallConfig `mapstructure:"calls"`
+}
+
+type EtcdConfig struct {
+	Servers            []string `mapstructure:"servers"`
+	DialTimeoutSeconds int      `mapstructure:"dialTimeoutSeconds"`
+}
+
+type CallConfig struct {
+	Method  string           `mapstructure:"method"`
+	Params  validator.Config `mapstructure:"params"`
+	Backend []*BackendConfig `mapstructure:"backend"`
+}
+
+type BackendConfig struct {
+	Name            string            `mapstructure:"name"`
+	FieldsMap       map[string]string `mapstructure:"fields_map"`
+	ResponseBody    string            `mapstructure:"response_body"`
+	RequestTemplate string            `mapstructure:"request_template"`
+	Method          string            `mapstructure:"method"`
+	URLTemplate     string            `mapstructure:"url_template"`
+	DependsOn       []string          `mapstructure:"depends_on"`
+	Allow           []string          `mapstructure:"allow"`
 }
 
 // TODO: add godoc

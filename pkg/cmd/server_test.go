@@ -5,13 +5,13 @@ import (
 	"testing"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/api"
+	"github.com/ksysoev/deriv-api-bff/pkg/config"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/validator"
-	"github.com/ksysoev/deriv-api-bff/pkg/repo"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRunServer(t *testing.T) {
-	cfg := &config{
+	cfg := &config.Config{
 		Server: api.Config{
 			Listen: ":0",
 		},
@@ -26,12 +26,12 @@ func TestRunServer(t *testing.T) {
 }
 
 func TestRunServer_Error(t *testing.T) {
-	cfg := &config{
+	cfg := &config.Config{
 		Server: api.Config{
 			Listen: ":0",
 		},
-		API: repo.CallsConfig{
-			Calls: []repo.CallConfig{
+		API: config.CallsConfig{
+			Calls: []config.CallConfig{
 				{
 					Method: "GET",
 					Params: validator.Config{

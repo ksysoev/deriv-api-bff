@@ -6,38 +6,13 @@ import (
 	"log/slog"
 	"sync"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/config"
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/composer"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handler"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/processor"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/validator"
 )
-
-type CallsConfig struct {
-	Calls []CallConfig `mapstructure:"calls"`
-}
-
-type EtcdConfig struct {
-	Servers            []string `mapstructure:"servers"`
-	DialTimeoutSeconds int      `mapstructure:"dialTimeoutSeconds"`
-}
-
-type CallConfig struct {
-	Method  string           `mapstructure:"method"`
-	Params  validator.Config `mapstructure:"params"`
-	Backend []*BackendConfig `mapstructure:"backend"`
-}
-
-type BackendConfig struct {
-	Name            string            `mapstructure:"name"`
-	FieldsMap       map[string]string `mapstructure:"fields_map"`
-	ResponseBody    string            `mapstructure:"response_body"`
-	RequestTemplate string            `mapstructure:"request_template"`
-	Method          string            `mapstructure:"method"`
-	URLTemplate     string            `mapstructure:"url_template"`
-	DependsOn       []string          `mapstructure:"depends_on"`
-	Allow           []string          `mapstructure:"allow"`
-}
 
 type CallsRepository struct {
 	mu    *sync.Mutex
@@ -48,7 +23,7 @@ type CallsRepository struct {
 // It takes cfg of type *CallsConfig which contains the configuration for the calls.
 // It returns a pointer to CallsRepository and an error if the repository creation fails.
 // It returns an error if the validator creation fails or if there is an error parsing the request template.
-func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
+func NewCallsRepository(cfg *config.CallsConfig) (*CallsRepository, error) {
 	handlerMap := make(map[string]core.Handler)
 
 	for _, call := range cfg.Calls {
@@ -66,7 +41,7 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 	return r, nil
 }
 
-func createHandler(call CallConfig, handlerMap map[string]core.Handler) error {
+func createHandler(call config.CallConfig, handlerMap map[string]core.Handler) error {
 	valid, err := validator.New(call.Params)
 	if err != nil {
 		return fmt.Errorf("failed to create validator: %w", err)
@@ -134,7 +109,7 @@ func (r *CallsRepository) GetCall(method string) core.Handler {
 // It takes a single parameter that is pointer to the new calls config.
 // The current implementation will completely overwrite the old config with new config.
 // It returns an error to if any while building the handlers, otherwise it returns nil.
-func (r *CallsRepository) UpdateCalls(calls *CallsConfig) {
+func (r *CallsRepository) UpdateCalls(calls *config.CallsConfig) {
 	newHandlerMap := make(map[string]core.Handler)
 
 	for _, call := range calls.Calls {
@@ -154,11 +129,11 @@ func (r *CallsRepository) UpdateCalls(calls *CallsConfig) {
 // It takes a slice of BackendConfig as input and returns a sorted slice of BackendConfig and an error.
 // It returns an error if a circular dependency is detected among the BackendConfig elements.
 // Each BackendConfig element must have a unique ResponseBody and a list of dependencies specified in DependsOn.
-func topSortDFS(be []*BackendConfig) ([]*BackendConfig, error) {
+func topSortDFS(be []*config.BackendConfig) ([]*config.BackendConfig, error) {
 	graph := createDepGraph(be)
 	visited := make(map[string]bool, len(be))
 	recStack := make(map[string]bool, len(be))
-	sorted := make([]*BackendConfig, 0, len(be))
+	sorted := make([]*config.BackendConfig, 0, len(be))
 
 	indexMap := make(map[string]int, len(be))
 	for i, b := range be {
@@ -203,7 +178,7 @@ func topSortDFS(be []*BackendConfig) ([]*BackendConfig, error) {
 // createDepGraph constructs a dependency graph from a slice of BackendConfig.
 // It takes a single parameter be which is a slice of BackendConfig.
 // It returns a map where the keys are response bodies and the values are slices of dependencies.
-func createDepGraph(be []*BackendConfig) map[string][]string {
+func createDepGraph(be []*config.BackendConfig) map[string][]string {
 	graph := make(map[string][]string)
 
 	for _, b := range be {

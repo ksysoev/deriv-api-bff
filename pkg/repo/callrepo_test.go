@@ -3,6 +3,7 @@ package repo
 import (
 	"testing"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/config"
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/validator"
 	"github.com/stretchr/testify/assert"
@@ -10,18 +11,18 @@ import (
 
 func TestNewCallsRepository(t *testing.T) {
 	tests := []struct {
-		cfg     *CallsConfig
+		cfg     *config.CallsConfig
 		name    string
 		wantErr bool
 	}{
 		{
 			name: "valid config",
-			cfg: &CallsConfig{
-				Calls: []CallConfig{
+			cfg: &config.CallsConfig{
+				Calls: []config.CallConfig{
 					{
 						Method: "testMethod",
 						Params: validator.Config{"param1": {Type: "string"}},
-						Backend: []*BackendConfig{
+						Backend: []*config.BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
 								ResponseBody:    "responseBody1",
@@ -36,12 +37,12 @@ func TestNewCallsRepository(t *testing.T) {
 		},
 		{
 			name: "invalid template",
-			cfg: &CallsConfig{
-				Calls: []CallConfig{
+			cfg: &config.CallsConfig{
+				Calls: []config.CallConfig{
 					{
 						Method: "testMethod",
 						Params: validator.Config{"param1": {Type: "value1"}},
-						Backend: []*BackendConfig{
+						Backend: []*config.BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
 								ResponseBody:    "responseBody1",
@@ -56,12 +57,12 @@ func TestNewCallsRepository(t *testing.T) {
 		},
 		{
 			name: "circular dependency",
-			cfg: &CallsConfig{
-				Calls: []CallConfig{
+			cfg: &config.CallsConfig{
+				Calls: []config.CallConfig{
 					{
 						Method: "testMethod",
 						Params: validator.Config{"param1": {Type: "string"}},
-						Backend: []*BackendConfig{
+						Backend: []*config.BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
 								ResponseBody:    "responseBody1",
@@ -84,12 +85,12 @@ func TestNewCallsRepository(t *testing.T) {
 		},
 		{
 			name: "valid dependency",
-			cfg: &CallsConfig{
-				Calls: []CallConfig{
+			cfg: &config.CallsConfig{
+				Calls: []config.CallConfig{
 					{
 						Method: "testMethod",
 						Params: validator.Config{"param1": {Type: "string"}},
-						Backend: []*BackendConfig{
+						Backend: []*config.BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
 								ResponseBody:    "responseBody1",
@@ -126,12 +127,12 @@ func TestNewCallsRepository(t *testing.T) {
 }
 
 func TestGetCall(t *testing.T) {
-	repo, err := NewCallsRepository(&CallsConfig{
-		Calls: []CallConfig{
+	repo, err := NewCallsRepository(&config.CallsConfig{
+		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
 				Params: validator.Config{"param1": {Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
@@ -177,17 +178,17 @@ func TestGetCall(t *testing.T) {
 func TestTopSortDFS(t *testing.T) {
 	tests := []struct {
 		name    string
-		input   []*BackendConfig
-		want    []*BackendConfig
+		input   []*config.BackendConfig
+		want    []*config.BackendConfig
 		wantErr bool
 	}{
 		{
 			name: "no dependencies",
-			input: []*BackendConfig{
+			input: []*config.BackendConfig{
 				{ResponseBody: "response1"},
 				{ResponseBody: "response2"},
 			},
-			want: []*BackendConfig{
+			want: []*config.BackendConfig{
 				{ResponseBody: "response1"},
 				{ResponseBody: "response2"},
 			},
@@ -195,11 +196,11 @@ func TestTopSortDFS(t *testing.T) {
 		},
 		{
 			name: "simple dependency",
-			input: []*BackendConfig{
+			input: []*config.BackendConfig{
 				{ResponseBody: "response1", DependsOn: []string{"response2"}},
 				{ResponseBody: "response2"},
 			},
-			want: []*BackendConfig{
+			want: []*config.BackendConfig{
 				{ResponseBody: "response2"},
 				{ResponseBody: "response1", DependsOn: []string{"response2"}},
 			},
@@ -207,7 +208,7 @@ func TestTopSortDFS(t *testing.T) {
 		},
 		{
 			name: "circular dependency",
-			input: []*BackendConfig{
+			input: []*config.BackendConfig{
 				{ResponseBody: "response1", DependsOn: []string{"response2"}},
 				{ResponseBody: "response2", DependsOn: []string{"response1"}},
 			},
@@ -216,12 +217,12 @@ func TestTopSortDFS(t *testing.T) {
 		},
 		{
 			name: "complex dependency",
-			input: []*BackendConfig{
+			input: []*config.BackendConfig{
 				{ResponseBody: "response1", DependsOn: []string{"response3"}},
 				{ResponseBody: "response2", DependsOn: []string{"response1"}},
 				{ResponseBody: "response3"},
 			},
-			want: []*BackendConfig{
+			want: []*config.BackendConfig{
 				{ResponseBody: "response3"},
 				{ResponseBody: "response1", DependsOn: []string{"response3"}},
 				{ResponseBody: "response2", DependsOn: []string{"response1"}},
@@ -230,7 +231,7 @@ func TestTopSortDFS(t *testing.T) {
 		},
 		{
 			name: "complex cicular dependency",
-			input: []*BackendConfig{
+			input: []*config.BackendConfig{
 				{ResponseBody: "response1", DependsOn: []string{"response3"}},
 				{ResponseBody: "response2", DependsOn: []string{"response1"}},
 				{ResponseBody: "response3", DependsOn: []string{"response2"}},
@@ -254,12 +255,12 @@ func TestTopSortDFS(t *testing.T) {
 }
 
 func TestUpdateCalls_ExistingMethod_Success(t *testing.T) {
-	oldCallsConfig := &CallsConfig{
-		Calls: []CallConfig{
+	oldCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
 				Params: validator.Config{"param1": {Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
@@ -278,12 +279,12 @@ func TestUpdateCalls_ExistingMethod_Success(t *testing.T) {
 
 	oldHandler := callsRepo.GetCall("testMethod")
 
-	newCallsConfig := &CallsConfig{
-		Calls: []CallConfig{
+	newCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
 				Params: validator.Config{"param1": {Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
@@ -310,12 +311,12 @@ func TestUpdateCalls_ExistingMethod_Success(t *testing.T) {
 }
 
 func TestUpdateCalls_NewMethod_Success(t *testing.T) {
-	oldCallsConfig := &CallsConfig{
-		Calls: []CallConfig{
+	oldCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
 				Params: validator.Config{"param1": {Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
@@ -334,12 +335,12 @@ func TestUpdateCalls_NewMethod_Success(t *testing.T) {
 
 	oldHandler := callsRepo.GetCall("testMethod")
 
-	newCallsConfig := &CallsConfig{
-		Calls: []CallConfig{
+	newCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
 			{
 				Method: "testMethodNew",
 				Params: validator.Config{"param1": {Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
@@ -367,12 +368,12 @@ func TestUpdateCalls_NewMethod_Success(t *testing.T) {
 }
 
 func TestUpdateCalls_Failure(t *testing.T) {
-	oldCallsConfig := &CallsConfig{
-		Calls: []CallConfig{
+	oldCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
 				Params: validator.Config{"param1": {Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
@@ -391,12 +392,12 @@ func TestUpdateCalls_Failure(t *testing.T) {
 
 	oldHandler := callsRepo.GetCall("testMethod")
 
-	newCallsConfig := &CallsConfig{
-		Calls: []CallConfig{
+	newCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
 				Params: validator.Config{"param1": {Type: "value1"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
@@ -418,15 +419,15 @@ func TestCreateHandler(t *testing.T) {
 	tests := []struct {
 		setupFunc func()
 		name      string
-		call      CallConfig
+		call      config.CallConfig
 		wantErr   bool
 	}{
 		{
 			name: "valid deriv handler creation",
-			call: CallConfig{
+			call: config.CallConfig{
 				Method: "testMethod",
 				Params: validator.Config{"param1": {Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -440,10 +441,10 @@ func TestCreateHandler(t *testing.T) {
 		},
 		{
 			name: "valid http handler creation",
-			call: CallConfig{
+			call: config.CallConfig{
 				Method: "testMethod",
 				Params: validator.Config{"param1": {Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -458,10 +459,10 @@ func TestCreateHandler(t *testing.T) {
 		},
 		{
 			name: "invalid processor configuration",
-			call: CallConfig{
+			call: config.CallConfig{
 				Method: "testMethod",
 				Params: validator.Config{"param1": {Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -477,10 +478,10 @@ func TestCreateHandler(t *testing.T) {
 		},
 		{
 			name: "invalid validator config",
-			call: CallConfig{
+			call: config.CallConfig{
 				Method: "testMethod",
 				Params: validator.Config{"param1": {Type: "invalidType"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -494,10 +495,10 @@ func TestCreateHandler(t *testing.T) {
 		},
 		{
 			name: "invalid request template",
-			call: CallConfig{
+			call: config.CallConfig{
 				Method: "testMethod",
 				Params: validator.Config{"param1": {Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -511,10 +512,10 @@ func TestCreateHandler(t *testing.T) {
 		},
 		{
 			name: "invalid url template",
-			call: CallConfig{
+			call: config.CallConfig{
 				Method: "testMethod",
 				Params: validator.Config{"param1": {Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						Name:         "backend1",
 						FieldsMap:    map[string]string{"field1": "value1"},
@@ -528,10 +529,10 @@ func TestCreateHandler(t *testing.T) {
 		},
 		{
 			name: "circular dependency",
-			call: CallConfig{
+			call: config.CallConfig{
 				Method: "testMethod",
 				Params: validator.Config{"param1": {Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
 						FieldsMap:       map[string]string{"field1": "value1"},
