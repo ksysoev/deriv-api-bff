@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"testing"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/core/tmpl"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -123,7 +124,7 @@ func TestNewHTTP(t *testing.T) {
 				Name:        "TestProcessor",
 				Method:      "GET",
 				URLTemplate: template.Must(template.New("test").Parse("/test/url")),
-				Tmplt:       template.Must(template.New("test").Parse("test template")),
+				Tmplt:       map[string]any{"key": "value"},
 				FieldMap:    map[string]string{"key1": "mappedKey1"},
 				Allow:       []string{"key1", "key2"},
 			},
@@ -131,7 +132,6 @@ func TestNewHTTP(t *testing.T) {
 				name:        "TestProcessor",
 				method:      "GET",
 				urlTemplate: template.Must(template.New("test").Parse("/test/url")),
-				tmpl:        template.Must(template.New("test").Parse("test template")),
 				fieldMap:    map[string]string{"key1": "mappedKey1"},
 				allow:       []string{"key1", "key2"},
 			},
@@ -152,11 +152,11 @@ func TestNewHTTP(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewHTTP(tt.cfg)
+			got, err := NewHTTP(tt.cfg)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.want.name, got.name)
 			assert.Equal(t, tt.want.method, got.method)
 			assert.Equal(t, tt.want.urlTemplate, got.urlTemplate)
-			assert.Equal(t, tt.want.tmpl, got.tmpl)
 			assert.Equal(t, tt.want.fieldMap, got.fieldMap)
 			assert.Equal(t, tt.want.allow, got.allow)
 		})
@@ -180,7 +180,7 @@ func TestHTTPProc_Render(t *testing.T) {
 				name:        "TestProcessor",
 				method:      "POST",
 				urlTemplate: template.Must(template.New("url").Parse("http://example.com/{{.ReqID}}")),
-				tmpl:        template.Must(template.New("body").Parse(`{"param": "{{.Params.param}}"}`)),
+				tmpl:        tmpl.Must(`{"param": "${params.param}"}`),
 			},
 			reqID:         123,
 			param:         map[string]any{"param": "value"},
@@ -225,7 +225,7 @@ func TestHTTPProc_Render(t *testing.T) {
 				name:        "TestProcessor",
 				method:      "POST",
 				urlTemplate: template.Must(template.New("url").Parse("http://example.com/{{.ReqID}}")),
-				tmpl:        template.Must(template.New("body").Parse(`{"param": "{{.InvalidField}}"}`)),
+				tmpl:        tmpl.Must(`{"param": "${invalid_field}"}`),
 			},
 			reqID:         123,
 			param:         map[string]any{"param": "value"},

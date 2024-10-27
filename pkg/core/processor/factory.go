@@ -45,7 +45,7 @@ func New(cfg *Config) (Processor, error) {
 // It takes a single parameter cfg of type *Config.
 // It returns a boolean value indicating whether the ResponseBody field of the configuration is not empty.
 func isDerivConfig(cfg *Config) bool {
-	return cfg.ResponseBody != ""
+	return cfg.ResponseBody != "" && len(cfg.Tmplt) > 0
 }
 
 // isHTTPConfig checks if the given configuration is for an HTTP request.
