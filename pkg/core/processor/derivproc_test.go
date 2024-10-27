@@ -9,21 +9,61 @@ import (
 )
 
 func TestNewDeriv(t *testing.T) {
-	cfg := &Config{
-		Tmplt:        map[string]any{"params": "${params}", "req_id": "${req_id}"},
-		FieldMap:     map[string]string{"key1": "mappedKey1"},
-		ResponseBody: "data",
-		Allow:        []string{"key1", "key2"},
+	tests := []struct {
+		cfg     *Config
+		name    string
+		wantErr bool
+	}{
+		{
+			name: "Valid Deriv Config",
+			cfg: &Config{
+				Tmplt:        map[string]any{"params": "${params}", "req_id": "${req_id}"},
+				FieldMap:     map[string]string{"key1": "mappedKey1"},
+				ResponseBody: "data",
+				Allow:        []string{"key1", "key2"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Fail to marshal request template",
+			cfg: &Config{
+				Tmplt:        map[string]any{"params": "${params}", "data": make(chan int)},
+				FieldMap:     map[string]string{"key1": "mappedKey1"},
+				ResponseBody: "data",
+				Allow:        []string{"key1", "key2"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Fail to parse request template",
+			cfg: &Config{
+				Tmplt:        map[string]any{"test": "${params}invalid"},
+				FieldMap:     map[string]string{"key1": "mappedKey1"},
+				ResponseBody: "data",
+				Allow:        []string{"key1", "key2"},
+			},
+			wantErr: true,
+		},
 	}
 
-	processor, err := NewDeriv(cfg)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			processor, err := NewDeriv(tt.cfg)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, processor)
 
-	assert.NoError(t, err)
-	assert.NotNil(t, processor)
-	assert.NotNil(t, processor.tmpl)
-	assert.Equal(t, cfg.FieldMap, processor.fieldMap)
-	assert.Equal(t, cfg.ResponseBody, processor.responseBody)
-	assert.Equal(t, cfg.Allow, processor.allow)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.NotNil(t, processor)
+			assert.NotNil(t, processor.tmpl)
+			assert.Equal(t, tt.cfg.FieldMap, processor.fieldMap)
+			assert.Equal(t, tt.cfg.ResponseBody, processor.responseBody)
+			assert.Equal(t, tt.cfg.Allow, processor.allow)
+		})
+	}
 }
 
 func TestProcessor_Render(t *testing.T) {

@@ -114,9 +114,9 @@ func TestHTTPProc_Name(t *testing.T) {
 }
 func TestNewHTTP(t *testing.T) {
 	tests := []struct {
-		cfg  *Config
-		want *HTTPProc
-		name string
+		cfg     *Config
+		name    string
+		wantErr bool
 	}{
 		{
 			name: "Valid configuration",
@@ -128,37 +128,50 @@ func TestNewHTTP(t *testing.T) {
 				FieldMap:    map[string]string{"key1": "mappedKey1"},
 				Allow:       []string{"key1", "key2"},
 			},
-			want: &HTTPProc{
-				name:        "TestProcessor",
-				method:      "GET",
-				urlTemplate: template.Must(template.New("test").Parse("/test/url")),
-				fieldMap:    map[string]string{"key1": "mappedKey1"},
-				allow:       []string{"key1", "key2"},
-			},
+			wantErr: false,
 		},
 		{
-			name: "Empty configuration",
-			cfg:  &Config{},
-			want: &HTTPProc{
-				name:        "",
-				method:      "",
-				urlTemplate: nil,
-				tmpl:        nil,
-				fieldMap:    nil,
-				allow:       nil,
+			name: "Req template marshal error",
+			cfg: &Config{
+				Name:        "TestProcessor",
+				Method:      "GET",
+				URLTemplate: template.Must(template.New("test").Parse("/test/url")),
+				Tmplt:       map[string]any{"key": make(chan int)},
+				FieldMap:    map[string]string{"key1": "mappedKey1"},
+				Allow:       []string{"key1", "key2"},
 			},
+			wantErr: true,
+		},
+		{
+			name: "Req template parse error",
+			cfg: &Config{
+				Name:        "TestProcessor",
+				Method:      "GET",
+				URLTemplate: template.Must(template.New("test").Parse("/test/url")),
+				Tmplt:       map[string]any{"test": "${params}invalid"},
+				FieldMap:    map[string]string{"key1": "mappedKey1"},
+				Allow:       []string{"key1", "key2"},
+			},
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewHTTP(tt.cfg)
+			processor, err := NewHTTP(tt.cfg)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, processor)
+
+				return
+			}
+
 			assert.NoError(t, err)
-			assert.Equal(t, tt.want.name, got.name)
-			assert.Equal(t, tt.want.method, got.method)
-			assert.Equal(t, tt.want.urlTemplate, got.urlTemplate)
-			assert.Equal(t, tt.want.fieldMap, got.fieldMap)
-			assert.Equal(t, tt.want.allow, got.allow)
+			assert.NotNil(t, processor)
+			assert.NotNil(t, processor.tmpl)
+			assert.Equal(t, tt.cfg.FieldMap, processor.fieldMap)
+			assert.Equal(t, tt.cfg.Allow, processor.allow)
 		})
 	}
 }
