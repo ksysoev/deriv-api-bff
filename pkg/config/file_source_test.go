@@ -3,8 +3,8 @@ package config
 import (
 	"os"
 	"testing"
+	"time"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
@@ -84,10 +84,8 @@ func TestFileSource_onFileChange(t *testing.T) {
 
 	createTempConfigFile(t, validConfig)
 
-	// Test onFileChange
-	event := fsnotify.Event{Name: configFile}
-
-	fileSource.onFileChange(event)
+	// need to give some time for config to refresh
+	time.Sleep(1 * time.Second)
 
 	// Check if the configuration was updated
 	config, err := fileSource.GetConfigurations()

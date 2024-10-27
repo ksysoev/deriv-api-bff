@@ -21,6 +21,7 @@ func (fileSource *FileSource) Init() error {
 	viper.SetConfigFile(fileSource.configFilePath)
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
+	viper.OnConfigChange(fileSource.onFileChange)
 	viper.WatchConfig()
 
 	if err := viper.ReadInConfig(); err != nil {
@@ -34,8 +35,6 @@ func (fileSource *FileSource) Init() error {
 	}
 
 	slog.Debug("Config loaded", slog.Any("config", cfg))
-
-	viper.OnConfigChange(fileSource.onFileChange)
 
 	return nil
 }
@@ -76,10 +75,8 @@ func NewFileSource(filePath string) *FileSource {
 func (fileSource *FileSource) onFileChange(in fsnotify.Event) {
 	slog.Debug(fmt.Sprintf("config file changed at %s", in.Name))
 
-	if err := viper.ReadInConfig(); err != nil {
-		slog.Error(fmt.Sprintf("Error while updating config from file %s: %v", in.Name, err))
-		return
-	}
+	fileSource.mu.Lock()
+	defer fileSource.mu.Unlock()
 
 	newConfig := &Config{}
 
@@ -87,10 +84,6 @@ func (fileSource *FileSource) onFileChange(in fsnotify.Event) {
 		slog.Error(fmt.Sprintf("Error while unmarshal on update from file %s: %v", in.Name, err))
 		return
 	}
-
-	fileSource.mu.Lock()
-
-	defer fileSource.mu.Unlock()
 
 	diffs := Compare(*(fileSource.currentConfig), *newConfig, "")
 

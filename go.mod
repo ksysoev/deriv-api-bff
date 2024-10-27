@@ -5,6 +5,7 @@ go 1.23.1
 require (
 	github.com/coder/websocket v1.8.12
 	github.com/coreos/etcd v3.3.27+incompatible
+	github.com/fsnotify/fsnotify v1.7.0
 	github.com/ksysoev/wasabi v0.5.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
@@ -21,7 +22,6 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.3 // indirect
