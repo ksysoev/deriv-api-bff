@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"log/slog"
@@ -15,15 +16,16 @@ import (
 )
 
 type CallsRepository struct {
-	mu    *sync.Mutex
-	calls map[string]core.Handler
+	mu            *sync.Mutex
+	calls         map[string]core.Handler
+	onUpdateEvent *config.Event[config.CallsConfig]
 }
 
 // NewCallsRepository creates a new instance of CallsRepository based on the provided configuration.
 // It takes cfg of type *CallsConfig which contains the configuration for the calls.
 // It returns a pointer to CallsRepository and an error if the repository creation fails.
 // It returns an error if the validator creation fails or if there is an error parsing the request template.
-func NewCallsRepository(cfg *config.CallsConfig) (*CallsRepository, error) {
+func NewCallsRepository(cfg *config.CallsConfig, event *config.Event[config.CallsConfig]) (*CallsRepository, error) {
 	handlerMap := make(map[string]core.Handler)
 
 	for _, call := range cfg.Calls {
@@ -34,9 +36,14 @@ func NewCallsRepository(cfg *config.CallsConfig) (*CallsRepository, error) {
 	}
 
 	r := &CallsRepository{
-		calls: handlerMap,
-		mu:    &sync.Mutex{},
+		calls:         handlerMap,
+		mu:            &sync.Mutex{},
+		onUpdateEvent: event,
 	}
+
+	r.onUpdateEvent.RegisterHandler(func(_ context.Context, cc config.CallsConfig) {
+		r.UpdateCalls(&cc)
+	})
 
 	return r, nil
 }

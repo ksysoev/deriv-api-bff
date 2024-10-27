@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"context"
 	"testing"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/config"
@@ -10,6 +11,7 @@ import (
 )
 
 func TestNewCallsRepository(t *testing.T) {
+	event := config.NewEvent[config.CallsConfig]()
 	tests := []struct {
 		cfg     *config.CallsConfig
 		name    string
@@ -114,7 +116,7 @@ func TestNewCallsRepository(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewCallsRepository(tt.cfg)
+			got, err := NewCallsRepository(tt.cfg, event)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -142,7 +144,7 @@ func TestGetCall(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, &config.Event[config.CallsConfig]{})
 	assert.NoError(t, err)
 	assert.NotNil(t, repo)
 
@@ -255,6 +257,7 @@ func TestTopSortDFS(t *testing.T) {
 }
 
 func TestUpdateCalls_ExistingMethod_Success(t *testing.T) {
+	event := config.NewEvent[config.CallsConfig]()
 	oldCallsConfig := &config.CallsConfig{
 		Calls: []config.CallConfig{
 			{
@@ -272,7 +275,7 @@ func TestUpdateCalls_ExistingMethod_Success(t *testing.T) {
 		},
 	}
 
-	callsRepo, err := NewCallsRepository(oldCallsConfig)
+	callsRepo, err := NewCallsRepository(oldCallsConfig, event)
 	if err != nil {
 		t.Errorf("Unexpected Error: %v", err)
 	}
@@ -328,7 +331,7 @@ func TestUpdateCalls_NewMethod_Success(t *testing.T) {
 		},
 	}
 
-	callsRepo, err := NewCallsRepository(oldCallsConfig)
+	callsRepo, err := NewCallsRepository(oldCallsConfig, &config.Event[config.CallsConfig]{})
 	if err != nil {
 		t.Errorf("Unexpected Error: %v", err)
 	}
@@ -385,7 +388,7 @@ func TestUpdateCalls_Failure(t *testing.T) {
 		},
 	}
 
-	callsRepo, err := NewCallsRepository(oldCallsConfig)
+	callsRepo, err := NewCallsRepository(oldCallsConfig, &config.Event[config.CallsConfig]{})
 	if err != nil {
 		t.Errorf("Unexpected Error: %v", err)
 	}
@@ -568,4 +571,54 @@ func TestCreateHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOnUpdateEvent(t *testing.T) {
+	oldCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
+			{
+				Method: "testMethod",
+				Params: validator.Config{"param1": {Type: "string"}},
+				Backend: []*config.BackendConfig{
+					{
+						FieldsMap:       map[string]string{"field1": "value1"},
+						ResponseBody:    "responseBody1",
+						RequestTemplate: "template1",
+						Allow:           []string{"allow1"},
+					},
+				},
+			},
+		},
+	}
+	newCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
+			{
+				Method: "testMethodNew",
+				Params: validator.Config{"param1": {Type: "string"}},
+				Backend: []*config.BackendConfig{
+					{
+						FieldsMap:       map[string]string{"field1": "value1"},
+						ResponseBody:    "responseBody1",
+						RequestTemplate: "template1",
+						DependsOn:       []string{"responseBody2"},
+						Allow:           []string{"allow1"},
+					},
+					{
+						FieldsMap:       map[string]string{"field2": "value2"},
+						ResponseBody:    "responseBody2",
+						RequestTemplate: "template2",
+						Allow:           []string{"allow2"},
+					},
+				},
+			},
+		},
+	}
+	event := config.NewEvent[config.CallsConfig]()
+	callsRepo, err := NewCallsRepository(oldCallsConfig, event)
+
+	assert.NoError(t, err)
+
+	event.Notify(context.Background(), *newCallsConfig)
+
+	assert.NotEmpty(t, callsRepo.GetCall("testMethodNew"))
 }
