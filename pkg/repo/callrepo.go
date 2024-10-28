@@ -63,12 +63,8 @@ func createHandler(call config.CallConfig, handlerMap map[string]core.Handler) e
 	}
 
 	for _, req := range call.Backend {
-		tmplt, err := template.New("request").Parse(req.RequestTemplate)
-		if err != nil {
-			return err
-		}
-
 		var urlTmpl *template.Template
+
 		if req.URLTemplate != "" {
 			urlTmpl, err = template.New("url").Parse(req.URLTemplate)
 			if err != nil {
@@ -78,7 +74,7 @@ func createHandler(call config.CallConfig, handlerMap map[string]core.Handler) e
 
 		p, err := processor.New(&processor.Config{
 			Name:         req.Name,
-			Tmplt:        tmplt,
+			Tmplt:        req.RequestTemplate,
 			FieldMap:     req.FieldsMap,
 			ResponseBody: req.ResponseBody,
 			Allow:        req.Allow,
