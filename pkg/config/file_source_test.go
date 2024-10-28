@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
@@ -54,13 +55,30 @@ func TestFileSource_Init(t *testing.T) {
 	assert.NotNil(t, config)
 }
 
-func TestFileSource_WatchConfig(t *testing.T) {
+func TestFileSource_WatchConfig_Pass(t *testing.T) {
 	// Setup
 	fileSource := NewFileSource(createTempConfigFile(t, validConfig))
+	event := NewEvent[any]()
+
+	event.RegisterHandler(func(_ context.Context, _ any) {})
 
 	// Test WatchConfig
-	fileSource.WatchConfig("key1")
-	assert.Contains(t, *fileSource.watchKeyPrefixSet, "key1")
+	err := fileSource.WatchConfig(event, "key1")
+
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(fileSource.GetWatchKeys()))
+}
+
+func TestFileSource_WatchConfig_Error(t *testing.T) {
+	// Setup
+	fileSource := NewFileSource(createTempConfigFile(t, validConfig))
+	event := NewEvent[any]()
+
+	// Test WatchConfig
+	err := fileSource.WatchConfig(event, "key1")
+
+	assert.Error(t, err)
+	assert.Equal(t, 0, len(fileSource.GetWatchKeys()))
 }
 
 func TestFileSource_onFileChange(t *testing.T) {
@@ -73,8 +91,6 @@ func TestFileSource_onFileChange(t *testing.T) {
 	err := fileSource.Init()
 
 	assert.NoError(t, err)
-
-	fileSource.watchKeyPrefixSet = &map[string]struct{}{".API": {}}
 
 	oldConfig, err := fileSource.GetConfigurations()
 

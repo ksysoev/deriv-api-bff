@@ -6,9 +6,7 @@ type Source interface {
 
 	GetConfigurations() (*Config, error)
 
-	GetConfigurationByKey(string) ([]byte, error)
-
-	WatchConfig(string)
+	WatchConfig(string) error
 
 	GetPriority() Priority
 
