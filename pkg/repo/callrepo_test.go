@@ -583,7 +583,7 @@ func TestOnUpdateEvent(t *testing.T) {
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
-						RequestTemplate: "template1",
+						RequestTemplate: map[string]any{"template1": "t1"},
 						Allow:           []string{"allow1"},
 					},
 				},
@@ -599,14 +599,14 @@ func TestOnUpdateEvent(t *testing.T) {
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
-						RequestTemplate: "template1",
+						RequestTemplate: map[string]any{"template1": "t1"},
 						DependsOn:       []string{"responseBody2"},
 						Allow:           []string{"allow1"},
 					},
 					{
 						FieldsMap:       map[string]string{"field2": "value2"},
 						ResponseBody:    "responseBody2",
-						RequestTemplate: "template2",
+						RequestTemplate: map[string]any{"template2": "t2"},
 						Allow:           []string{"allow2"},
 					},
 				},

@@ -34,7 +34,7 @@ type BackendConfig struct {
 	Name            string            `mapstructure:"name"`
 	FieldsMap       map[string]string `mapstructure:"fields_map"`
 	ResponseBody    string            `mapstructure:"response_body"`
-	RequestTemplate string            `mapstructure:"request_template"`
+	RequestTemplate map[string]any    `mapstructure:"request_template"`
 	Method          string            `mapstructure:"method"`
 	URLTemplate     string            `mapstructure:"url_template"`
 	DependsOn       []string          `mapstructure:"depends_on"`
