@@ -32,7 +32,7 @@ type BackendConfig struct {
 	Name            string            `mapstructure:"name"`
 	FieldsMap       map[string]string `mapstructure:"fields_map"`
 	ResponseBody    string            `mapstructure:"response_body"`
-	RequestTemplate string            `mapstructure:"request_template"`
+	RequestTemplate map[string]any    `mapstructure:"request_template"`
 	Method          string            `mapstructure:"method"`
 	URLTemplate     string            `mapstructure:"url_template"`
 	DependsOn       []string          `mapstructure:"depends_on"`
@@ -81,12 +81,8 @@ func createHandler(call CallConfig, handlerMap map[string]core.Handler) error {
 	}
 
 	for _, req := range call.Backend {
-		tmplt, err := template.New("request").Parse(req.RequestTemplate)
-		if err != nil {
-			return err
-		}
-
 		var urlTmpl *template.Template
+
 		if req.URLTemplate != "" {
 			urlTmpl, err = template.New("url").Parse(req.URLTemplate)
 			if err != nil {
@@ -96,7 +92,7 @@ func createHandler(call CallConfig, handlerMap map[string]core.Handler) error {
 
 		p, err := processor.New(&processor.Config{
 			Name:         req.Name,
-			Tmplt:        tmplt,
+			Tmplt:        req.RequestTemplate,
 			FieldMap:     req.FieldsMap,
 			ResponseBody: req.ResponseBody,
 			Allow:        req.Allow,
