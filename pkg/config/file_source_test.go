@@ -26,7 +26,7 @@ func createTempConfigFile(t *testing.T, content string) string {
 	t.Helper()
 
 	tmpdir := os.TempDir()
-	configPath := tmpdir + "/test_config.yaml"
+	configPath := tmpdir + "/" + t.Name() + "_test_config.yaml"
 
 	err := os.WriteFile(configPath, []byte(content), 0o600)
 	assert.NoError(t, err)
