@@ -11,7 +11,7 @@ import (
 )
 
 func TestRunServer(t *testing.T) {
-	cfg := &config{
+	cfg := &Config{
 		Server: api.Config{
 			Listen: ":0",
 		},
@@ -26,7 +26,7 @@ func TestRunServer(t *testing.T) {
 }
 
 func TestRunServer_Error(t *testing.T) {
-	cfg := &config{
+	cfg := &Config{
 		Server: api.Config{
 			Listen: ":0",
 		},

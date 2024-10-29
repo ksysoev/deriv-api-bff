@@ -3,11 +3,22 @@
 package tests
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"time"
 
 	"github.com/coder/websocket"
+	"github.com/ksysoev/deriv-api-bff/pkg/api"
+	"github.com/ksysoev/deriv-api-bff/pkg/cmd"
+	"github.com/ksysoev/deriv-api-bff/pkg/core"
+	"github.com/ksysoev/deriv-api-bff/pkg/prov/deriv"
+	httpprov "github.com/ksysoev/deriv-api-bff/pkg/prov/http"
+	"github.com/ksysoev/deriv-api-bff/pkg/prov/router"
+	"github.com/ksysoev/deriv-api-bff/pkg/repo"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -65,4 +76,55 @@ func (s *testSuite) createTestWSEchoServer() http.HandlerFunc {
 			}
 		}
 	})
+}
+
+func (s *testSuite) startAppWithConfig(cfg cmd.Config) (string, func(), error) {
+	derivAPI := deriv.NewService(&cfg.Deriv)
+
+	connRegistry := repo.NewConnectionRegistry()
+
+	calls, err := repo.NewCallsRepository(&cfg.API)
+	assert.NoError(s.T(), err)
+
+	beRouter := router.New(derivAPI, httpprov.NewService())
+	requestHandler := core.NewService(calls, beRouter, connRegistry)
+
+	server := api.NewSevice(&cfg.Server, requestHandler)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	ready := make(chan struct{})
+	done := make(chan struct{})
+
+	go func() {
+		for server.Addr() == nil {
+			time.Sleep(10 * time.Millisecond)
+		}
+		close(ready)
+	}()
+
+	go func() {
+		err := server.Run(ctx)
+		assert.NoError(s.T(), err)
+
+		close(done)
+	}()
+
+	select {
+	case <-ready:
+	case <-time.After(time.Second):
+		s.T().Fatal("Server did not start")
+	}
+
+	closer := func() {
+		cancel()
+		select {
+		case <-done:
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+
+	url := fmt.Sprintf("ws://%s/?app_id=1", server.Addr().String())
+
+	return url, closer, nil
 }
