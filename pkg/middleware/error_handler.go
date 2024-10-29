@@ -7,6 +7,9 @@ import (
 	"github.com/ksysoev/wasabi/dispatch"
 )
 
+// NewErrorHandlingMiddleware creates a middleware that handles errors and panics during request handling.
+// It takes no parameters and returns a function that wraps a wasabi.RequestHandler.
+// The returned function logs any errors or panics that occur during the handling of a request.
 func NewErrorHandlingMiddleware() func(next wasabi.RequestHandler) wasabi.RequestHandler {
 	return func(next wasabi.RequestHandler) wasabi.RequestHandler {
 		return dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
