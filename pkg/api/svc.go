@@ -43,6 +43,8 @@ func NewSevice(cfg *Config, handler BFFService) *Service {
 	}
 
 	dispatcher := dispatch.NewRouterDispatcher(s, parse)
+	dispatcher.Use(middleware.NewErrorHandlingMiddleware())
+
 	registry := channel.NewConnectionRegistry(
 		channel.WithMaxFrameLimit(maxMessageSize),
 	)

@@ -2,43 +2,78 @@ package processor
 
 import (
 	"context"
-	"html/template"
 	"testing"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/core/tmpl"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewDeriv(t *testing.T) {
-	tmpl, err := template.New("test").Parse("Params: {{.Params}}, ReqID: {{.ReqID}}")
-	assert.NoError(t, err)
-
-	cfg := &Config{
-		Tmplt:        tmpl,
-		FieldMap:     map[string]string{"key1": "mappedKey1"},
-		ResponseBody: "data",
-		Allow:        []string{"key1", "key2"},
+	tests := []struct {
+		cfg     *Config
+		name    string
+		wantErr bool
+	}{
+		{
+			name: "Valid Deriv Config",
+			cfg: &Config{
+				Tmplt:        map[string]any{"params": "${params}", "req_id": "${req_id}"},
+				FieldMap:     map[string]string{"key1": "mappedKey1"},
+				ResponseBody: "data",
+				Allow:        []string{"key1", "key2"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Fail to marshal request template",
+			cfg: &Config{
+				Tmplt:        map[string]any{"params": "${params}", "data": make(chan int)},
+				FieldMap:     map[string]string{"key1": "mappedKey1"},
+				ResponseBody: "data",
+				Allow:        []string{"key1", "key2"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Fail to parse request template",
+			cfg: &Config{
+				Tmplt:        map[string]any{"test": "${params}invalid"},
+				FieldMap:     map[string]string{"key1": "mappedKey1"},
+				ResponseBody: "data",
+				Allow:        []string{"key1", "key2"},
+			},
+			wantErr: true,
+		},
 	}
 
-	processor := NewDeriv(cfg)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			processor, err := NewDeriv(tt.cfg)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, processor)
 
-	assert.NotNil(t, processor)
-	assert.Equal(t, tmpl, processor.tmpl)
-	assert.Equal(t, cfg.FieldMap, processor.fieldMap)
-	assert.Equal(t, cfg.ResponseBody, processor.responseBody)
-	assert.Equal(t, cfg.Allow, processor.allow)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.NotNil(t, processor)
+			assert.NotNil(t, processor.tmpl)
+			assert.Equal(t, tt.cfg.FieldMap, processor.fieldMap)
+			assert.Equal(t, tt.cfg.ResponseBody, processor.responseBody)
+			assert.Equal(t, tt.cfg.Allow, processor.allow)
+		})
+	}
 }
 
 func TestProcessor_Render(t *testing.T) {
-	tmpl, err := template.New("test").Parse("Params: {{.Params}}, ReqID: {{.ReqID}}, Resp: {{.Resp}}")
-	assert.NoError(t, err)
-
-	tmpl1, err := template.New("test").Parse("Params: {{index .Params \"key1\" \"key2\"}}")
-	assert.NoError(t, err)
+	tmpl1 := tmpl.Must(`{"params":"${params}","req_id":"${req_id}","resp": "${resp}"}`)
+	tmpl2 := tmpl.Must(`{"params": "${params.key1.key2}}"}`)
 
 	tests := []struct {
 		params   map[string]any
 		deps     map[string]any
-		tmpl     *template.Template
+		tmpl     *tmpl.Tmpl
 		name     string
 		expected string
 		reqID    int64
@@ -49,7 +84,7 @@ func TestProcessor_Render(t *testing.T) {
 			params:   map[string]any{"key1": "value1"},
 			deps:     map[string]any{"dep1": "value1"},
 			reqID:    12345,
-			expected: "Params: map[key1:value1], ReqID: 12345, Resp: map[dep1:value1]",
+			expected: `{"params":{"key1":"value1"},"req_id":12345,"resp": {"dep1":"value1"}}`,
 			wantErr:  false,
 		},
 		{
@@ -57,7 +92,7 @@ func TestProcessor_Render(t *testing.T) {
 			params:   nil,
 			deps:     nil,
 			reqID:    12345,
-			expected: "Params: map[], ReqID: 12345, Resp: map[]",
+			expected: `{"params":{},"req_id":12345,"resp": {}}`,
 			wantErr:  false,
 		},
 		{
@@ -65,7 +100,7 @@ func TestProcessor_Render(t *testing.T) {
 			params:   map[string]any{},
 			deps:     map[string]any{},
 			reqID:    12345,
-			expected: "Params: map[], ReqID: 12345, Resp: map[]",
+			expected: `{"params":{},"req_id":12345,"resp": {}}`,
 			wantErr:  false,
 		},
 		{
@@ -73,7 +108,7 @@ func TestProcessor_Render(t *testing.T) {
 			params:   map[string]any{"key1": "value1"},
 			deps:     nil,
 			reqID:    12345,
-			expected: "Params: map[key1:value1], ReqID: 12345, Resp: map[]",
+			expected: `{"params":{"key1":"value1"},"req_id":12345,"resp": {}}`,
 			wantErr:  false,
 		},
 		{
@@ -81,7 +116,7 @@ func TestProcessor_Render(t *testing.T) {
 			params:   nil,
 			deps:     map[string]any{"dep1": "value1"},
 			reqID:    12345,
-			expected: "Params: map[], ReqID: 12345, Resp: map[dep1:value1]",
+			expected: `{"params":{},"req_id":12345,"resp": {"dep1":"value1"}}`,
 			wantErr:  false,
 		},
 		{
@@ -89,7 +124,7 @@ func TestProcessor_Render(t *testing.T) {
 			params:   nil,
 			deps:     nil,
 			reqID:    12345,
-			tmpl:     tmpl1,
+			tmpl:     tmpl2,
 			expected: "",
 			wantErr:  true,
 		},
@@ -98,7 +133,7 @@ func TestProcessor_Render(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rp := &DerivProc{
-				tmpl: tmpl,
+				tmpl: tmpl1,
 			}
 
 			if tt.tmpl != nil {

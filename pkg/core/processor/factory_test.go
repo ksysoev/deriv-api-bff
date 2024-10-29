@@ -15,6 +15,7 @@ func TestNew(t *testing.T) {
 			name: "Valid Deriv Config",
 			cfg: &Config{
 				ResponseBody: "some response",
+				Tmplt:        map[string]any{"key": "value"},
 			},
 			wantErr: false,
 		},
@@ -32,6 +33,7 @@ func TestNew(t *testing.T) {
 				Method:       "GET",
 				URLTemplate:  template.Must(template.New("test").Parse("/test/url")),
 				ResponseBody: "some response",
+				Tmplt:        map[string]any{"key": "value"},
 			},
 			wantErr: true,
 		},
@@ -62,11 +64,19 @@ func TestIsDerivConfig(t *testing.T) {
 			name: "Deriv Config",
 			cfg: &Config{
 				ResponseBody: "some response",
+				Tmplt:        map[string]any{"key": "value"},
 			},
 			want: true,
 		},
 		{
-			name: "Non-Deriv Config",
+			name: "Non-Deriv Config1",
+			cfg: &Config{
+				ResponseBody: "some response",
+			},
+			want: false,
+		},
+		{
+			name: "Non-Deriv Config2",
 			cfg:  &Config{},
 			want: false,
 		},

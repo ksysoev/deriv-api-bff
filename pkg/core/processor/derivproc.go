@@ -1,42 +1,54 @@
 package processor
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"log/slog"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/tmpl"
 )
 
 type DerivProc struct {
 	name         string
-	tmpl         *template.Template
+	tmpl         *tmpl.Tmpl
 	fieldMap     map[string]string
 	responseBody string
 	allow        []string
 }
 
 type templateData struct {
-	Params map[string]any
-	Resp   map[string]any
-	ReqID  int64
+	Params map[string]any `json:"params"`
+	Resp   map[string]any `json:"resp"`
+	ReqID  int64          `json:"req_id"`
 }
 
 // NewDeriv creates and returns a new Processor instance configured with the provided Config.
 // It takes a single parameter cfg of type *Config which contains the necessary configuration.
 // It returns a pointer to a Processor struct initialized with the values from the Config.
-func NewDeriv(cfg *Config) *DerivProc {
+func NewDeriv(cfg *Config) (*DerivProc, error) {
+	t := cfg.Tmplt
+	t["req_id"] = "${req_id}"
+
+	rawTmpl, err := json.Marshal(t)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request template: %w", err)
+	}
+
+	reqTmpl, err := tmpl.New(string(rawTmpl))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse request template: %w", err)
+	}
+
 	return &DerivProc{
 		name:         cfg.Name,
-		tmpl:         cfg.Tmplt,
+		tmpl:         reqTmpl,
 		fieldMap:     cfg.FieldMap,
 		responseBody: cfg.ResponseBody,
 		allow:        cfg.Allow,
-	}
+	}, nil
 }
 
 // Name returns the name of the Processor as a string.
@@ -70,13 +82,12 @@ func (p *DerivProc) Render(ctx context.Context, reqID int64, params, deps map[st
 		Resp:   deps,
 	}
 
-	buf := bytes.NewBuffer(nil)
-
-	if err := p.tmpl.Execute(buf, data); err != nil {
+	req, err := p.tmpl.Execute(data)
+	if err != nil {
 		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
 
-	return request.NewRequest(ctx, request.TextMessage, buf.Bytes()), nil
+	return request.NewRequest(ctx, request.TextMessage, req), nil
 }
 
 // Parse processes the input data and filters the response based on allowed keys.
@@ -125,7 +136,7 @@ func (p *DerivProc) parse(data []byte) (map[string]any, error) {
 
 	err := json.Unmarshal(data, &rdata)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
 	if errData, ok := rdata["error"]; ok {
