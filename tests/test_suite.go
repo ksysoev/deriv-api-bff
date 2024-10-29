@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 
 	"github.com/coder/websocket"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -49,27 +48,19 @@ func (s *testSuite) createTestWSEchoServer() http.HandlerFunc {
 					return
 				}
 
-				assert.NoError(nil, err)
-
 				return
 			}
 
 			wsw, err := c.Writer(r.Context(), websocket.MessageText)
 			if err != nil {
-				assert.NoError(nil, err)
-
 				return
 			}
 
 			if _, err := io.Copy(wsw, wsr); err != nil {
-				assert.NoError(nil, err)
-
 				return
 			}
 
 			if err := wsw.Close(); err != nil {
-				assert.NoError(nil, err)
-
 				return
 			}
 		}
