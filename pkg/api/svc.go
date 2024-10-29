@@ -79,18 +79,51 @@ func (s *Service) Run(ctx context.Context) error {
 // If the request type is core.TextMessage or core.BinaryMessage, it passes the request through to the handler.
 // For other request types, it processes the request using the handler.
 func (s *Service) Handle(conn wasabi.Connection, r wasabi.Request) error {
+	defer func() {
+		if err := recover(); err != nil {
+			slog.Error(
+				"panic during request handling",
+				slog.Any("error", err),
+				slog.String("routing_key", r.RoutingKey()),
+				slog.Any("request", r),
+			)
+		}
+	}()
+
 	req, ok := r.(*request.Request)
 	if !ok {
-		return fmt.Errorf("unsupported request type: %T", req)
+		slog.Error("invalid request type", slog.Any("type", r))
+
+		return nil
 	}
 
 	switch req.RoutingKey() {
 	case request.TextMessage, request.BinaryMessage:
-		return s.handler.PassThrough(conn, req)
+		if err := s.handler.PassThrough(conn, req); err != nil {
+			slog.Error(
+				"failed to pass through request",
+				slog.Any("error", err),
+				slog.String("routing_key", req.RoutingKey()),
+				slog.Any("request", req),
+			)
+		}
+
+		return nil
 	case "":
-		return fmt.Errorf("empty request type: %v", req)
+		slog.Error("empty request type", slog.Any("request", req))
+
+		return nil
 	default:
-		return s.handler.ProcessRequest(conn, req)
+		if err := s.handler.ProcessRequest(conn, req); err != nil {
+			slog.Error(
+				"failed to bff request",
+				slog.Any("error", err),
+				slog.String("routing_key", req.RoutingKey()),
+				slog.Any("request", req),
+			)
+		}
+
+		return nil
 	}
 }
 
