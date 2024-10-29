@@ -117,7 +117,7 @@ func TestService_Handle(t *testing.T) {
 		{
 			name:        "Empty Request Type",
 			request:     request.NewRequest(context.Background(), "", []byte("empty request type")),
-			expectError: false,
+			expectError: true,
 		},
 		{
 			name:        "ProcessRequest CustomMessage",
@@ -127,7 +127,7 @@ func TestService_Handle(t *testing.T) {
 		{
 			name:        "Unsupported Request Type",
 			request:     mocks.NewMockRequest(t),
-			expectError: false,
+			expectError: true,
 		},
 	}
 
