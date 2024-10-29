@@ -3,10 +3,6 @@ package tests
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 	"time"
 
 	"github.com/coder/websocket"
@@ -20,61 +16,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func createTestWSEchoServer(_ *testing.T) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c, err := websocket.Accept(w, r, nil)
-		if err != nil {
-			return
-		}
-
-		defer c.Close(websocket.StatusNormalClosure, "")
-
-		for {
-			_, wsr, err := c.Reader(r.Context())
-			if err != nil {
-				if err == io.EOF {
-					return
-				}
-
-				assert.NoError(nil, err)
-
-				return
-			}
-
-			wsw, err := c.Writer(r.Context(), websocket.MessageText)
-			if err != nil {
-				assert.NoError(nil, err)
-
-				return
-			}
-
-			if _, err := io.Copy(wsw, wsr); err != nil {
-				assert.NoError(nil, err)
-
-				return
-			}
-
-			if err := wsw.Close(); err != nil {
-				assert.NoError(nil, err)
-
-				return
-			}
-		}
-	})
-}
-
-func TestPassthrough(t *testing.T) {
-	ts := httptest.NewServer(createTestWSEchoServer(t))
-	defer ts.Close()
+func (s *testSuite) TestPassthrough() {
+	a := assert.New(s.T())
 
 	derivAPI := deriv.NewService(&deriv.Config{
-		Endpoint: ts.URL,
+		Endpoint: s.echoWSURL(),
 	})
 
 	connRegistry := repo.NewConnectionRegistry()
 
 	calls, err := repo.NewCallsRepository(&repo.CallsConfig{})
-	assert.NoError(t, err)
+	a.NoError(err)
 
 	beRouter := router.New(derivAPI, httpprov.NewService())
 	requestHandler := core.NewService(calls, beRouter, connRegistry)
@@ -93,7 +45,7 @@ func TestPassthrough(t *testing.T) {
 		close(ready)
 
 		err := server.Run(ctx)
-		assert.NoError(t, err)
+		a.NoError(err)
 
 		close(done)
 	}()
@@ -110,7 +62,7 @@ func TestPassthrough(t *testing.T) {
 	wsURL := fmt.Sprintf("ws://%s/?app_id=1", server.Addr())
 
 	c, r, err := websocket.Dial(ctx, wsURL, nil)
-	assert.NoError(t, err)
+	a.NoError(err)
 
 	if r.Body != nil {
 		r.Body.Close()
@@ -121,12 +73,12 @@ func TestPassthrough(t *testing.T) {
 	expectedResp := map[string]string{"ping": "1"}
 
 	err = wsjson.Write(ctx, c, &expectedResp)
-	assert.NoError(t, err)
+	a.NoError(err)
 
 	var resp map[string]string
 	err = wsjson.Read(ctx, c, &resp)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedResp, resp)
+	a.NoError(err)
+	a.Equal(expectedResp, resp)
 
 	cancel()
 
