@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	"github.com/ksysoev/deriv-api-bff/pkg/middleware"
@@ -29,24 +30,18 @@ type Config struct {
 type Service struct {
 	cfg     *Config
 	handler BFFService
+	server  *server.Server
 }
 
 // NewSevice creates a new instance of Service with the provided configuration and handler.
 // It takes cfg of type *Config and handler of type BFFService.
 // It returns a pointer to a Service struct.
 func NewSevice(cfg *Config, handler BFFService) *Service {
-	return &Service{
+	s := &Service{
 		cfg:     cfg,
 		handler: handler,
 	}
-}
 
-// Run starts the service and listens for incoming connections.
-// It takes a context.Context parameter which is used to manage the lifecycle of the service.
-// It returns an error if the server fails to start or close properly.
-// The function sets up a dispatcher, a connection registry, and a channel endpoint with middleware.
-// It also handles graceful shutdown when the context is done.
-func (s *Service) Run(ctx context.Context) error {
 	dispatcher := dispatch.NewRouterDispatcher(s, parse)
 	dispatcher.Use(middleware.NewErrorHandlingMiddleware())
 
@@ -57,18 +52,34 @@ func (s *Service) Run(ctx context.Context) error {
 	endpoint.Use(middleware.NewQueryParamsMiddleware())
 	endpoint.Use(middleware.NewHeadersMiddleware())
 
-	srv := server.NewServer(s.cfg.Listen)
-	srv.AddChannel(endpoint)
+	s.server = server.NewServer(cfg.Listen)
+	s.server.AddChannel(endpoint)
 
+	return s
+}
+
+// Addr returns the network address the server is listening on.
+// It takes no parameters.
+// It returns a net.Addr which represents the server's network address.
+func (s *Service) Addr() net.Addr {
+	return s.server.Addr()
+}
+
+// Run starts the service and listens for incoming connections.
+// It takes a context.Context parameter which is used to manage the lifecycle of the service.
+// It returns an error if the server fails to start or close properly.
+// The function sets up a dispatcher, a connection registry, and a channel endpoint with middleware.
+// It also handles graceful shutdown when the context is done.
+func (s *Service) Run(ctx context.Context) error {
 	go func() {
 		<-ctx.Done()
 
-		if err := srv.Close(); err != nil {
+		if err := s.server.Close(); err != nil {
 			slog.Error("Fail to close app server", "error", err)
 		}
 	}()
 
-	if err := srv.Run(); err != nil {
+	if err := s.server.Run(); err != nil {
 		return fmt.Errorf("failed to start server: %w", err)
 	}
 
