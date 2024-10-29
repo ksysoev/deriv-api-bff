@@ -27,22 +27,38 @@ type testSuite struct {
 	echoWS *httptest.Server
 }
 
+// newTestSuite creates and returns a new instance of testSuite.
+// It takes no parameters and returns a pointer to a testSuite instance.
 func newTestSuite() *testSuite {
 	return &testSuite{}
 }
 
+// SetupSuite initializes the test suite by setting up a new WebSocket server.
+// It does not take any parameters and does not return any values.
+// This function is typically called before any tests are run to ensure the test environment is properly configured.
 func (s *testSuite) SetupSuite() {
 	s.echoWS = httptest.NewServer(s.createTestWSEchoServer())
 }
 
+// TearDownSuite closes the WebSocket connection used by the test suite.
+// It does not take any parameters and does not return any values.
+// This function ensures that the WebSocket connection is properly closed after all tests in the suite have run.
 func (s *testSuite) TearDownSuite() {
 	s.echoWS.Close()
 }
 
+// echoWSURL returns the WebSocket URL for the echo server.
+// It does not take any parameters.
+// It returns a string which is the URL of the echo WebSocket server.
 func (s *testSuite) echoWSURL() string {
 	return s.echoWS.URL
 }
 
+// createTestWSEchoServer creates a WebSocket echo server handler function.
+// It returns an http.HandlerFunc that establishes a WebSocket connection,
+// reads messages from the client, and echoes them back.
+// If an error occurs during the WebSocket handshake or message processing,
+// the connection is closed gracefully.
 func (s *testSuite) createTestWSEchoServer() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := websocket.Accept(w, r, nil)
@@ -78,6 +94,10 @@ func (s *testSuite) createTestWSEchoServer() http.HandlerFunc {
 	})
 }
 
+// startAppWithConfig starts the application with the provided configuration.
+// It takes cfg of type *cmd.Config which contains the configuration settings for the application.
+// It returns a string representing the URL of the started server, a function to close the server, and an error if the server fails to start.
+// It returns an error if the calls repository cannot be created or if the server does not start within the specified timeout.
 func (s *testSuite) startAppWithConfig(cfg *cmd.Config) (url string, closer func(), err error) {
 	derivAPI := deriv.NewService(&cfg.Deriv)
 
