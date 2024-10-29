@@ -78,13 +78,15 @@ func (s *testSuite) createTestWSEchoServer() http.HandlerFunc {
 	})
 }
 
-func (s *testSuite) startAppWithConfig(cfg cmd.Config) (string, func(), error) {
+func (s *testSuite) startAppWithConfig(cfg *cmd.Config) (url string, closer func(), err error) {
 	derivAPI := deriv.NewService(&cfg.Deriv)
 
 	connRegistry := repo.NewConnectionRegistry()
 
 	calls, err := repo.NewCallsRepository(&cfg.API)
-	assert.NoError(s.T(), err)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to create calls repo: %w", err)
+	}
 
 	beRouter := router.New(derivAPI, httpprov.NewService())
 	requestHandler := core.NewService(calls, beRouter, connRegistry)
@@ -100,6 +102,7 @@ func (s *testSuite) startAppWithConfig(cfg cmd.Config) (string, func(), error) {
 		for server.Addr() == nil {
 			time.Sleep(10 * time.Millisecond)
 		}
+
 		close(ready)
 	}()
 
@@ -113,10 +116,12 @@ func (s *testSuite) startAppWithConfig(cfg cmd.Config) (string, func(), error) {
 	select {
 	case <-ready:
 	case <-time.After(time.Second):
-		s.T().Fatal("Server did not start")
+		cancel()
+
+		return "", nil, fmt.Errorf("server did not start")
 	}
 
-	closer := func() {
+	closer = func() {
 		cancel()
 		select {
 		case <-done:
@@ -124,7 +129,7 @@ func (s *testSuite) startAppWithConfig(cfg cmd.Config) (string, func(), error) {
 		}
 	}
 
-	url := fmt.Sprintf("ws://%s/?app_id=1", server.Addr().String())
+	url = fmt.Sprintf("ws://%s/?app_id=1", server.Addr().String())
 
 	return url, closer, nil
 }

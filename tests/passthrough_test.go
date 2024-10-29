@@ -15,7 +15,7 @@ import (
 func (s *testSuite) TestPassthrough() {
 	a := assert.New(s.T())
 
-	url, stopServer, err := s.startAppWithConfig(cmd.Config{
+	url, stopServer, err := s.startAppWithConfig(&cmd.Config{
 		Server: api.Config{
 			Listen: "localhost:0",
 		},
