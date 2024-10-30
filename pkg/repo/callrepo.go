@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"fmt"
-	"html/template"
 	"log/slog"
 	"sync"
 
@@ -63,15 +62,6 @@ func createHandler(call config.CallConfig, handlerMap map[string]core.Handler) e
 	}
 
 	for _, req := range call.Backend {
-		var urlTmpl *template.Template
-
-		if req.URLTemplate != "" {
-			urlTmpl, err = template.New("url").Parse(req.URLTemplate)
-			if err != nil {
-				return fmt.Errorf("failed to parse URL template: %w", err)
-			}
-		}
-
 		p, err := processor.New(&processor.Config{
 			Name:         req.Name,
 			Tmplt:        req.RequestTemplate,
@@ -79,7 +69,7 @@ func createHandler(call config.CallConfig, handlerMap map[string]core.Handler) e
 			ResponseBody: req.ResponseBody,
 			Allow:        req.Allow,
 			Method:       req.Method,
-			URLTemplate:  urlTmpl,
+			URLTemplate:  req.URLTemplate,
 		})
 
 		if err != nil {

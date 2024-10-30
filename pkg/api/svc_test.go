@@ -142,3 +142,41 @@ func TestService_Handle(t *testing.T) {
 		})
 	}
 }
+
+func TestService_Addr(t *testing.T) {
+	cfg := &Config{
+		Listen: "localhost:0",
+	}
+
+	mockBFFService := NewMockBFFService(t)
+	service := NewSevice(cfg, mockBFFService)
+
+	addr := service.Addr()
+	assert.Nil(t, addr)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ready := make(chan struct{})
+
+	go func() {
+		for service.Addr() == nil {
+			time.Sleep(10 * time.Millisecond)
+		}
+
+		close(ready)
+	}()
+
+	go func() {
+		_ = service.Run(ctx)
+	}()
+
+	select {
+	case <-ready:
+	case <-time.After(1 * time.Second):
+		t.Error("Expected server to start")
+	}
+
+	addr = service.Addr()
+	assert.NotNil(t, addr)
+}

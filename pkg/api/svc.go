@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	"github.com/ksysoev/deriv-api-bff/pkg/middleware"
@@ -29,16 +30,39 @@ type Config struct {
 type Service struct {
 	cfg     *Config
 	handler BFFService
+	server  *server.Server
 }
 
 // NewSevice creates a new instance of Service with the provided configuration and handler.
 // It takes cfg of type *Config and handler of type BFFService.
 // It returns a pointer to a Service struct.
 func NewSevice(cfg *Config, handler BFFService) *Service {
-	return &Service{
+	s := &Service{
 		cfg:     cfg,
 		handler: handler,
 	}
+
+	dispatcher := dispatch.NewRouterDispatcher(s, parse)
+	dispatcher.Use(middleware.NewErrorHandlingMiddleware())
+
+	registry := channel.NewConnectionRegistry(
+		channel.WithMaxFrameLimit(maxMessageSize),
+	)
+	endpoint := channel.NewChannel("/", dispatcher, registry, channel.WithOriginPatterns("*"))
+	endpoint.Use(middleware.NewQueryParamsMiddleware())
+	endpoint.Use(middleware.NewHeadersMiddleware())
+
+	s.server = server.NewServer(cfg.Listen)
+	s.server.AddChannel(endpoint)
+
+	return s
+}
+
+// Addr returns the network address the server is listening on.
+// It takes no parameters.
+// It returns a net.Addr which represents the server's network address.
+func (s *Service) Addr() net.Addr {
+	return s.server.Addr()
 }
 
 // Run starts the service and listens for incoming connections.
@@ -47,26 +71,15 @@ func NewSevice(cfg *Config, handler BFFService) *Service {
 // The function sets up a dispatcher, a connection registry, and a channel endpoint with middleware.
 // It also handles graceful shutdown when the context is done.
 func (s *Service) Run(ctx context.Context) error {
-	dispatcher := dispatch.NewRouterDispatcher(s, parse)
-	registry := channel.NewConnectionRegistry(
-		channel.WithMaxFrameLimit(maxMessageSize),
-	)
-	endpoint := channel.NewChannel("/", dispatcher, registry, channel.WithOriginPatterns("*"))
-	endpoint.Use(middleware.NewQueryParamsMiddleware())
-	endpoint.Use(middleware.NewHeadersMiddleware())
-
-	srv := server.NewServer(s.cfg.Listen)
-	srv.AddChannel(endpoint)
-
 	go func() {
 		<-ctx.Done()
 
-		if err := srv.Close(); err != nil {
+		if err := s.server.Close(); err != nil {
 			slog.Error("Fail to close app server", "error", err)
 		}
 	}()
 
-	if err := srv.Run(); err != nil {
+	if err := s.server.Run(); err != nil {
 		return fmt.Errorf("failed to start server: %w", err)
 	}
 
