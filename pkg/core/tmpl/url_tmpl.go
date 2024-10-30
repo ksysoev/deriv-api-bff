@@ -59,14 +59,13 @@ func (t *URLTmpl) Execute(params any) (string, error) {
 			return 0, err
 		}
 
-		str, ok := v.(string)
-		if !ok {
-			return 0, fmt.Errorf("expected string, got %T", v)
+		if str, ok := v.(string); ok {
+			escapedStr := url.QueryEscape(str)
+
+			return w.Write([]byte(escapedStr))
 		}
 
-		escapedStr := url.QueryEscape(str)
-
-		return w.Write([]byte(escapedStr))
+		return 0, fmt.Errorf("expected string, got %T", v)
 	})
 
 	if err != nil {
