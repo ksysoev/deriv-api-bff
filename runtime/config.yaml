@@ -52,7 +52,7 @@ api:
           type: "string"
       backend:
         - method: "GET"
-          url_template: 'http://nginx/country/{{ index .Params "country" }}.json'
+          url_template: 'http://nginx/country/${params.country}.json'
           allow: 
             - region
             - subregion

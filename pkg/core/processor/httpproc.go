@@ -1,11 +1,9 @@
 package processor
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"log/slog"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
@@ -16,7 +14,7 @@ import (
 type HTTPProc struct {
 	name        string
 	method      string
-	urlTemplate *template.Template
+	urlTemplate *tmpl.URLTmpl
 	tmpl        *tmpl.Tmpl
 	fieldMap    map[string]string
 	allow       []string
@@ -36,10 +34,15 @@ func NewHTTP(cfg *Config) (*HTTPProc, error) {
 		return nil, fmt.Errorf("failed to parse request template: %w", err)
 	}
 
+	urlTmpl, err := tmpl.NewURLTmpl(cfg.URLTemplate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse URL template: %w", err)
+	}
+
 	return &HTTPProc{
 		name:        cfg.Name,
 		method:      cfg.Method,
-		urlTemplate: cfg.URLTemplate,
+		urlTemplate: urlTmpl,
 		tmpl:        reqTmpl,
 		fieldMap:    cfg.FieldMap,
 		allow:       cfg.Allow,
@@ -63,14 +66,13 @@ func (p *HTTPProc) Render(ctx context.Context, reqID int64, param, deps map[stri
 		ReqID:  reqID,
 	}
 
-	urlBuf := bytes.NewBuffer(nil)
-
-	if err := p.urlTemplate.Execute(urlBuf, data); err != nil {
+	url, err := p.urlTemplate.Execute(data)
+	if err != nil {
 		return nil, fmt.Errorf("fail to execute URL template %s: %w", p.name, err)
 	}
 
 	if p.tmpl == nil {
-		return request.NewHTTPReq(ctx, p.method, urlBuf.String(), nil, reqID), nil
+		return request.NewHTTPReq(ctx, p.method, url, nil, reqID), nil
 	}
 
 	body, err := p.tmpl.Execute(data)
@@ -78,7 +80,7 @@ func (p *HTTPProc) Render(ctx context.Context, reqID int64, param, deps map[stri
 		return nil, fmt.Errorf("fail to execute request template %s: %w", p.name, err)
 	}
 
-	return request.NewHTTPReq(ctx, p.method, urlBuf.String(), body, reqID), nil
+	return request.NewHTTPReq(ctx, p.method, url, body, reqID), nil
 }
 
 // Parse processes the input data and filters the response based on allowed keys.

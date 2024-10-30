@@ -2,7 +2,6 @@ package processor
 
 import (
 	"context"
-	"html/template"
 	"testing"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/tmpl"
@@ -123,7 +122,7 @@ func TestNewHTTP(t *testing.T) {
 			cfg: &Config{
 				Name:        "TestProcessor",
 				Method:      "GET",
-				URLTemplate: template.Must(template.New("test").Parse("/test/url")),
+				URLTemplate: "/test/url",
 				Tmplt:       map[string]any{"key": "value"},
 				FieldMap:    map[string]string{"key1": "mappedKey1"},
 				Allow:       []string{"key1", "key2"},
@@ -135,7 +134,7 @@ func TestNewHTTP(t *testing.T) {
 			cfg: &Config{
 				Name:        "TestProcessor",
 				Method:      "GET",
-				URLTemplate: template.Must(template.New("test").Parse("/test/url")),
+				URLTemplate: "/test/url",
 				Tmplt:       map[string]any{"key": make(chan int)},
 				FieldMap:    map[string]string{"key1": "mappedKey1"},
 				Allow:       []string{"key1", "key2"},
@@ -147,8 +146,20 @@ func TestNewHTTP(t *testing.T) {
 			cfg: &Config{
 				Name:        "TestProcessor",
 				Method:      "GET",
-				URLTemplate: template.Must(template.New("test").Parse("/test/url")),
+				URLTemplate: "/test/url",
 				Tmplt:       map[string]any{"test": "${params}invalid"},
+				FieldMap:    map[string]string{"key1": "mappedKey1"},
+				Allow:       []string{"key1", "key2"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "URL template parse error",
+			cfg: &Config{
+				Name:        "TestProcessor",
+				Method:      "GET",
+				URLTemplate: "/test/url${params",
+				Tmplt:       map[string]any{"test": "${params}"},
 				FieldMap:    map[string]string{"key1": "mappedKey1"},
 				Allow:       []string{"key1", "key2"},
 			},
@@ -192,8 +203,8 @@ func TestHTTPProc_Render(t *testing.T) {
 			proc: &HTTPProc{
 				name:        "TestProcessor",
 				method:      "POST",
-				urlTemplate: template.Must(template.New("url").Parse("http://example.com/{{.ReqID}}")),
-				tmpl:        tmpl.Must(`{"param": "${params.param}"}`),
+				urlTemplate: tmpl.MustNewURLTmpl("http://example.com/${req_id}"),
+				tmpl:        tmpl.MustNewTmpl(`{"param": "${params.param}"}`),
 			},
 			reqID:         123,
 			param:         map[string]any{"param": "value"},
@@ -207,7 +218,7 @@ func TestHTTPProc_Render(t *testing.T) {
 			proc: &HTTPProc{
 				name:        "TestProcessor",
 				method:      "GET",
-				urlTemplate: template.Must(template.New("url").Parse("http://example.com/{{.ReqID}}")),
+				urlTemplate: tmpl.MustNewURLTmpl("http://example.com/${req_id}"),
 				tmpl:        nil,
 			},
 			reqID:         123,
@@ -222,7 +233,7 @@ func TestHTTPProc_Render(t *testing.T) {
 			proc: &HTTPProc{
 				name:        "TestProcessor",
 				method:      "GET",
-				urlTemplate: template.Must(template.New("url").Parse("http://example.com/{{.InvalidField}}")),
+				urlTemplate: tmpl.MustNewURLTmpl("http://example.com/${params.invalid_field}"),
 				tmpl:        nil,
 			},
 			reqID:         123,
@@ -237,8 +248,8 @@ func TestHTTPProc_Render(t *testing.T) {
 			proc: &HTTPProc{
 				name:        "TestProcessor",
 				method:      "POST",
-				urlTemplate: template.Must(template.New("url").Parse("http://example.com/{{.ReqID}}")),
-				tmpl:        tmpl.Must(`{"param": "${invalid_field}"}`),
+				urlTemplate: tmpl.MustNewURLTmpl("http://example.com/${req_id}"),
+				tmpl:        tmpl.MustNewTmpl(`{"param": "${invalid_field}"}`),
 			},
 			reqID:         123,
 			param:         map[string]any{"param": "value"},

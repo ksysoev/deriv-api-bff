@@ -24,7 +24,7 @@ func TestMust(t *testing.T) {
 	tmplRaw := `{"key": "${value}"}`
 
 	assert.NotPanics(t, func() {
-		tmpl := Must(tmplRaw)
+		tmpl := MustNewTmpl(tmplRaw)
 		assert.NotNil(t, tmpl)
 	})
 }
@@ -33,7 +33,7 @@ func TestMust_Panic(t *testing.T) {
 	tmplRaw := `{"key": "${value"`
 
 	assert.Panics(t, func() {
-		Must(tmplRaw)
+		MustNewTmpl(tmplRaw)
 	})
 }
 
