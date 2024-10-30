@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 
 	"github.com/valyala/fasttemplate"
 	"github.com/wolfeidau/jsontemplate"
@@ -52,7 +53,9 @@ func (t *URLTmpl) Execute(params any) ([]byte, error) {
 			return 0, fmt.Errorf("expected string, got %T", v)
 		}
 
-		return w.Write([]byte(str))
+		escapedStr := url.QueryEscape(str)
+
+		return w.Write([]byte(escapedStr))
 	})
 
 	return buf.Bytes(), err

@@ -51,6 +51,24 @@ func TestURLTmpl_Execute(t *testing.T) {
 			want:   "http://example.com/value",
 		},
 		{
+			name:   "object parameter",
+			tmpl:   "http://example.com/${param}",
+			params: map[string]any{"param": map[string]string{"key": "value"}},
+			want:   "http://example.com/%7B%22key%22%3A%22value%22%7D",
+		},
+		{
+			name:   "null parameter",
+			tmpl:   "http://example.com/${param}",
+			params: map[string]any{"param": nil},
+			want:   "http://example.com/",
+		},
+		{
+			name:   "url escape value execution",
+			tmpl:   "http://example.com/${param}",
+			params: map[string]string{"param": "v=a&lue"},
+			want:   "http://example.com/v%3Da%26lue",
+		},
+		{
 			name:    "missing parameter",
 			tmpl:    "http://example.com/${param}",
 			params:  map[string]string{},
