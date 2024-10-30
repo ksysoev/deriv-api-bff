@@ -27,11 +27,11 @@ func New(tmplRaw string) (*Tmpl, error) {
 	}, nil
 }
 
-// Must creates a new Tmpl instance from the provided raw template string.
+// MustNewTmpl creates a new Tmpl instance from the provided raw template string.
 // It takes tmplRaw of type string, which is the raw template content.
 // It returns a pointer to a Tmpl instance.
 // It panics if there is an error during the creation of the Tmpl instance.
-func Must(tmplRaw string) *Tmpl {
+func MustNewTmpl(tmplRaw string) *Tmpl {
 	tmpl, err := New(tmplRaw)
 	if err != nil {
 		panic(err)

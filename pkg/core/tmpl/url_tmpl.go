@@ -27,6 +27,15 @@ func NewURLTmpl(tmpl string) (*URLTmpl, error) {
 	return &URLTmpl{tmpl: t}, nil
 }
 
+func MustNewURLTmpl(tmplRaw string) *URLTmpl {
+	tmpl, err := NewURLTmpl(tmplRaw)
+	if err != nil {
+		panic(err)
+	}
+
+	return tmpl
+}
+
 // Execute generates a URL string by executing a template with the provided parameters.
 // It takes params of type any, which are marshaled into JSON and used to fill the template.
 // It returns a string containing the generated URL and an error if the operation fails.

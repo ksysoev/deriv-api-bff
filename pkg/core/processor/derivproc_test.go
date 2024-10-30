@@ -67,8 +67,8 @@ func TestNewDeriv(t *testing.T) {
 }
 
 func TestProcessor_Render(t *testing.T) {
-	tmpl1 := tmpl.Must(`{"params":"${params}","req_id":"${req_id}","resp": "${resp}"}`)
-	tmpl2 := tmpl.Must(`{"params": "${params.key1.key2}}"}`)
+	tmpl1 := tmpl.MustNewTmpl(`{"params":"${params}","req_id":"${req_id}","resp": "${resp}"}`)
+	tmpl2 := tmpl.MustNewTmpl(`{"params": "${params.key1.key2}}"}`)
 
 	tests := []struct {
 		params   map[string]any

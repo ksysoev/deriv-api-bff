@@ -3,7 +3,6 @@ package processor
 import (
 	"context"
 	"fmt"
-	"html/template"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 )
@@ -17,7 +16,7 @@ type Processor interface {
 type Config struct {
 	Name         string
 	Method       string
-	URLTemplate  *template.Template
+	URLTemplate  string
 	Tmplt        map[string]any
 	FieldMap     map[string]string
 	ResponseBody string
@@ -52,5 +51,5 @@ func isDerivConfig(cfg *Config) bool {
 // It takes a single parameter cfg of type *Config.
 // It returns a boolean value: true if both Method and URLTemplate fields of cfg are non-empty, otherwise false.
 func isHTTPConfig(cfg *Config) bool {
-	return cfg.Method != "" && cfg.URLTemplate != nil
+	return cfg.Method != "" && cfg.URLTemplate != ""
 }
