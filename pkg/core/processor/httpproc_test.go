@@ -153,6 +153,18 @@ func TestNewHTTP(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "URL template parse error",
+			cfg: &Config{
+				Name:        "TestProcessor",
+				Method:      "GET",
+				URLTemplate: "/test/url${params",
+				Tmplt:       map[string]any{"test": "${params}"},
+				FieldMap:    map[string]string{"key1": "mappedKey1"},
+				Allow:       []string{"key1", "key2"},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {

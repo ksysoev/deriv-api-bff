@@ -27,6 +27,10 @@ func NewURLTmpl(tmpl string) (*URLTmpl, error) {
 	return &URLTmpl{tmpl: t}, nil
 }
 
+// MustNewURLTmpl creates a new URLTmpl from the given raw template string.
+// It takes tmplRaw of type string.
+// It returns a pointer to a URLTmpl.
+// It panics if the template string is invalid or if there is an error during the creation of the URLTmpl.
 func MustNewURLTmpl(tmplRaw string) *URLTmpl {
 	tmpl, err := NewURLTmpl(tmplRaw)
 	if err != nil {

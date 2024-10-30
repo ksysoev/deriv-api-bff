@@ -80,6 +80,12 @@ func TestURLTmpl_Execute(t *testing.T) {
 			params:  map[string]int{"param": 123},
 			wantErr: true,
 		},
+		{
+			name:    "invalid params",
+			tmpl:    "http://example.com/${param}",
+			params:  map[string]any{"param": make(chan int)},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -93,6 +99,38 @@ func TestURLTmpl_Execute(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+func TestMustNewURLTmpl(t *testing.T) {
+	tests := []struct {
+		name      string
+		tmpl      string
+		wantPanic bool
+	}{
+		{
+			name:      "valid template",
+			tmpl:      "http://example.com/${param}",
+			wantPanic: false,
+		},
+		{
+			name:      "invalid template",
+			tmpl:      "http://example.com/${param",
+			wantPanic: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.wantPanic {
+				assert.Panics(t, func() {
+					MustNewURLTmpl(tt.tmpl)
+				})
+			} else {
+				assert.NotPanics(t, func() {
+					MustNewURLTmpl(tt.tmpl)
+				})
 			}
 		})
 	}
