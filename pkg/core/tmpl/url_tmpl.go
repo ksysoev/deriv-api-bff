@@ -1,7 +1,6 @@
 package tmpl
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -28,21 +27,20 @@ func NewURLTmpl(tmpl string) (*URLTmpl, error) {
 	return &URLTmpl{tmpl: t}, nil
 }
 
-// Execute processes the given parameters using a JSON template and returns the resulting byte slice.
-// It takes params of type any, which are marshaled into JSON format.
-// It returns a byte slice containing the processed template and an error if any occurs during processing.
-// It returns an error if the parameters cannot be marshaled into JSON, if the template execution fails, or if the expected string type is not met during template processing.
-func (t *URLTmpl) Execute(params any) ([]byte, error) {
+// Execute generates a URL string by executing a template with the provided parameters.
+// It takes params of type any, which are marshaled into JSON and used to fill the template.
+// It returns a string containing the generated URL and an error if the operation fails.
+// It returns an error if the parameters cannot be marshaled into JSON, if the template execution fails,
+// or if the template path does not resolve to a string value.
+func (t *URLTmpl) Execute(params any) (string, error) {
 	jData, err := json.Marshal(params)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request template: %w", err)
+		return "", fmt.Errorf("failed to marshal request template: %w", err)
 	}
 
 	doc := jsontemplate.NewDocument(jData)
 
-	buf := bytes.NewBuffer(nil)
-
-	_, err = t.tmpl.ExecuteFunc(buf, func(w io.Writer, path string) (int, error) {
+	str, err := t.tmpl.ExecuteFuncStringWithErr(func(w io.Writer, path string) (int, error) {
 		v, err := doc.Read(path + ";escape")
 		if err != nil {
 			return 0, err
@@ -58,5 +56,9 @@ func (t *URLTmpl) Execute(params any) ([]byte, error) {
 		return w.Write([]byte(escapedStr))
 	})
 
-	return buf.Bytes(), err
+	if err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return str, nil
 }

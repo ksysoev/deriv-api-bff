@@ -92,7 +92,7 @@ func TestURLTmpl_Execute(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.want, string(got))
+				assert.Equal(t, tt.want, got)
 			}
 		})
 	}
