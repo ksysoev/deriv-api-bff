@@ -76,54 +76,54 @@ func TestProcessor_Render(t *testing.T) {
 		tmpl     *tmpl.Tmpl
 		name     string
 		expected string
-		reqID    int64
+		reqID    string
 		wantErr  bool
 	}{
 		{
 			name:     "with params and deps",
 			params:   map[string]any{"key1": "value1"},
 			deps:     map[string]any{"dep1": "value1"},
-			reqID:    12345,
-			expected: `{"params":{"key1":"value1"},"req_id":12345,"resp": {"dep1":"value1"}}`,
+			reqID:    "12345",
+			expected: `{"params":{"key1":"value1"},"req_id":"12345","resp": {"dep1":"value1"}}`,
 			wantErr:  false,
 		},
 		{
 			name:     "with nil params and deps",
 			params:   nil,
 			deps:     nil,
-			reqID:    12345,
-			expected: `{"params":{},"req_id":12345,"resp": {}}`,
+			reqID:    "12345",
+			expected: `{"params":{},"req_id":"12345","resp": {}}`,
 			wantErr:  false,
 		},
 		{
 			name:     "with empty params and deps",
 			params:   map[string]any{},
 			deps:     map[string]any{},
-			reqID:    12345,
-			expected: `{"params":{},"req_id":12345,"resp": {}}`,
+			reqID:    "12345",
+			expected: `{"params":{},"req_id":"12345","resp": {}}`,
 			wantErr:  false,
 		},
 		{
 			name:     "with only params",
 			params:   map[string]any{"key1": "value1"},
 			deps:     nil,
-			reqID:    12345,
-			expected: `{"params":{"key1":"value1"},"req_id":12345,"resp": {}}`,
+			reqID:    "12345",
+			expected: `{"params":{"key1":"value1"},"req_id":"12345","resp": {}}`,
 			wantErr:  false,
 		},
 		{
 			name:     "with only deps",
 			params:   nil,
 			deps:     map[string]any{"dep1": "value1"},
-			reqID:    12345,
-			expected: `{"params":{},"req_id":12345,"resp": {"dep1":"value1"}}`,
+			reqID:    "12345",
+			expected: `{"params":{},"req_id":"12345","resp": {"dep1":"value1"}}`,
 			wantErr:  false,
 		},
 		{
 			name:     "with error",
 			params:   nil,
 			deps:     nil,
-			reqID:    12345,
+			reqID:    "12345",
 			tmpl:     tmpl2,
 			expected: "",
 			wantErr:  true,

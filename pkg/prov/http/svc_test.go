@@ -101,7 +101,7 @@ func TestSendWrapper(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var reqID int64
+			var reqID string
 
 			if !tt.expectError {
 				reqID, _ = conn.WaitResponse()

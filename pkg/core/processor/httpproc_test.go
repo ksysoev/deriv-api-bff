@@ -195,7 +195,7 @@ func TestHTTPProc_Render(t *testing.T) {
 		name          string
 		wantRoutinKey string
 		wantBody      []byte
-		reqID         int64
+		reqID         string
 		wantErr       bool
 	}{
 		{
@@ -206,7 +206,7 @@ func TestHTTPProc_Render(t *testing.T) {
 				urlTemplate: tmpl.MustNewURLTmpl("http://example.com/${req_id}"),
 				tmpl:        tmpl.MustNewTmpl(`{"param": "${params.param}"}`),
 			},
-			reqID:         123,
+			reqID:         "123",
 			param:         map[string]any{"param": "value"},
 			deps:          map[string]any{},
 			wantRoutinKey: "POST http://example.com/123",
@@ -221,7 +221,7 @@ func TestHTTPProc_Render(t *testing.T) {
 				urlTemplate: tmpl.MustNewURLTmpl("http://example.com/${req_id}"),
 				tmpl:        nil,
 			},
-			reqID:         123,
+			reqID:         "123",
 			param:         map[string]any{"param": "value"},
 			deps:          map[string]any{},
 			wantRoutinKey: "GET http://example.com/123",
@@ -236,7 +236,7 @@ func TestHTTPProc_Render(t *testing.T) {
 				urlTemplate: tmpl.MustNewURLTmpl("http://example.com/${params.invalid_field}"),
 				tmpl:        nil,
 			},
-			reqID:         123,
+			reqID:         "123",
 			param:         map[string]any{"param": "value"},
 			deps:          map[string]any{},
 			wantRoutinKey: "",
@@ -251,7 +251,7 @@ func TestHTTPProc_Render(t *testing.T) {
 				urlTemplate: tmpl.MustNewURLTmpl("http://example.com/${req_id}"),
 				tmpl:        tmpl.MustNewTmpl(`{"param": "${invalid_field}"}`),
 			},
-			reqID:         123,
+			reqID:         "123",
 			param:         map[string]any{"param": "value"},
 			deps:          map[string]any{},
 			wantRoutinKey: "POST http://example.com/123",

@@ -14,9 +14,9 @@ func TestNewHTTPReq(t *testing.T) {
 	url := "http://example.com"
 	body := []byte("test body")
 
-	req := NewHTTPReq(ctx, method, url, body, 1)
+	req := NewHTTPReq(ctx, method, url, body, "testID")
 
-	assert.Equal(t, int64(1), req.ID())
+	assert.Equal(t, "testID", req.ID())
 	assert.Equal(t, ctx, req.ctx)
 	assert.Equal(t, method, req.method)
 	assert.Equal(t, url, req.url)
@@ -25,7 +25,7 @@ func TestNewHTTPReq(t *testing.T) {
 }
 
 func TestAddHeader(t *testing.T) {
-	req := NewHTTPReq(context.Background(), "GET", "http://example.com", nil, 1)
+	req := NewHTTPReq(context.Background(), "GET", "http://example.com", nil, "testID")
 	req.AddHeader("Content-Type", "application/json")
 
 	assert.Equal(t, []string{"application/json"}, req.headers["Content-Type"])
@@ -37,7 +37,7 @@ func TestToHTTPRequest(t *testing.T) {
 	url := "http://example.com"
 	body := []byte("test body")
 
-	req := NewHTTPReq(ctx, method, url, body, 1)
+	req := NewHTTPReq(ctx, method, url, body, "testID")
 	req.AddHeader("Content-Type", "application/json")
 
 	httpReq, err := req.ToHTTPRequest()
@@ -55,14 +55,14 @@ func TestToHTTPRequest(t *testing.T) {
 
 func TestToHTTPRequestError(t *testing.T) {
 	ctx := context.Background()
-	req := NewHTTPReq(ctx, "/invalid method", "http://example.com", nil, 1)
+	req := NewHTTPReq(ctx, "/invalid method", "http://example.com", nil, "testID")
 
 	_, err := req.ToHTTPRequest()
 	assert.Error(t, err)
 }
 func TestContext(t *testing.T) {
 	ctx := context.Background()
-	req := NewHTTPReq(ctx, "GET", "http://example.com", nil, 1)
+	req := NewHTTPReq(ctx, "GET", "http://example.com", nil, "testID")
 
 	assert.Equal(t, ctx, req.Context())
 }
@@ -70,7 +70,7 @@ func TestContext(t *testing.T) {
 func TestRoutingKey(t *testing.T) {
 	method := "GET"
 	url := "http://example.com"
-	req := NewHTTPReq(context.Background(), method, url, nil, 1)
+	req := NewHTTPReq(context.Background(), method, url, nil, "testID")
 
 	expectedRoutingKey := method + " " + url
 	assert.Equal(t, expectedRoutingKey, req.RoutingKey())
@@ -78,7 +78,7 @@ func TestRoutingKey(t *testing.T) {
 
 func TestData(t *testing.T) {
 	body := []byte("test body")
-	req := NewHTTPReq(context.Background(), "GET", "http://example.com", body, 1)
+	req := NewHTTPReq(context.Background(), "GET", "http://example.com", body, "testID")
 
 	assert.Equal(t, body, req.Data())
 }
@@ -89,7 +89,7 @@ func TestWithContext(t *testing.T) {
 	newCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	req := NewHTTPReq(ctx, "GET", "http://example.com", nil, 1)
+	req := NewHTTPReq(ctx, "GET", "http://example.com", nil, "testID")
 
 	req1 := req.WithContext(newCtx)
 	assert.Equal(t, newCtx, req1.Context())

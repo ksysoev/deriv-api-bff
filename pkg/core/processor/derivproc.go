@@ -22,7 +22,7 @@ type DerivProc struct {
 type templateData struct {
 	Params map[string]any `json:"params"`
 	Resp   map[string]any `json:"resp"`
-	ReqID  int64          `json:"req_id"`
+	ReqID  string         `json:"req_id"`
 }
 
 type passthrough struct {
@@ -71,7 +71,7 @@ func (p *DerivProc) Name() string {
 // and two maps params and deps of type map[string]any.
 // It returns an error if the template execution fails.
 // If deps or params are nil, they are initialized as empty maps before template execution.
-func (p *DerivProc) Render(ctx context.Context, reqID int64, params, deps map[string]any) (core.Request, error) {
+func (p *DerivProc) Render(ctx context.Context, reqID string, params, deps map[string]any) (core.Request, error) {
 	if deps == nil {
 		deps = make(map[string]any)
 	}

@@ -14,14 +14,14 @@ type HTTPReq struct {
 	url     string
 	method  string
 	body    []byte
-	id      int64
+	id      string
 }
 
 // NewHTTPReq creates a new HTTPReq instance with the specified method, URL, and body.
 // It takes three parameters: ctx of type context.Context, method of type string, and url of type string.
 // It also takes body of type []byte which represents the request payload.
 // It returns a pointer to an HTTPReq struct initialized with the provided method, URL, and body.
-func NewHTTPReq(ctx context.Context, method, url string, body []byte, reqID int64) *HTTPReq {
+func NewHTTPReq(ctx context.Context, method, url string, body []byte, reqID string) *HTTPReq {
 	return &HTTPReq{
 		ctx:     ctx,
 		url:     url,
@@ -32,7 +32,7 @@ func NewHTTPReq(ctx context.Context, method, url string, body []byte, reqID int6
 	}
 }
 
-func (r *HTTPReq) ID() int64 {
+func (r *HTTPReq) ID() string {
 	return r.id
 }
 
