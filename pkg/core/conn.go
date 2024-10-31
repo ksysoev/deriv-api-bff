@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"sync"
-	"sync/atomic"
 
 	"github.com/coder/websocket"
+	"github.com/google/uuid"
 	"github.com/ksysoev/wasabi"
 )
 
@@ -19,15 +19,14 @@ const (
 
 type Conn struct {
 	clientConn wasabi.Connection
-	requests   map[int64]chan []byte
+	requests   map[string]chan []byte
 	onClose    func(string)
-	currID     int64
 	mu         sync.Mutex
 }
 
 type respID struct {
 	Passthrough struct {
-		ReqID int64 `json:"req_id"`
+		ReqID string `json:"req_id"`
 	} `json:"passthrough"`
 }
 
@@ -42,8 +41,7 @@ func NewConnection(conn wasabi.Connection, onClose func(id string)) *Conn {
 
 	return &Conn{
 		clientConn: conn,
-		currID:     initID,
-		requests:   make(map[int64]chan []byte),
+		requests:   make(map[string]chan []byte),
 		onClose:    onClose,
 	}
 }
@@ -62,22 +60,16 @@ func (c *Conn) Context() context.Context {
 
 // WaitResponse waits for a response from the connection and returns a request ID and a channel to receive the response.
 // It returns an int64 representing the request ID and a receive-only channel of type []byte for the response.
-func (c *Conn) WaitResponse() (reqID int64, respChan <-chan []byte) {
+func (c *Conn) WaitResponse() (reqID string, respChan <-chan []byte) {
+	reqID = uuid.New().String()
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	reqID = c.nextID()
 	ch := make(chan []byte, 1)
 	c.requests[reqID] = ch
 
 	return reqID, ch
-}
-
-// nextID generates the next unique identifier for the connection.
-// It increments the current ID atomically to ensure thread safety.
-// It returns an int64 which is the next unique identifier.
-func (c *Conn) nextID() int64 {
-	return atomic.AddInt64(&c.currID, 1)
 }
 
 // Send sends a message of the specified type through the connection.
@@ -96,7 +88,7 @@ func (c *Conn) Send(msgType wasabi.MessageType, msg []byte) error {
 		return c.clientConn.Send(msgType, msg)
 	}
 
-	if resp.Passthrough.ReqID == 0 {
+	if resp.Passthrough.ReqID == "" {
 		return c.clientConn.Send(msgType, msg)
 	}
 
@@ -107,7 +99,7 @@ func (c *Conn) Send(msgType wasabi.MessageType, msg []byte) error {
 	return nil
 }
 
-func (c *Conn) DoneRequest(reqID int64, resp []byte) bool {
+func (c *Conn) DoneRequest(reqID string, resp []byte) bool {
 	c.mu.Lock()
 	ch, ok := c.requests[reqID]
 	delete(c.requests, reqID)
