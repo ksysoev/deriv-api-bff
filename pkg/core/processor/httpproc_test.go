@@ -194,8 +194,8 @@ func TestHTTPProc_Render(t *testing.T) {
 		deps          map[string]any
 		name          string
 		wantRoutinKey string
-		wantBody      []byte
 		reqID         string
+		wantBody      []byte
 		wantErr       bool
 	}{
 		{

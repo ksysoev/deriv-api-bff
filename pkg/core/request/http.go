@@ -13,8 +13,8 @@ type HTTPReq struct {
 	headers map[string][]string
 	url     string
 	method  string
-	body    []byte
 	id      string
+	body    []byte
 }
 
 // NewHTTPReq creates a new HTTPReq instance with the specified method, URL, and body.
