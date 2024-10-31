@@ -16,12 +16,12 @@ type Validator interface {
 
 type RenderParser interface {
 	Name() string
-	Render(ctx context.Context, reqID int64, params map[string]any, deps map[string]any) (core.Request, error)
+	Render(ctx context.Context, reqID string, params map[string]any, deps map[string]any) (core.Request, error)
 	Parse(data []byte) (map[string]any, map[string]any, error)
 }
 
 type WaitComposer interface {
-	Prepare(context.Context, string, Parser) (int64, map[string]any, error)
+	Prepare(context.Context, string, Parser) (string, map[string]any, error)
 	Compose() (map[string]any, error)
 }
 

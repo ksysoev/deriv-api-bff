@@ -81,23 +81,23 @@ func (_c *MockWaitComposer_Compose_Call) RunAndReturn(run func() (map[string]any
 }
 
 // Prepare provides a mock function with given fields: _a0, _a1, _a2
-func (_m *MockWaitComposer) Prepare(_a0 context.Context, _a1 string, _a2 Parser) (int64, map[string]any, error) {
+func (_m *MockWaitComposer) Prepare(_a0 context.Context, _a1 string, _a2 Parser) (string, map[string]any, error) {
 	ret := _m.Called(_a0, _a1, _a2)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Prepare")
 	}
 
-	var r0 int64
+	var r0 string
 	var r1 map[string]any
 	var r2 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, Parser) (int64, map[string]any, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, Parser) (string, map[string]any, error)); ok {
 		return rf(_a0, _a1, _a2)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, Parser) int64); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, Parser) string); ok {
 		r0 = rf(_a0, _a1, _a2)
 	} else {
-		r0 = ret.Get(0).(int64)
+		r0 = ret.Get(0).(string)
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, Parser) map[string]any); ok {
@@ -137,12 +137,12 @@ func (_c *MockWaitComposer_Prepare_Call) Run(run func(_a0 context.Context, _a1 s
 	return _c
 }
 
-func (_c *MockWaitComposer_Prepare_Call) Return(_a0 int64, _a1 map[string]any, _a2 error) *MockWaitComposer_Prepare_Call {
+func (_c *MockWaitComposer_Prepare_Call) Return(_a0 string, _a1 map[string]any, _a2 error) *MockWaitComposer_Prepare_Call {
 	_c.Call.Return(_a0, _a1, _a2)
 	return _c
 }
 
-func (_c *MockWaitComposer_Prepare_Call) RunAndReturn(run func(context.Context, string, Parser) (int64, map[string]any, error)) *MockWaitComposer_Prepare_Call {
+func (_c *MockWaitComposer_Prepare_Call) RunAndReturn(run func(context.Context, string, Parser) (string, map[string]any, error)) *MockWaitComposer_Prepare_Call {
 	_c.Call.Return(run)
 	return _c
 }
