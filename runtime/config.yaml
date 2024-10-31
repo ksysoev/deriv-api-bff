@@ -1,5 +1,7 @@
 server:
   listen: ":8080"
+  max_requests: 100
+  max_requests_per_conn: 10
 deriv:
   endpoint: "wss://ws.derivws.com/websockets/v3"
 etcd:

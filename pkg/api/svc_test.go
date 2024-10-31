@@ -180,3 +180,66 @@ func TestService_Addr(t *testing.T) {
 	addr = service.Addr()
 	assert.NotNil(t, addr)
 }
+func TestPopulateDefaults(t *testing.T) {
+	tests := []struct {
+		input    *Config
+		expected *Config
+		name     string
+	}{
+		{
+			name: "Defaults Applied",
+			input: &Config{
+				Listen: "localhost:8080",
+			},
+			expected: &Config{
+				Listen:             "localhost:8080",
+				MaxRequests:        maxRequestsDefault,
+				MaxRequestsPerConn: maxRequestsPerConnDefault,
+			},
+		},
+		{
+			name: "MaxRequests Set",
+			input: &Config{
+				Listen:      "localhost:8080",
+				MaxRequests: 200,
+			},
+			expected: &Config{
+				Listen:             "localhost:8080",
+				MaxRequests:        200,
+				MaxRequestsPerConn: maxRequestsPerConnDefault,
+			},
+		},
+		{
+			name: "MaxRequestsPerConn Set",
+			input: &Config{
+				Listen:             "localhost:8080",
+				MaxRequestsPerConn: 20,
+			},
+			expected: &Config{
+				Listen:             "localhost:8080",
+				MaxRequests:        maxRequestsDefault,
+				MaxRequestsPerConn: 20,
+			},
+		},
+		{
+			name: "All Values Set",
+			input: &Config{
+				Listen:             "localhost:8080",
+				MaxRequests:        200,
+				MaxRequestsPerConn: 20,
+			},
+			expected: &Config{
+				Listen:             "localhost:8080",
+				MaxRequests:        200,
+				MaxRequestsPerConn: 20,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			populateDefaults(tt.input)
+			assert.Equal(t, tt.expected, tt.input)
+		})
+	}
+}
