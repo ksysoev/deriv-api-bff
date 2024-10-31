@@ -85,11 +85,11 @@ func (c *Conn) Send(msgType wasabi.MessageType, msg []byte) error {
 		return c.clientConn.Send(msgType, msg)
 	}
 
-	if !c.DoneRequest(resp.Passthrough.ReqID, msg) {
-		return c.clientConn.Send(msgType, msg)
+	if c.DoneRequest(resp.Passthrough.ReqID, msg) {
+		return nil
 	}
 
-	return nil
+	return c.clientConn.Send(msgType, msg)
 }
 
 func (c *Conn) DoneRequest(reqID string, resp []byte) bool {
@@ -98,16 +98,16 @@ func (c *Conn) DoneRequest(reqID string, resp []byte) bool {
 	delete(c.requests, reqID)
 	c.mu.Unlock()
 
-	if !ok {
-		return false
+	if ok {
+		respCopy := make([]byte, len(resp))
+		copy(respCopy, resp)
+
+		ch <- respCopy
+
+		return true
 	}
 
-	respCopy := make([]byte, len(resp))
-	copy(respCopy, resp)
-
-	ch <- respCopy
-
-	return true
+	return false
 }
 
 // Close terminates the connection with a given status code and reason.

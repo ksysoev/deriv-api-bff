@@ -136,6 +136,22 @@ func TestConn_Send(t *testing.T) {
 		assert.False(t, exists)
 	})
 
+	t.Run("Send incorrect message", func(t *testing.T) {
+		msgType := wasabi.MsgTypeText
+		reqID := "testID"
+		msg := []byte(`{"passthrough":{"req_id":testID},"data":"test"}`)
+		respChan := make(chan []byte, 1)
+
+		mockConn.EXPECT().Send(msgType, msg).Return(nil)
+
+		conn := NewConnection(mockConn, func(_ string) {})
+		conn.requests[reqID] = respChan
+
+		err := conn.Send(msgType, msg)
+
+		assert.NoError(t, err)
+	})
+
 	t.Run("Send non-binary message with req_id but no matching request", func(t *testing.T) {
 		msgType := wasabi.MsgTypeText
 		msg := []byte(`{"req_id":1000001,"data":"test"}`)
