@@ -136,6 +136,9 @@ func parse(_ wasabi.Connection, ctx context.Context, msgType wasabi.MessageType,
 	return request.NewRequest(ctx, coreMsgType, data)
 }
 
+// populateDefaults sets default values for the configuration if they are not already set.
+// It takes a single parameter cfg of type *Config.
+// It does not return any values.
 func populateDefaults(cfg *Config) {
 	if cfg.MaxRequests == 0 {
 		cfg.MaxRequests = maxRequestsDefault
