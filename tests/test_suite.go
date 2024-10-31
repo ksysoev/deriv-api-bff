@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
 	"github.com/ksysoev/deriv-api-bff/pkg/api"
 	"github.com/ksysoev/deriv-api-bff/pkg/cmd"
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
@@ -20,7 +21,7 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/repo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type testSuite struct {
@@ -99,7 +100,17 @@ func (s *testSuite) createTestWSEchoServer() http.HandlerFunc {
 // It takes cfg of type *cmd.Config which contains the configuration settings for the application.
 // It returns a string representing the URL of the started server, a function to close the server, and an error if the server fails to start.
 // It returns an error if the calls repository cannot be created or if the server does not start within the specified timeout.
-func (s *testSuite) startAppWithConfig(cfg *cmd.Config) (url string, err error) {
+func (s *testSuite) startAppWithConfig(cfgYAML string) (url string, err error) {
+	var cfg cmd.Config
+
+	if err := yaml.Unmarshal([]byte(cfgYAML), &cfg); err != nil {
+		return "", fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+
+	cfg.Deriv.Endpoint = s.echoWSURL()
+
+	s.debugConfig(&cfg)
+
 	derivAPI := deriv.NewService(&cfg.Deriv)
 
 	connRegistry := repo.NewConnectionRegistry()
@@ -153,11 +164,41 @@ func (s *testSuite) startAppWithConfig(cfg *cmd.Config) (url string, err error) 
 	return fmt.Sprintf("ws://%s/?app_id=1", server.Addr().String()), nil
 }
 
-// DebugConfig marshals the provided configuration into YAML format and logs it.
+// testRequest sends a WebSocket request to the specified URL and asserts the response.
+// It takes three parameters: url of type string, req of type any, and expectedResp of type any.
+// It does not return any values but uses assertions to validate the response.
+// It returns an error if the WebSocket connection fails, the request cannot be written, or the response cannot be read.
+func (s *testSuite) testRequest(url string, req, expectedResp any) {
+	a := assert.New(s.T())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+
+	defer cancel()
+
+	c, r, err := websocket.Dial(ctx, url, nil)
+	a.NoError(err)
+
+	if r.Body != nil {
+		_ = r.Body.Close()
+	}
+
+	defer c.Close(websocket.StatusNormalClosure, "")
+
+	err = wsjson.Write(ctx, c, &req)
+	a.NoError(err)
+
+	var resp map[string]any
+
+	err = wsjson.Read(ctx, c, &resp)
+	a.NoError(err)
+	a.Equal(expectedResp, resp)
+}
+
+// debugConfig marshals the provided configuration into YAML format and logs it.
 // It takes cfg of type *cmd.Config.
 // It does not return any values.
 // It logs an error message and fails the test if marshalling the configuration fails.
-func (s *testSuite) DebugConfig(cfg *cmd.Config) {
+func (s *testSuite) debugConfig(cfg *cmd.Config) {
 	d, err := yaml.Marshal(cfg)
 	if err != nil {
 		s.T().Fatalf("failed to marshal config: %v", err)

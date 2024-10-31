@@ -1,15 +1,5 @@
 package tests
 
-import (
-	"context"
-
-	"github.com/coder/websocket"
-	"github.com/coder/websocket/wsjson"
-	"github.com/ksysoev/deriv-api-bff/pkg/cmd"
-	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v3"
-)
-
 const testRequestParamsConfig = `
 server:
   listen: "localhost:0"
@@ -37,33 +27,10 @@ api:
 `
 
 func (s *testSuite) TestRequestParams() {
-	a := assert.New(s.T())
-
-	var cfg cmd.Config
-
-	err := yaml.Unmarshal([]byte(testRequestParamsConfig), &cfg)
+	url, err := s.startAppWithConfig(testRequestParamsConfig)
 	if err != nil {
-		a.FailNow(err.Error())
+		s.T().Fatal("failed to start app with config", err)
 	}
-
-	cfg.Deriv.Endpoint = s.echoWSURL()
-
-	s.DebugConfig(&cfg)
-
-	url, err := s.startAppWithConfig(&cfg)
-
-	a.NoError(err)
-
-	ctx := context.Background()
-
-	c, r, err := websocket.Dial(ctx, url, nil)
-	a.NoError(err)
-
-	if r.Body != nil {
-		r.Body.Close()
-	}
-
-	defer c.Close(websocket.StatusNormalClosure, "")
 
 	req := map[string]any{
 		"method": "testcall",
@@ -73,24 +40,15 @@ func (s *testSuite) TestRequestParams() {
 			"param3": true,
 		},
 	}
+	expectedResp := map[string]any{
+		"echo":     req,
+		"msg_type": "testcall",
+		"param1":   "value1",
+		"param2":   float64(2),
+		"param3":   true,
+	}
 
-	err = wsjson.Write(ctx, c, &req)
-	a.NoError(err)
-
-	var resp map[string]any
-	err = wsjson.Read(ctx, c, &resp)
-	a.NoError(err)
-
-	a.Equal(
-		map[string]any{
-			"echo":     req,
-			"msg_type": "testcall",
-			"param1":   "value1",
-			"param2":   float64(2),
-			"param3":   true,
-		},
-		resp,
-	)
+	s.testRequest(url, req, expectedResp)
 }
 
 const testAggergationConfig = `
@@ -115,54 +73,20 @@ api:
 `
 
 func (s *testSuite) TestAggregation() {
-	a := assert.New(s.T())
-
-	var cfg cmd.Config
-
-	err := yaml.Unmarshal([]byte(testAggergationConfig), &cfg)
+	url, err := s.startAppWithConfig(testAggergationConfig)
 	if err != nil {
-		a.FailNow(err.Error())
+		s.T().Fatal("failed to start app with config", err)
 	}
 
-	cfg.Deriv.Endpoint = s.echoWSURL()
-
-	s.DebugConfig(&cfg)
-
-	url, err := s.startAppWithConfig(&cfg)
-
-	a.NoError(err)
-
-	ctx := context.Background()
-
-	c, r, err := websocket.Dial(ctx, url, nil)
-	a.NoError(err)
-
-	if r.Body != nil {
-		r.Body.Close()
+	req := map[string]any{"method": "testcall"}
+	expectedResp := map[string]any{
+		"echo":     req,
+		"msg_type": "testcall",
+		"field1":   "value1",
+		"field2":   "value2",
 	}
 
-	defer c.Close(websocket.StatusNormalClosure, "")
-
-	req := map[string]any{
-		"method": "testcall",
-	}
-
-	err = wsjson.Write(ctx, c, &req)
-	a.NoError(err)
-
-	var resp map[string]any
-	err = wsjson.Read(ctx, c, &resp)
-	a.NoError(err)
-
-	a.Equal(
-		map[string]any{
-			"echo":     req,
-			"msg_type": "testcall",
-			"field1":   "value1",
-			"field2":   "value2",
-		},
-		resp,
-	)
+	s.testRequest(url, req, expectedResp)
 }
 
 const testChainConfig = `
@@ -189,52 +113,18 @@ api:
 `
 
 func (s *testSuite) TestChain() {
-	a := assert.New(s.T())
-
-	var cfg cmd.Config
-
-	err := yaml.Unmarshal([]byte(testChainConfig), &cfg)
+	url, err := s.startAppWithConfig(testChainConfig)
 	if err != nil {
-		a.FailNow(err.Error())
+		s.T().Fatal("failed to start app with config", err)
 	}
 
-	cfg.Deriv.Endpoint = s.echoWSURL()
-
-	s.DebugConfig(&cfg)
-
-	url, err := s.startAppWithConfig(&cfg)
-
-	a.NoError(err)
-
-	ctx := context.Background()
-
-	c, r, err := websocket.Dial(ctx, url, nil)
-	a.NoError(err)
-
-	if r.Body != nil {
-		r.Body.Close()
+	req := map[string]any{"method": "testcall"}
+	expectedResp := map[string]any{
+		"echo":     req,
+		"msg_type": "testcall",
+		"field1":   "value1",
+		"field2":   "value1",
 	}
 
-	defer c.Close(websocket.StatusNormalClosure, "")
-
-	req := map[string]any{
-		"method": "testcall",
-	}
-
-	err = wsjson.Write(ctx, c, &req)
-	a.NoError(err)
-
-	var resp map[string]any
-	err = wsjson.Read(ctx, c, &resp)
-	a.NoError(err)
-
-	a.Equal(
-		map[string]any{
-			"echo":     req,
-			"msg_type": "testcall",
-			"field1":   "value1",
-			"field2":   "value1",
-		},
-		resp,
-	)
+	s.testRequest(url, req, expectedResp)
 }
