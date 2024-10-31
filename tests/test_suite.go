@@ -20,6 +20,7 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/repo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/yaml.v2"
 )
 
 type testSuite struct {
@@ -152,4 +153,17 @@ func (s *testSuite) startAppWithConfig(cfg *cmd.Config) (url string, closer func
 	url = fmt.Sprintf("ws://%s/?app_id=1", server.Addr().String())
 
 	return url, closer, nil
+}
+
+// debugConfig marshals the provided configuration into YAML format and logs it.
+// It takes cfg of type *cmd.Config.
+// It does not return any values.
+// It logs an error message and fails the test if marshalling the configuration fails.
+func (s *testSuite) debugConfig(cfg *cmd.Config) {
+	d, err := yaml.Marshal(cfg)
+	if err != nil {
+		s.T().Fatalf("failed to marshal config: %v", err)
+	}
+
+	s.T().Logf("Config:\n%s", string(d))
 }

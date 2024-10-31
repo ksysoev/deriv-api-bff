@@ -63,7 +63,7 @@ func (s *testSuite) TestRequestParams() {
 
 	defer c.Close(websocket.StatusNormalClosure, "")
 
-	expectedResp := map[string]any{
+	req := map[string]any{
 		"method": "testcall",
 		"params": map[string]any{
 			"param1": "value1",
@@ -72,7 +72,7 @@ func (s *testSuite) TestRequestParams() {
 		},
 	}
 
-	err = wsjson.Write(ctx, c, &expectedResp)
+	err = wsjson.Write(ctx, c, &req)
 	a.NoError(err)
 
 	var resp map[string]any
@@ -81,11 +81,81 @@ func (s *testSuite) TestRequestParams() {
 
 	a.Equal(
 		map[string]any{
-			"echo":     expectedResp,
+			"echo":     req,
 			"msg_type": "testcall",
 			"param1":   "value1",
 			"param2":   float64(2),
 			"param3":   true,
+		},
+		resp,
+	)
+}
+
+const testAggergationConfig = `
+server:
+  listen: "localhost:0"
+api:
+  calls:
+    - method: testcall
+      backend:
+        - response_body: data1
+          request_template:
+            data1:
+              field1: value1
+          allow: 
+            - field1
+        - response_body: data2
+          request_template:
+            data2:
+              field2: value2
+          allow:
+            - field2
+`
+
+func (s *testSuite) TestAggregation() {
+	a := assert.New(s.T())
+
+	var cfg cmd.Config
+
+	err := yaml.Unmarshal([]byte(testAggergationConfig), &cfg)
+	a.NoError(err)
+
+	cfg.Deriv.Endpoint = s.echoWSURL()
+
+	url, stopServer, err := s.startAppWithConfig(&cfg)
+
+	a.NoError(err)
+
+	defer stopServer()
+
+	ctx := context.Background()
+
+	c, r, err := websocket.Dial(ctx, url, nil)
+	a.NoError(err)
+
+	if r.Body != nil {
+		r.Body.Close()
+	}
+
+	defer c.Close(websocket.StatusNormalClosure, "")
+
+	req := map[string]any{
+		"method": "testcall",
+	}
+
+	err = wsjson.Write(ctx, c, &req)
+	a.NoError(err)
+
+	var resp map[string]any
+	err = wsjson.Read(ctx, c, &resp)
+	a.NoError(err)
+
+	a.Equal(
+		map[string]any{
+			"echo":     req,
+			"msg_type": "testcall",
+			"field1":   "value1",
+			"field2":   "value2",
 		},
 		resp,
 	)
