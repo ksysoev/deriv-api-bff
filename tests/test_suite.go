@@ -155,11 +155,11 @@ func (s *testSuite) startAppWithConfig(cfg *cmd.Config) (url string, closer func
 	return url, closer, nil
 }
 
-// debugConfig marshals the provided configuration into YAML format and logs it.
+// DebugConfig marshals the provided configuration into YAML format and logs it.
 // It takes cfg of type *cmd.Config.
 // It does not return any values.
 // It logs an error message and fails the test if marshalling the configuration fails.
-func (s *testSuite) debugConfig(cfg *cmd.Config) {
+func (s *testSuite) DebugConfig(cfg *cmd.Config) {
 	d, err := yaml.Marshal(cfg)
 	if err != nil {
 		s.T().Fatalf("failed to marshal config: %v", err)
