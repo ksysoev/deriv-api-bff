@@ -11,11 +11,14 @@ import (
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/channel"
 	"github.com/ksysoev/wasabi/dispatch"
+	reqmid "github.com/ksysoev/wasabi/middleware/request"
 	"github.com/ksysoev/wasabi/server"
 )
 
 const (
-	maxMessageSize = 600 * 1024
+	maxMessageSize            = 600 * 1024
+	maxRequestsDefault        = 100
+	maxRequestsPerConnDefault = 10
 )
 
 type BFFService interface {
@@ -25,8 +28,8 @@ type BFFService interface {
 
 type Config struct {
 	Listen             string `mapstructure:"listen"`
-	MaxRequests        int    `mapstructure:"max_requests"`
-	MaxRequestsPerConn int    `mapstructure:"max_requests_per_conn"`
+	MaxRequests        uint   `mapstructure:"max_requests"`
+	MaxRequestsPerConn uint   `mapstructure:"max_requests_per_conn"`
 }
 
 type Service struct {
@@ -44,11 +47,15 @@ func NewSevice(cfg *Config, handler BFFService) *Service {
 		handler: handler,
 	}
 
+	populateDefaults(cfg)
+
 	dispatcher := dispatch.NewRouterDispatcher(s, parse)
 	dispatcher.Use(middleware.NewErrorHandlingMiddleware())
+	dispatcher.Use(reqmid.NewTrottlerMiddleware(cfg.MaxRequests))
 
 	registry := channel.NewConnectionRegistry(
 		channel.WithMaxFrameLimit(maxMessageSize),
+		channel.WithConcurrencyLimit(cfg.MaxRequestsPerConn),
 	)
 	endpoint := channel.NewChannel("/", dispatcher, registry, channel.WithOriginPatterns("*"))
 	endpoint.Use(middleware.NewQueryParamsMiddleware())
@@ -127,4 +134,14 @@ func parse(_ wasabi.Connection, ctx context.Context, msgType wasabi.MessageType,
 	}
 
 	return request.NewRequest(ctx, coreMsgType, data)
+}
+
+func populateDefaults(cfg *Config) {
+	if cfg.MaxRequests == 0 {
+		cfg.MaxRequests = maxRequestsDefault
+	}
+
+	if cfg.MaxRequestsPerConn == 0 {
+		cfg.MaxRequestsPerConn = maxRequestsPerConnDefault
+	}
 }
