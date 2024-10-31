@@ -24,7 +24,9 @@ type BFFService interface {
 }
 
 type Config struct {
-	Listen string `mapstructure:"listen"`
+	Listen             string `mapstructure:"listen"`
+	MaxRequests        int    `mapstructure:"max_requests"`
+	MaxRequestsPerConn int    `mapstructure:"max_requests_per_conn"`
 }
 
 type Service struct {
