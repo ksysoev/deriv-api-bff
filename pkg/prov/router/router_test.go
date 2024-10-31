@@ -43,7 +43,7 @@ func TestRouter_Handle_HTTPProv(t *testing.T) {
 	mockConn := mocks.NewMockConnection(t)
 	conn := core.NewConnection(mockConn, func(_ string) {})
 	ctx := context.Background()
-	mockRequest := request.NewHTTPReq(ctx, "GET", "/test", nil, 1)
+	mockRequest := request.NewHTTPReq(ctx, "GET", "/test", nil, "1")
 
 	mockHTTP.EXPECT().Handle(conn, mockRequest).Return(nil)
 
