@@ -25,12 +25,16 @@ type templateData struct {
 	ReqID  int64          `json:"req_id"`
 }
 
+type passthrough struct {
+	ReqID string `json:"req_id"`
+}
+
 // NewDeriv creates and returns a new Processor instance configured with the provided Config.
 // It takes a single parameter cfg of type *Config which contains the necessary configuration.
 // It returns a pointer to a Processor struct initialized with the values from the Config.
 func NewDeriv(cfg *Config) (*DerivProc, error) {
 	t := cfg.Tmplt
-	t["req_id"] = "${req_id}"
+	t["passthrough"] = passthrough{ReqID: "${req_id}"}
 
 	rawTmpl, err := json.Marshal(t)
 	if err != nil {

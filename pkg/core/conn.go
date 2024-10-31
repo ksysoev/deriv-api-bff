@@ -25,6 +25,12 @@ type Conn struct {
 	mu         sync.Mutex
 }
 
+type respID struct {
+	Passthrough struct {
+		ReqID int64 `json:"req_id"`
+	} `json:"passthrough"`
+}
+
 // NewConnection initializes a new Conn instance with the provided wasabi.Connection and onClose callback.
 // It takes conn of type wasabi.Connection and onClose of type func(id string).
 // It returns a pointer to a Conn struct.
@@ -84,19 +90,17 @@ func (c *Conn) Send(msgType wasabi.MessageType, msg []byte) error {
 		return c.clientConn.Send(msgType, msg)
 	}
 
-	var respID struct {
-		ReqID int64 `json:"req_id"`
-	}
+	var resp respID
 
-	if err := json.Unmarshal(msg, &respID); err != nil {
+	if err := json.Unmarshal(msg, &resp); err != nil {
 		return c.clientConn.Send(msgType, msg)
 	}
 
-	if respID.ReqID == 0 {
+	if resp.Passthrough.ReqID == 0 {
 		return c.clientConn.Send(msgType, msg)
 	}
 
-	if !c.DoneRequest(respID.ReqID, msg) {
+	if !c.DoneRequest(resp.Passthrough.ReqID, msg) {
 		return c.clientConn.Send(msgType, msg)
 	}
 
