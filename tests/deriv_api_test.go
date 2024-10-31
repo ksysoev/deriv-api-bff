@@ -42,9 +42,13 @@ func (s *testSuite) TestRequestParams() {
 	var cfg cmd.Config
 
 	err := yaml.Unmarshal([]byte(testRequestParamsConfig), &cfg)
-	a.NoError(err)
+	if err != nil {
+		a.FailNow(err.Error())
+	}
 
 	cfg.Deriv.Endpoint = s.echoWSURL()
+
+	s.DebugConfig(&cfg)
 
 	url, stopServer, err := s.startAppWithConfig(&cfg)
 
@@ -118,9 +122,13 @@ func (s *testSuite) TestAggregation() {
 	var cfg cmd.Config
 
 	err := yaml.Unmarshal([]byte(testAggergationConfig), &cfg)
-	a.NoError(err)
+	if err != nil {
+		a.FailNow(err.Error())
+	}
 
 	cfg.Deriv.Endpoint = s.echoWSURL()
+
+	s.DebugConfig(&cfg)
 
 	url, stopServer, err := s.startAppWithConfig(&cfg)
 
@@ -156,6 +164,82 @@ func (s *testSuite) TestAggregation() {
 			"msg_type": "testcall",
 			"field1":   "value1",
 			"field2":   "value2",
+		},
+		resp,
+	)
+}
+
+const testChainConfig = `
+server:
+  listen: "localhost:0"
+api:
+  calls:
+    - method: testcall
+      backend:
+        - response_body: data1
+          request_template:
+            data1:
+              field1: value1
+          allow: 
+            - field1
+        - response_body: data2
+          depends_on:
+            - data1
+          request_template:
+            data2:
+              field2: ${resp.data1.field1}
+          allow:
+            - field2
+`
+
+func (s *testSuite) TestChain() {
+	a := assert.New(s.T())
+
+	var cfg cmd.Config
+
+	err := yaml.Unmarshal([]byte(testChainConfig), &cfg)
+	if err != nil {
+		a.FailNow(err.Error())
+	}
+
+	cfg.Deriv.Endpoint = s.echoWSURL()
+
+	s.DebugConfig(&cfg)
+
+	url, stopServer, err := s.startAppWithConfig(&cfg)
+
+	a.NoError(err)
+
+	defer stopServer()
+
+	ctx := context.Background()
+
+	c, r, err := websocket.Dial(ctx, url, nil)
+	a.NoError(err)
+
+	if r.Body != nil {
+		r.Body.Close()
+	}
+
+	defer c.Close(websocket.StatusNormalClosure, "")
+
+	req := map[string]any{
+		"method": "testcall",
+	}
+
+	err = wsjson.Write(ctx, c, &req)
+	a.NoError(err)
+
+	var resp map[string]any
+	err = wsjson.Read(ctx, c, &resp)
+	a.NoError(err)
+
+	a.Equal(
+		map[string]any{
+			"echo":     req,
+			"msg_type": "testcall",
+			"field1":   "value1",
+			"field2":   "value1",
 		},
 		resp,
 	)
