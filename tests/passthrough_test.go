@@ -15,7 +15,7 @@ import (
 func (s *testSuite) TestPassthrough() {
 	a := assert.New(s.T())
 
-	url, stopServer, err := s.startAppWithConfig(&cmd.Config{
+	url, err := s.startAppWithConfig(&cmd.Config{
 		Server: api.Config{
 			Listen: "localhost:0",
 		},
@@ -26,8 +26,6 @@ func (s *testSuite) TestPassthrough() {
 	})
 
 	a.NoError(err)
-
-	defer stopServer()
 
 	ctx := context.Background()
 

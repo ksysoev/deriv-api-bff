@@ -50,11 +50,9 @@ func (s *testSuite) TestRequestParams() {
 
 	s.DebugConfig(&cfg)
 
-	url, stopServer, err := s.startAppWithConfig(&cfg)
+	url, err := s.startAppWithConfig(&cfg)
 
 	a.NoError(err)
-
-	defer stopServer()
 
 	ctx := context.Background()
 
@@ -130,11 +128,9 @@ func (s *testSuite) TestAggregation() {
 
 	s.DebugConfig(&cfg)
 
-	url, stopServer, err := s.startAppWithConfig(&cfg)
+	url, err := s.startAppWithConfig(&cfg)
 
 	a.NoError(err)
-
-	defer stopServer()
 
 	ctx := context.Background()
 
@@ -206,11 +202,9 @@ func (s *testSuite) TestChain() {
 
 	s.DebugConfig(&cfg)
 
-	url, stopServer, err := s.startAppWithConfig(&cfg)
+	url, err := s.startAppWithConfig(&cfg)
 
 	a.NoError(err)
-
-	defer stopServer()
 
 	ctx := context.Background()
 

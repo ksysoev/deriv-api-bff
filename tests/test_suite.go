@@ -99,14 +99,14 @@ func (s *testSuite) createTestWSEchoServer() http.HandlerFunc {
 // It takes cfg of type *cmd.Config which contains the configuration settings for the application.
 // It returns a string representing the URL of the started server, a function to close the server, and an error if the server fails to start.
 // It returns an error if the calls repository cannot be created or if the server does not start within the specified timeout.
-func (s *testSuite) startAppWithConfig(cfg *cmd.Config) (url string, closer func(), err error) {
+func (s *testSuite) startAppWithConfig(cfg *cmd.Config) (url string, err error) {
 	derivAPI := deriv.NewService(&cfg.Deriv)
 
 	connRegistry := repo.NewConnectionRegistry()
 
 	calls, err := repo.NewCallsRepository(&cfg.API)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to create calls repo: %w", err)
+		return "", fmt.Errorf("failed to create calls repo: %w", err)
 	}
 
 	beRouter := router.New(derivAPI, httpprov.NewService())
@@ -139,20 +139,18 @@ func (s *testSuite) startAppWithConfig(cfg *cmd.Config) (url string, closer func
 	case <-time.After(time.Second):
 		cancel()
 
-		return "", nil, fmt.Errorf("server did not start")
+		return "", fmt.Errorf("server did not start")
 	}
 
-	closer = func() {
+	s.T().Cleanup(func() {
 		cancel()
 		select {
 		case <-done:
 		case <-time.After(10 * time.Millisecond):
 		}
-	}
+	})
 
-	url = fmt.Sprintf("ws://%s/?app_id=1", server.Addr().String())
-
-	return url, closer, nil
+	return fmt.Sprintf("ws://%s/?app_id=1", server.Addr().String()), nil
 }
 
 // DebugConfig marshals the provided configuration into YAML format and logs it.
