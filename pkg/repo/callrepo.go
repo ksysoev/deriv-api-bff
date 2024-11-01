@@ -207,7 +207,7 @@ func createDepGraph(be []*BackendConfig) map[string][]string {
 	graph := make(map[string][]string)
 
 	for _, b := range be {
-		graph[b.ResponseBody] = b.DependsOn
+		graph[b.Name] = b.DependsOn
 	}
 
 	return graph

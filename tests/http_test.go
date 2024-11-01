@@ -98,3 +98,49 @@ func (s *testSuite) TestHTTPRequestAggregation() {
 
 	s.testRequest(url, req, expectedResp)
 }
+
+const testHTTPRequestChainConfig = `
+server:
+  listen: "localhost:0"
+api:
+  calls:
+    - method: testcall
+      backend:
+        - name: testcall1
+          url_template: "{{host}}/testcall1"
+          method: GET
+          allow: 
+            - data1
+        - name: testcall2
+          depends_on:
+            - testcall1
+          url_template: "{{host}}/testcall2/${resp.testcall1.data1}"
+          method: POST
+          allow: 
+            - data2
+`
+
+func (s *testSuite) TestHTTPRequestChain() {
+	httpUrl := s.httpURL()
+	cfg := strings.ReplaceAll(testHTTPRequestChainConfig, "{{host}}", httpUrl)
+
+	url, err := s.startAppWithConfig(cfg)
+	if err != nil {
+		s.T().Fatal("failed to start app with config", err)
+	}
+
+	s.addHTTPContent("/testcall1", `{"data1": "value1", "data2": 1}`)
+	s.addHTTPContent("POST /testcall2/value1", `{"data1": "value2", "data2": 2}`)
+
+	req := map[string]any{
+		"method": "testcall",
+	}
+	expectedResp := map[string]any{
+		"echo":     req,
+		"msg_type": "testcall",
+		"data1":    "value1",
+		"data2":    float64(2),
+	}
+
+	s.testRequest(url, req, expectedResp)
+}
