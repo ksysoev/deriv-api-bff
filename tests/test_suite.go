@@ -216,8 +216,8 @@ func (s *testSuite) debugConfig(cfg *cmd.Config) {
 	s.T().Logf("Config:\n%s", string(d))
 }
 
-func (s *testSuite) addHTTPContent(path string, content string) {
-	s.mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+func (s *testSuite) addHTTPContent(path, content string) {
+	s.mux.HandleFunc(path, func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(content))
 	})
 }

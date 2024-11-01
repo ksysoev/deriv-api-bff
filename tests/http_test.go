@@ -27,8 +27,8 @@ api:
 `
 
 func (s *testSuite) TestHTTPRequestParams() {
-	httpUrl := s.httpURL()
-	cfg := strings.ReplaceAll(testHTTRequestParamsConfig, "{{host}}", httpUrl)
+	httpURL := s.httpURL()
+	cfg := strings.ReplaceAll(testHTTRequestParamsConfig, "{{host}}", httpURL)
 
 	url, err := s.startAppWithConfig(cfg)
 	if err != nil {
@@ -75,8 +75,8 @@ api:
 `
 
 func (s *testSuite) TestHTTPRequestAggregation() {
-	httpUrl := s.httpURL()
-	cfg := strings.ReplaceAll(testHTTPRequestAggregationConfig, "{{host}}", httpUrl)
+	httpURL := s.httpURL()
+	cfg := strings.ReplaceAll(testHTTPRequestAggregationConfig, "{{host}}", httpURL)
 
 	url, err := s.startAppWithConfig(cfg)
 	if err != nil {
@@ -121,8 +121,8 @@ api:
 `
 
 func (s *testSuite) TestHTTPRequestChain() {
-	httpUrl := s.httpURL()
-	cfg := strings.ReplaceAll(testHTTPRequestChainConfig, "{{host}}", httpUrl)
+	httpURL := s.httpURL()
+	cfg := strings.ReplaceAll(testHTTPRequestChainConfig, "{{host}}", httpURL)
 
 	url, err := s.startAppWithConfig(cfg)
 	if err != nil {
