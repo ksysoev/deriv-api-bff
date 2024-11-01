@@ -26,6 +26,13 @@ func TestNewFieldValidator(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Fail to marshal schema",
+			config: Config{
+				"unknown": make(chan int),
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {

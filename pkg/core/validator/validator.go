@@ -8,14 +8,18 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
-type Config map[string]*FieldSchema
+type Config map[string]any
+
+type schemaValidator interface {
+	Validate(data any) error
+}
 
 type FieldSchema struct {
-	Type string `mapstructure:"type"`
+	Type string `mapstructure:"type" json:"type"`
 }
 
 type FieldValidator struct {
-	jsonSchema *jsonschema.Schema
+	jsonSchema schemaValidator
 }
 
 // New creates a new FieldValidator based on the provided configuration.
@@ -23,17 +27,17 @@ type FieldValidator struct {
 // It returns a pointer to a FieldValidator and an error.
 // It returns an error if any field in the configuration has an unknown type.
 func New(cfg Config) (*FieldValidator, error) {
-	schema := map[string]interface{}{
-		"type":                 "object",
-		"properties":           make(map[string]interface{}),
-		"additionalProperties": false,
-		"required":             make([]string, 0),
+	required := make([]string, 0, len(cfg))
+
+	for field, _ := range cfg {
+		required = append(required, field)
 	}
 
-	for field, fieldConfig := range cfg {
-		schema["properties"].(map[string]interface{})[field] = map[string]interface{}{"type": fieldConfig.Type}
-
-		schema["required"] = append(schema["required"].([]string), field)
+	schema := map[string]any{
+		"type":                 "object",
+		"properties":           cfg,
+		"additionalProperties": false,
+		"required":             required,
 	}
 
 	schemaJSON, err := json.Marshal(schema)
