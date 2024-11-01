@@ -2,6 +2,9 @@ package validator
 
 import (
 	"testing"
+
+	"github.com/santhosh-tekuri/jsonschema/v5"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewFieldValidator(t *testing.T) {
@@ -32,6 +35,11 @@ func TestNewFieldValidator(t *testing.T) {
 				"unknown": make(chan int),
 			},
 			wantErr: true,
+		},
+		{
+			name:    "Nil configuration",
+			config:  nil,
+			wantErr: false,
 		},
 	}
 
@@ -104,6 +112,50 @@ func TestFieldValidator_Validate(t *testing.T) {
 			err := validator.Validate(tt.data)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestFieldValidator_Validate_ErrorHandling(t *testing.T) {
+	expectedValidationErrNoCases := &jsonschema.ValidationError{}
+
+	tests := []struct {
+		err     error
+		wantErr error
+		name    string
+	}{
+		{
+			name:    "No error",
+			err:     nil,
+			wantErr: nil,
+		},
+		{
+			name:    "Error",
+			err:     assert.AnError,
+			wantErr: assert.AnError,
+		},
+		{
+			name:    "error validation no cases",
+			err:     expectedValidationErrNoCases,
+			wantErr: expectedValidationErrNoCases,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSchema := NewMockschemaValidator(t)
+			val := &FieldValidator{
+				jsonSchema: mockSchema,
+			}
+
+			mockSchema.EXPECT().Validate(map[string]any{}).Return(tt.err)
+			err := val.Validate(map[string]any{})
+
+			if tt.wantErr != nil {
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
