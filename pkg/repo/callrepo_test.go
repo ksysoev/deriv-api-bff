@@ -7,11 +7,12 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/config"
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/validator"
+	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewCallsRepository(t *testing.T) {
-	event := config.NewEvent[config.CallsConfig]()
+	event := config.NewEvent[map[string]any]()
 	tests := []struct {
 		cfg     *config.CallsConfig
 		name    string
@@ -144,7 +145,7 @@ func TestGetCall(t *testing.T) {
 				},
 			},
 		},
-	}, &config.Event[config.CallsConfig]{})
+	}, &config.Event[map[string]any]{})
 	assert.NoError(t, err)
 	assert.NotNil(t, repo)
 
@@ -257,7 +258,7 @@ func TestTopSortDFS(t *testing.T) {
 }
 
 func TestUpdateCalls_ExistingMethod_Success(t *testing.T) {
-	event := config.NewEvent[config.CallsConfig]()
+	event := config.NewEvent[map[string]any]()
 	oldCallsConfig := &config.CallsConfig{
 		Calls: []config.CallConfig{
 			{
@@ -306,7 +307,11 @@ func TestUpdateCalls_ExistingMethod_Success(t *testing.T) {
 		},
 	}
 
-	callsRepo.UpdateCalls(newCallsConfig)
+	newCallsMap := make(map[string]any)
+
+	_ = mapstructure.Decode(newCallsConfig, &newCallsMap)
+
+	callsRepo.UpdateCalls(newCallsMap)
 
 	newHandler := callsRepo.GetCall("testMethod")
 
@@ -331,7 +336,7 @@ func TestUpdateCalls_NewMethod_Success(t *testing.T) {
 		},
 	}
 
-	callsRepo, err := NewCallsRepository(oldCallsConfig, &config.Event[config.CallsConfig]{})
+	callsRepo, err := NewCallsRepository(oldCallsConfig, &config.Event[map[string]any]{})
 	if err != nil {
 		t.Errorf("Unexpected Error: %v", err)
 	}
@@ -362,7 +367,11 @@ func TestUpdateCalls_NewMethod_Success(t *testing.T) {
 		},
 	}
 
-	callsRepo.UpdateCalls(newCallsConfig)
+	newCallsMap := make(map[string]any)
+
+	_ = mapstructure.Decode(newCallsConfig, &newCallsMap)
+
+	callsRepo.UpdateCalls(newCallsMap)
 
 	newHandler := callsRepo.GetCall("testMethodNew")
 
@@ -388,7 +397,7 @@ func TestUpdateCalls_Failure(t *testing.T) {
 		},
 	}
 
-	callsRepo, err := NewCallsRepository(oldCallsConfig, &config.Event[config.CallsConfig]{})
+	callsRepo, err := NewCallsRepository(oldCallsConfig, &config.Event[map[string]any]{})
 	if err != nil {
 		t.Errorf("Unexpected Error: %v", err)
 	}
@@ -412,7 +421,11 @@ func TestUpdateCalls_Failure(t *testing.T) {
 		},
 	}
 
-	callsRepo.UpdateCalls(newCallsConfig)
+	newCallsMap := make(map[string]any)
+
+	_ = mapstructure.Decode(newCallsConfig, &newCallsMap)
+
+	callsRepo.UpdateCalls(newCallsMap)
 
 	newHandler := callsRepo.GetCall("testMethod")
 	assert.Equal(t, oldHandler, newHandler, "old handler and new handler must be same")
@@ -613,12 +626,16 @@ func TestOnUpdateEvent(t *testing.T) {
 			},
 		},
 	}
-	event := config.NewEvent[config.CallsConfig]()
+
+	event := config.NewEvent[map[string]any]()
 	callsRepo, err := NewCallsRepository(oldCallsConfig, event)
+	newCallsMap := make(map[string]any)
 
 	assert.NoError(t, err)
 
-	event.Notify(context.Background(), *newCallsConfig)
+	_ = mapstructure.Decode(newCallsConfig, &newCallsMap)
+
+	event.Notify(context.Background(), newCallsMap)
 
 	assert.NotEmpty(t, callsRepo.GetCall("testMethodNew"))
 }

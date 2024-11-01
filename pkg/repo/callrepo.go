@@ -12,19 +12,20 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handler"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/processor"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/validator"
+	"github.com/mitchellh/mapstructure"
 )
 
 type CallsRepository struct {
 	mu            *sync.Mutex
 	calls         map[string]core.Handler
-	onUpdateEvent *config.Event[config.CallsConfig]
+	onUpdateEvent *config.Event[map[string]any]
 }
 
 // NewCallsRepository creates a new instance of CallsRepository based on the provided configuration.
 // It takes cfg of type *CallsConfig which contains the configuration for the calls.
 // It returns a pointer to CallsRepository and an error if the repository creation fails.
 // It returns an error if the validator creation fails or if there is an error parsing the request template.
-func NewCallsRepository(cfg *config.CallsConfig, event *config.Event[config.CallsConfig]) (*CallsRepository, error) {
+func NewCallsRepository(cfg *config.CallsConfig, event *config.Event[map[string]any]) (*CallsRepository, error) {
 	handlerMap := make(map[string]core.Handler)
 
 	for _, call := range cfg.Calls {
@@ -40,8 +41,8 @@ func NewCallsRepository(cfg *config.CallsConfig, event *config.Event[config.Call
 		onUpdateEvent: event,
 	}
 
-	r.onUpdateEvent.RegisterHandler(func(_ context.Context, cc config.CallsConfig) {
-		r.UpdateCalls(&cc)
+	r.onUpdateEvent.RegisterHandler(func(_ context.Context, cc map[string]any) {
+		r.UpdateCalls(cc)
 	})
 
 	return r, nil
@@ -102,8 +103,15 @@ func (r *CallsRepository) GetCall(method string) core.Handler {
 // It takes a single parameter that is pointer to the new calls config.
 // The current implementation will completely overwrite the old config with new config.
 // It returns an error to if any while building the handlers, otherwise it returns nil.
-func (r *CallsRepository) UpdateCalls(calls *config.CallsConfig) {
+func (r *CallsRepository) UpdateCalls(callsMap map[string]any) {
 	newHandlerMap := make(map[string]core.Handler)
+	calls := &config.CallsConfig{}
+
+	err := mapstructure.Decode(&callsMap, calls)
+
+	if err != nil {
+		slog.Warn(fmt.Sprintf("Error while updating calls config in Calls Repo: %v", err))
+	}
 
 	for _, call := range calls.Calls {
 		err := createHandler(call, newHandlerMap)

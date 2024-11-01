@@ -13,8 +13,9 @@ import (
 // It returns an error if the configuration file cannot be read or if the configuration cannot be unmarshaled.
 func initConfig(configPath string) (*config.Config, error) {
 	fileSource := config.NewFileSource(configPath)
+	cfg := &config.Config{}
 
-	err := fileSource.Init()
+	err := fileSource.Init(cfg)
 	if err != nil {
 		return nil, err
 	}

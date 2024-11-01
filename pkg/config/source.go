@@ -2,17 +2,17 @@ package config
 
 // defines the source of the config and/or config changes“
 type Source interface {
-	Init() error
+	Init(*Config) error
 
 	GetConfigurations() (*Config, error)
 
-	WatchConfig(string) error
+	WatchConfig(*Event[any], string) error
 
 	GetPriority() Priority
 
 	Name() string
 
-	Close()
+	Close() error
 }
 
 type Priority int8

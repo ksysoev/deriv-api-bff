@@ -23,7 +23,7 @@ type configUpdates struct {
 	Found bool
 }
 
-func (fileSource *FileSource) Init() error {
+func (fileSource *FileSource) Init(cfg *Config) error {
 	fileSource.mu.Lock()
 	defer fileSource.mu.Unlock()
 
@@ -37,13 +37,12 @@ func (fileSource *FileSource) Init() error {
 		return fmt.Errorf("failed to read config: %w", err)
 	}
 
-	cfg := &Config{}
-
 	if err := viper.Unmarshal(cfg); err != nil {
 		return fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
 	slog.Debug("Config loaded", slog.Any("config", cfg))
+	cfg.addConfigSource(fileSource)
 
 	fileSource.currentConfig = cfg
 

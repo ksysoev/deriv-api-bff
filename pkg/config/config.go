@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"reflect"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/api"
@@ -9,10 +10,11 @@ import (
 )
 
 type Config struct {
-	Server api.Config   `mapstructure:"server"`
-	Deriv  deriv.Config `mapstructure:"deriv"`
-	API    CallsConfig  `mapstructure:"api"`
-	Etcd   EtcdConfig   `mapstructure:"etcd"`
+	sources []*Source
+	Server  api.Config   `mapstructure:"server"`
+	Deriv   deriv.Config `mapstructure:"deriv"`
+	API     CallsConfig  `mapstructure:"api"`
+	Etcd    EtcdConfig   `mapstructure:"etcd"`
 }
 
 type CallsConfig struct {
@@ -39,6 +41,20 @@ type BackendConfig struct {
 	URLTemplate     string            `mapstructure:"url_template" yaml:"url_template"`
 	DependsOn       []string          `mapstructure:"depends_on" yaml:"depends_on"`
 	Allow           []string          `mapstructure:"allow" yaml:"allow"`
+}
+
+func (cfg *Config) addConfigSource(s Source) {
+	if len(cfg.sources) == 0 {
+		cfg.sources = make([]*Source, 0)
+	}
+
+	cfg.sources = append(cfg.sources, &s)
+}
+
+func (cfg *Config) WatchConfig(key string) error {
+	// TODO implement this function
+	// iterate over all sources and call their watch config
+	return errors.New(key)
 }
 
 // TODO: add godoc

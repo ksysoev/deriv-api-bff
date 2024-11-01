@@ -43,9 +43,10 @@ func TestFileSource_Init(t *testing.T) {
 	viper.Reset()
 
 	fileSource := NewFileSource(createTempConfigFile(t, validConfig))
+	cfg := &Config{}
 
 	// Test Init
-	err := fileSource.Init()
+	err := fileSource.Init(cfg)
 	assert.NoError(t, err)
 
 	// Test GetConfigurations
@@ -53,6 +54,7 @@ func TestFileSource_Init(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, config)
+	assert.Equal(t, cfg, config)
 }
 
 func TestFileSource_WatchConfig_Pass(t *testing.T) {
@@ -87,8 +89,9 @@ func TestFileSource_onFileChange(t *testing.T) {
 
 	configFile := createTempConfigFile(t, "")
 	fileSource := NewFileSource(configFile)
+	cfg := &Config{}
 
-	err := fileSource.Init()
+	err := fileSource.Init(cfg)
 
 	assert.NoError(t, err)
 
