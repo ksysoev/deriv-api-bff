@@ -132,17 +132,21 @@ func findKeyValue(m map[string]any, keyList []string) []configUpdates {
 	curr := m
 
 	for i, k := range keyList {
-		v, exists := curr[k]
-		if exists {
-			results[i] = configUpdates{Value: v, Found: true}
+		children := strings.Split(k, ".")
 
-			if nested, ok := v.(map[string]any); ok {
-				curr = nested
+		for _, child := range children {
+			v, exists := curr[child]
+			if exists {
+				results[i] = configUpdates{Value: v, Found: true}
+
+				if nested, ok := v.(map[string]any); ok {
+					curr = nested
+				} else {
+					break
+				}
 			} else {
-				break
+				results[i] = configUpdates{Value: nil, Found: false}
 			}
-		} else {
-			results[i] = configUpdates{Value: nil, Found: false}
 		}
 	}
 

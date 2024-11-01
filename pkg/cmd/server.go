@@ -21,7 +21,6 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	connRegistry := repo.NewConnectionRegistry()
 	callsRepoConfigWatcher := config.NewEvent[any]()
 
-	//TODO: change to valid event here and add watch config too
 	calls, err := repo.NewCallsRepository(&cfg.API, callsRepoConfigWatcher)
 	if err != nil {
 		return fmt.Errorf("failed to create calls repo: %w", err)
