@@ -62,9 +62,9 @@ func (e *ValidationError) APIError() error {
 	}
 
 	detailsData, err := json.Marshal(details)
-	if err != nil {
-		return fmt.Errorf("failed to marshal APIError details: %w", err)
+	if err == nil {
+		return core.NewAPIError("InputValidationFailed", "Input validation failed", detailsData)
 	}
 
-	return core.NewAPIError("InputValidationFailed", "Input validation failed", detailsData)
+	return fmt.Errorf("failed to marshal APIError details: %w", err)
 }

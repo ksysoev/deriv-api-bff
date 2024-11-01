@@ -24,7 +24,7 @@ func TestNewCallsRepository(t *testing.T) {
 				Calls: []config.CallConfig{
 					{
 						Method: "testMethod",
-						Params: validator.Config{"param1": {Type: "string"}},
+						Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 						Backend: []*config.BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
@@ -44,7 +44,7 @@ func TestNewCallsRepository(t *testing.T) {
 				Calls: []config.CallConfig{
 					{
 						Method: "testMethod",
-						Params: validator.Config{"param1": {Type: "value1"}},
+						Params: validator.Config{"param1": validator.FieldSchema{Type: "value1"}},
 						Backend: []*config.BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
@@ -64,7 +64,7 @@ func TestNewCallsRepository(t *testing.T) {
 				Calls: []config.CallConfig{
 					{
 						Method: "testMethod",
-						Params: validator.Config{"param1": {Type: "string"}},
+						Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 						Backend: []*config.BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
@@ -92,7 +92,7 @@ func TestNewCallsRepository(t *testing.T) {
 				Calls: []config.CallConfig{
 					{
 						Method: "testMethod",
-						Params: validator.Config{"param1": {Type: "string"}},
+						Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 						Backend: []*config.BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
@@ -134,7 +134,7 @@ func TestGetCall(t *testing.T) {
 		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
-				Params: validator.Config{"param1": {Type: "string"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -274,7 +274,7 @@ func TestUpdateCalls_ExistingMethod_Success(t *testing.T) {
 		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
-				Params: validator.Config{"param1": {Type: "string"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -298,7 +298,7 @@ func TestUpdateCalls_ExistingMethod_Success(t *testing.T) {
 		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
-				Params: validator.Config{"param1": {Type: "string"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -334,7 +334,7 @@ func TestUpdateCalls_NewMethod_Success(t *testing.T) {
 		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
-				Params: validator.Config{"param1": {Type: "string"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -358,7 +358,7 @@ func TestUpdateCalls_NewMethod_Success(t *testing.T) {
 		Calls: []config.CallConfig{
 			{
 				Method: "testMethodNew",
-				Params: validator.Config{"param1": {Type: "string"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -395,7 +395,7 @@ func TestUpdateCalls_Failure(t *testing.T) {
 		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
-				Params: validator.Config{"param1": {Type: "string"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -419,7 +419,7 @@ func TestUpdateCalls_Failure(t *testing.T) {
 		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
-				Params: validator.Config{"param1": {Type: "value1"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "value1"}},
 				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -453,7 +453,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "valid deriv handler creation",
 			call: config.CallConfig{
 				Method: "testMethod",
-				Params: validator.Config{"param1": {Type: "string"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
@@ -470,7 +470,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "valid http handler creation",
 			call: config.CallConfig{
 				Method: "testMethod",
-				Params: validator.Config{"param1": {Type: "string"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
@@ -488,7 +488,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "invalid processor configuration",
 			call: config.CallConfig{
 				Method: "testMethod",
-				Params: validator.Config{"param1": {Type: "string"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
@@ -507,7 +507,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "invalid validator config",
 			call: config.CallConfig{
 				Method: "testMethod",
-				Params: validator.Config{"param1": {Type: "invalidType"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "invalidType"}},
 				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
@@ -524,7 +524,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "invalid request template",
 			call: config.CallConfig{
 				Method: "testMethod",
-				Params: validator.Config{"param1": {Type: "string"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
@@ -541,7 +541,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "invalid url template",
 			call: config.CallConfig{
 				Method: "testMethod",
-				Params: validator.Config{"param1": {Type: "string"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*config.BackendConfig{
 					{
 						Name:         "backend1",
@@ -558,7 +558,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "circular dependency",
 			call: config.CallConfig{
 				Method: "testMethod",
-				Params: validator.Config{"param1": {Type: "string"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
@@ -584,7 +584,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "Missing name in backend config",
 			call: config.CallConfig{
 				Method: "testMethod",
-				Params: validator.Config{"param1": {Type: "string"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:   map[string]string{"field1": "value1"},
@@ -617,7 +617,7 @@ func TestOnUpdateEvent(t *testing.T) {
 		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
-				Params: validator.Config{"param1": {Type: "string"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "value1"}},
 				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -633,7 +633,7 @@ func TestOnUpdateEvent(t *testing.T) {
 		Calls: []config.CallConfig{
 			{
 				Method: "testMethodNew",
-				Params: validator.Config{"param1": {Type: "string"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "value1"}},
 				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -671,7 +671,7 @@ func TestOnUpdateEvent_Failure(t *testing.T) {
 		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
-				Params: validator.Config{"param1": {Type: "string"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "value1"}},
 				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
