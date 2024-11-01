@@ -15,7 +15,7 @@ type Request interface {
 }
 
 type Sender func(Request) error
-type Waiter func() (reqID int64, respChan <-chan []byte)
+type Waiter func() (reqID string, respChan <-chan []byte)
 
 type CallsRepo interface {
 	GetCall(method string) Handler

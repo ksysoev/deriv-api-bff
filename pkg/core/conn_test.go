@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/coder/websocket"
+	"github.com/google/uuid"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/mocks"
 	"github.com/stretchr/testify/assert"
@@ -25,7 +26,6 @@ func TestNewConnection(t *testing.T) {
 
 	assert.NotNil(t, conn)
 	assert.Equal(t, mockConn, conn.clientConn)
-	assert.Equal(t, initID, conn.currID)
 	assert.NotNil(t, conn.requests)
 	assert.Equal(t, 0, len(conn.requests))
 	assert.NotNil(t, conn.onClose)
@@ -63,7 +63,10 @@ func TestConn_WaitResponse(t *testing.T) {
 	reqID, respChan := conn.WaitResponse()
 
 	assert.NotNil(t, respChan)
-	assert.Equal(t, initID+1, reqID)
+
+	_, err := uuid.Parse(reqID)
+	assert.NoError(t, err)
+
 	assert.Contains(t, conn.requests, reqID)
 }
 
@@ -117,8 +120,8 @@ func TestConn_Send(t *testing.T) {
 
 	t.Run("Send non-binary message with req_id", func(t *testing.T) {
 		msgType := wasabi.MsgTypeText
-		reqID := initID + 1
-		msg := []byte(`{"req_id":1000001,"data":"test"}`)
+		reqID := "testID"
+		msg := []byte(`{"passthrough":{"req_id":"testID"},"data":"test"}`)
 		respChan := make(chan []byte, 1)
 
 		conn := NewConnection(mockConn, func(_ string) {})
@@ -131,6 +134,22 @@ func TestConn_Send(t *testing.T) {
 
 		_, exists := conn.requests[reqID]
 		assert.False(t, exists)
+	})
+
+	t.Run("Send incorrect message", func(t *testing.T) {
+		msgType := wasabi.MsgTypeText
+		reqID := "testID"
+		msg := []byte(`{"passthrough":{"req_id":testID},"data":"test"}`)
+		respChan := make(chan []byte, 1)
+
+		mockConn.EXPECT().Send(msgType, msg).Return(nil)
+
+		conn := NewConnection(mockConn, func(_ string) {})
+		conn.requests[reqID] = respChan
+
+		err := conn.Send(msgType, msg)
+
+		assert.NoError(t, err)
 	})
 
 	t.Run("Send non-binary message with req_id but no matching request", func(t *testing.T) {

@@ -53,7 +53,7 @@ func (s *Service) requestFactory(r wasabi.Request) (*http.Request, error) {
 func sendWrapper(conn *core.Conn, req *request.HTTPReq) channel.SendWrapper {
 	return func(_ wasabi.Connection, _ wasabi.MessageType, msg []byte) error {
 		if ok := conn.DoneRequest(req.ID(), msg); !ok {
-			return fmt.Errorf("request ID %d not found is cancelled", req.ID())
+			return fmt.Errorf("request ID %s not found is cancelled", req.ID())
 		}
 
 		return nil

@@ -25,13 +25,13 @@ func makeParser(t *testing.T) func([]byte) (map[string]any, map[string]any, erro
 	}
 }
 
-func makeWaiter(t *testing.T) (respChan chan []byte, waiter func() (int64, <-chan []byte)) {
+func makeWaiter(t *testing.T) (respChan chan []byte, waiter func() (string, <-chan []byte)) {
 	t.Helper()
 
 	respChan = make(chan []byte, 1)
 
-	return respChan, func() (int64, <-chan []byte) {
-		return 1234, respChan
+	return respChan, func() (string, <-chan []byte) {
+		return "1234", respChan
 	}
 }
 

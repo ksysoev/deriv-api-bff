@@ -40,7 +40,7 @@ func TestHandle_Success(t *testing.T) {
 
 	waitComposer := NewMockWaitComposer(t)
 	waitComposer.EXPECT().Compose().Return(expectedParams, nil)
-	waitComposer.EXPECT().Prepare(mock.Anything, expectedCallName, mock.Anything).Return(1, make(map[string]any), nil)
+	waitComposer.EXPECT().Prepare(mock.Anything, expectedCallName, mock.Anything).Return("1", make(map[string]any), nil)
 
 	handler := New(validator, []RenderParser{renderParser}, func(core.Waiter) WaitComposer {
 		return waitComposer
@@ -49,8 +49,8 @@ func TestHandle_Success(t *testing.T) {
 	ctx := context.Background()
 
 	echoChan := make(chan []byte, 1)
-	waiter := func() (int64, <-chan []byte) {
-		return 1, echoChan
+	waiter := func() (string, <-chan []byte) {
+		return "1", echoChan
 	}
 
 	sender := func(req core.Request) error {
@@ -79,8 +79,8 @@ func TestHandle_ValidationError(t *testing.T) {
 	ctx := context.Background()
 
 	echoChan := make(chan []byte, 1)
-	waiter := func() (int64, <-chan []byte) {
-		return 1, echoChan
+	waiter := func() (string, <-chan []byte) {
+		return "1", echoChan
 	}
 
 	sender := func(req core.Request) error {
@@ -107,7 +107,7 @@ func TestHandle_SendError(t *testing.T) {
 	renderParser.EXPECT().Name().Return(expectedCallName)
 
 	waitComposer := NewMockWaitComposer(t)
-	waitComposer.EXPECT().Prepare(mock.Anything, expectedCallName, mock.Anything).Return(1, make(map[string]any), nil)
+	waitComposer.EXPECT().Prepare(mock.Anything, expectedCallName, mock.Anything).Return("1", make(map[string]any), nil)
 
 	handler := New(validator, []RenderParser{renderParser, renderParser}, func(core.Waiter) WaitComposer {
 		return waitComposer
@@ -116,8 +116,8 @@ func TestHandle_SendError(t *testing.T) {
 	ctx := context.Background()
 
 	echoChan := make(chan []byte, 1)
-	waiter := func() (int64, <-chan []byte) {
-		return 1, echoChan
+	waiter := func() (string, <-chan []byte) {
+		return "1", echoChan
 	}
 
 	sender := func(_ core.Request) error {
@@ -148,8 +148,8 @@ func TestHandle_CancelledContext(t *testing.T) {
 	})
 
 	echoChan := make(chan []byte, 1)
-	waiter := func() (int64, <-chan []byte) {
-		return 1, echoChan
+	waiter := func() (string, <-chan []byte) {
+		return "1", echoChan
 	}
 
 	sender := func(_ core.Request) error {
@@ -172,7 +172,7 @@ func TestHandle_PrepareError(t *testing.T) {
 	renderParser.EXPECT().Name().Return(expectedCallName)
 
 	waitComposer := NewMockWaitComposer(t)
-	waitComposer.EXPECT().Prepare(mock.Anything, expectedCallName, mock.Anything).Return(0, nil, assert.AnError)
+	waitComposer.EXPECT().Prepare(mock.Anything, expectedCallName, mock.Anything).Return("", nil, assert.AnError)
 	waitComposer.EXPECT().Compose().Return(nil, assert.AnError)
 
 	handler := New(validator, []RenderParser{renderParser}, func(core.Waiter) WaitComposer {
@@ -182,8 +182,8 @@ func TestHandle_PrepareError(t *testing.T) {
 	ctx := context.Background()
 
 	echoChan := make(chan []byte, 1)
-	waiter := func() (int64, <-chan []byte) {
-		return 1, echoChan
+	waiter := func() (string, <-chan []byte) {
+		return "1", echoChan
 	}
 
 	sender := func(_ core.Request) error {
