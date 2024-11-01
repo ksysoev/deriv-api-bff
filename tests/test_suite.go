@@ -26,34 +26,43 @@ import (
 
 type testSuite struct {
 	suite.Suite
-	echoWS *httptest.Server
+	httpServ *httptest.Server
+	mux      *http.ServeMux
 }
 
 // newTestSuite creates and returns a new instance of testSuite.
 // It takes no parameters and returns a pointer to a testSuite instance.
 func newTestSuite() *testSuite {
-	return &testSuite{}
+	return &testSuite{
+		mux: http.NewServeMux(),
+	}
 }
 
-// SetupSuite initializes the test suite by setting up a new WebSocket server.
-// It does not take any parameters and does not return any values.
-// This function is typically called before any tests are run to ensure the test environment is properly configured.
-func (s *testSuite) SetupSuite() {
-	s.echoWS = httptest.NewServer(s.createTestWSEchoServer())
+// BeforeTest sets up the HTTP server and WebSocket echo server for the test suite.
+// It takes two string parameters, which are not used in the function.
+// It initializes the HTTP server and WebSocket echo server for testing purposes.
+func (s *testSuite) BeforeTest(_, _ string) {
+	s.mux = http.NewServeMux()
+	s.mux.Handle("/ws", s.createTestWSEchoServer())
+	s.httpServ = httptest.NewServer(s.mux)
 }
 
-// TearDownSuite closes the WebSocket connection used by the test suite.
-// It does not take any parameters and does not return any values.
-// This function ensures that the WebSocket connection is properly closed after all tests in the suite have run.
-func (s *testSuite) TearDownSuite() {
-	s.echoWS.Close()
+// AfterTest performs cleanup operations after each test.
+// It takes two unnamed string parameters which are not used in the function.
+// It closes the HTTP server associated with the test suite to release resources.
+func (s *testSuite) AfterTest(_, _ string) {
+	s.httpServ.Close()
 }
 
 // echoWSURL returns the WebSocket URL for the echo server.
 // It does not take any parameters.
 // It returns a string which is the URL of the echo WebSocket server.
 func (s *testSuite) echoWSURL() string {
-	return s.echoWS.URL
+	return s.httpServ.URL + "/ws"
+}
+
+func (s *testSuite) httpURL() string {
+	return s.httpServ.URL
 }
 
 // createTestWSEchoServer creates a WebSocket echo server handler function.
@@ -206,4 +215,10 @@ func (s *testSuite) debugConfig(cfg *config.Config) {
 	}
 
 	s.T().Logf("Config:\n%s", string(d))
+}
+
+func (s *testSuite) addHTTPContent(path, content string) {
+	s.mux.HandleFunc(path, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(content))
+	})
 }

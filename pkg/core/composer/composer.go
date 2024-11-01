@@ -40,14 +40,14 @@ func New(depGraph map[string][]string, waiter core.Waiter) *Composer {
 // It returns an int64 request ID, a map of dependency results, and an error if the dependencies cannot be composed or the response cannot be parsed.
 // It returns an error if the dependencies cannot be composed or the response cannot be parsed.
 func (c *Composer) Prepare(ctx context.Context, name string, parser handler.Parser) (reqID string, depsResults map[string]any, err error) {
-	c.wg.Add(1)
-
 	depsResults, err = c.composeDependencies(ctx, name)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to compose dependencies: %w", err)
 	}
 
 	reqID, respChan := c.waiter()
+
+	c.wg.Add(1)
 
 	go func() {
 		defer c.wg.Done()
