@@ -27,9 +27,13 @@ type FieldValidator struct {
 // It returns a pointer to a FieldValidator and an error.
 // It returns an error if any field in the configuration has an unknown type.
 func New(cfg Config) (*FieldValidator, error) {
+	if cfg == nil {
+		cfg = make(Config)
+	}
+
 	required := make([]string, 0, len(cfg))
 
-	for field, _ := range cfg {
+	for field := range cfg {
 		required = append(required, field)
 	}
 
