@@ -118,8 +118,6 @@ func (s *testSuite) startAppWithConfig(cfgYAML string) (url string, err error) {
 
 	cfg.Deriv.Endpoint = s.echoWSURL()
 
-	s.debugConfig(&cfg)
-
 	derivAPI := deriv.NewService(&cfg.Deriv)
 
 	connRegistry := repo.NewConnectionRegistry()
@@ -203,11 +201,11 @@ func (s *testSuite) testRequest(url string, req, expectedResp any) {
 	a.Equal(expectedResp, resp)
 }
 
-// debugConfig marshals the provided configuration into YAML format and logs it.
+// DebugConfig marshals the provided configuration into YAML format and logs it.
 // It takes cfg of type *cmd.Config.
 // It does not return any values.
 // It logs an error message and fails the test if marshalling the configuration fails.
-func (s *testSuite) debugConfig(cfg *cmd.Config) {
+func (s *testSuite) DebugConfig(cfg *cmd.Config) {
 	d, err := yaml.Marshal(cfg)
 	if err != nil {
 		s.T().Fatalf("failed to marshal config: %v", err)

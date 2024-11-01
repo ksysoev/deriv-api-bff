@@ -42,12 +42,12 @@ func New(cfg Config) (*FieldValidator, error) {
 		schema["required"] = append(schema["required"].([]string), field)
 	}
 
-	scchemaJson, err := json.Marshal(schema)
+	schemaJSON, err := json.Marshal(schema)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal schema: %w", err)
 	}
 
-	val, err := jsonschema.CompileString("", string(scchemaJson))
+	val, err := jsonschema.CompileString("", string(schemaJSON))
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile schema: %w", err)
 	}
