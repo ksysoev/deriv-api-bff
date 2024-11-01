@@ -184,32 +184,32 @@ func TestTopSortDFS(t *testing.T) {
 		{
 			name: "no dependencies",
 			input: []*BackendConfig{
-				{ResponseBody: "response1"},
-				{ResponseBody: "response2"},
+				{Name: "response1"},
+				{Name: "response2"},
 			},
 			want: []*BackendConfig{
-				{ResponseBody: "response1"},
-				{ResponseBody: "response2"},
+				{Name: "response1"},
+				{Name: "response2"},
 			},
 			wantErr: false,
 		},
 		{
 			name: "simple dependency",
 			input: []*BackendConfig{
-				{ResponseBody: "response1", DependsOn: []string{"response2"}},
-				{ResponseBody: "response2"},
+				{Name: "response1", DependsOn: []string{"response2"}},
+				{Name: "response2"},
 			},
 			want: []*BackendConfig{
-				{ResponseBody: "response2"},
-				{ResponseBody: "response1", DependsOn: []string{"response2"}},
+				{Name: "response2"},
+				{Name: "response1", DependsOn: []string{"response2"}},
 			},
 			wantErr: false,
 		},
 		{
 			name: "circular dependency",
 			input: []*BackendConfig{
-				{ResponseBody: "response1", DependsOn: []string{"response2"}},
-				{ResponseBody: "response2", DependsOn: []string{"response1"}},
+				{Name: "response1", DependsOn: []string{"response2"}},
+				{Name: "response2", DependsOn: []string{"response1"}},
 			},
 			want:    nil,
 			wantErr: true,
@@ -217,23 +217,23 @@ func TestTopSortDFS(t *testing.T) {
 		{
 			name: "complex dependency",
 			input: []*BackendConfig{
-				{ResponseBody: "response1", DependsOn: []string{"response3"}},
-				{ResponseBody: "response2", DependsOn: []string{"response1"}},
-				{ResponseBody: "response3"},
+				{Name: "response1", DependsOn: []string{"response3"}},
+				{Name: "response2", DependsOn: []string{"response1"}},
+				{Name: "response3"},
 			},
 			want: []*BackendConfig{
-				{ResponseBody: "response3"},
-				{ResponseBody: "response1", DependsOn: []string{"response3"}},
-				{ResponseBody: "response2", DependsOn: []string{"response1"}},
+				{Name: "response3"},
+				{Name: "response1", DependsOn: []string{"response3"}},
+				{Name: "response2", DependsOn: []string{"response1"}},
 			},
 			wantErr: false,
 		},
 		{
 			name: "complex cicular dependency",
 			input: []*BackendConfig{
-				{ResponseBody: "response1", DependsOn: []string{"response3"}},
-				{ResponseBody: "response2", DependsOn: []string{"response1"}},
-				{ResponseBody: "response3", DependsOn: []string{"response2"}},
+				{Name: "response1", DependsOn: []string{"response3"}},
+				{Name: "response2", DependsOn: []string{"response1"}},
+				{Name: "response3", DependsOn: []string{"response2"}},
 			},
 			want:    nil,
 			wantErr: true,
@@ -537,7 +537,7 @@ func TestCreateHandler(t *testing.T) {
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
 						RequestTemplate: map[string]any{"key1": "value1"},
-						DependsOn:       []string{"responseBody2"},
+						DependsOn:       []string{"backend2"},
 						Allow:           []string{"allow1"},
 					},
 					{
@@ -545,7 +545,7 @@ func TestCreateHandler(t *testing.T) {
 						FieldsMap:       map[string]string{"field2": "value2"},
 						ResponseBody:    "responseBody2",
 						RequestTemplate: map[string]any{"key1": "value1"},
-						DependsOn:       []string{"responseBody1"},
+						DependsOn:       []string{"backend1"},
 						Allow:           []string{"allow2"},
 					},
 				},
