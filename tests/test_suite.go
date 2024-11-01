@@ -27,19 +27,23 @@ import (
 type testSuite struct {
 	suite.Suite
 	echoWS *httptest.Server
+	mux    *http.ServeMux
 }
 
 // newTestSuite creates and returns a new instance of testSuite.
 // It takes no parameters and returns a pointer to a testSuite instance.
 func newTestSuite() *testSuite {
-	return &testSuite{}
+	return &testSuite{
+		mux: http.NewServeMux(),
+	}
 }
 
 // SetupSuite initializes the test suite by setting up a new WebSocket server.
 // It does not take any parameters and does not return any values.
 // This function is typically called before any tests are run to ensure the test environment is properly configured.
 func (s *testSuite) SetupSuite() {
-	s.echoWS = httptest.NewServer(s.createTestWSEchoServer())
+	s.mux.Handle("/ws", s.createTestWSEchoServer())
+	s.echoWS = httptest.NewServer(s.mux)
 }
 
 // TearDownSuite closes the WebSocket connection used by the test suite.
@@ -53,6 +57,10 @@ func (s *testSuite) TearDownSuite() {
 // It does not take any parameters.
 // It returns a string which is the URL of the echo WebSocket server.
 func (s *testSuite) echoWSURL() string {
+	return s.echoWS.URL + "/ws"
+}
+
+func (s *testSuite) httpURL() string {
 	return s.echoWS.URL
 }
 
@@ -205,4 +213,10 @@ func (s *testSuite) debugConfig(cfg *cmd.Config) {
 	}
 
 	s.T().Logf("Config:\n%s", string(d))
+}
+
+func (s *testSuite) addHTTPContent(path string, content string) {
+	s.mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(content))
+	})
 }
