@@ -617,7 +617,7 @@ func TestOnUpdateEvent(t *testing.T) {
 		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "value1"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -633,7 +633,7 @@ func TestOnUpdateEvent(t *testing.T) {
 		Calls: []config.CallConfig{
 			{
 				Method: "testMethodNew",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "value1"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -671,7 +671,7 @@ func TestOnUpdateEvent_Failure(t *testing.T) {
 		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "value1"}},
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
