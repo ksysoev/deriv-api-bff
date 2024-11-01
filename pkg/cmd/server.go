@@ -26,7 +26,7 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 		return fmt.Errorf("failed to create calls repo: %w", err)
 	}
 
-	err = cfg.WatchConfig(callsRepoConfigWatcher, ".API.Calls")
+	err = cfg.WatchConfig(callsRepoConfigWatcher, "api.calls")
 	if err != nil {
 		return fmt.Errorf("failed to watch config for calls repo: %w", err)
 	}
