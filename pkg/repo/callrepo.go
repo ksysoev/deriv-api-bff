@@ -71,6 +71,16 @@ func createHandler(call CallConfig, handlerMap map[string]core.Handler) error {
 		return fmt.Errorf("failed to create validator: %w", err)
 	}
 
+	for _, req := range call.Backend {
+		if req.Name == "" {
+			req.Name = req.ResponseBody
+		}
+
+		if req.Name == "" {
+			return fmt.Errorf("name or response_body must be provided")
+		}
+	}
+
 	procs := make([]handler.RenderParser, 0, len(call.Backend))
 	graph := createDepGraph(call.Backend)
 
@@ -148,7 +158,11 @@ func topSortDFS(be []*BackendConfig) ([]*BackendConfig, error) {
 
 	indexMap := make(map[string]int, len(be))
 	for i, b := range be {
-		indexMap[b.ResponseBody] = i
+		if _, ok := indexMap[b.Name]; ok {
+			return nil, fmt.Errorf("duplicate backend name: %s", b.Name)
+		}
+
+		indexMap[b.Name] = i
 	}
 
 	var dfs func(string) error
@@ -178,7 +192,7 @@ func topSortDFS(be []*BackendConfig) ([]*BackendConfig, error) {
 	}
 
 	for _, b := range be {
-		if err := dfs(b.ResponseBody); err != nil {
+		if err := dfs(b.Name); err != nil {
 			return nil, err
 		}
 	}

@@ -18,7 +18,8 @@ api:
         param3:
           type: bool
       backend:
-        - url_template: "{{host}}/testcall/${params.param1}/${params.param2}/${params.param3}"
+        - name: testcall
+          url_template: "{{host}}/testcall/${params.param1}/${params.param2}/${params.param3}"
           method: "GET"
           allow: 
             - data1
