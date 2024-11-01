@@ -18,13 +18,18 @@ import (
 // It returns an error if the request handler creation fails or if the server fails to run.
 func runServer(ctx context.Context, cfg *config.Config) error {
 	derivAPI := deriv.NewService(&cfg.Deriv)
-
 	connRegistry := repo.NewConnectionRegistry()
+	callsRepoConfigWatcher := config.NewEvent[any]()
 
 	//TODO: change to valid event here and add watch config too
-	calls, err := repo.NewCallsRepository(&cfg.API, config.NewEvent[map[string]any]())
+	calls, err := repo.NewCallsRepository(&cfg.API, callsRepoConfigWatcher)
 	if err != nil {
 		return fmt.Errorf("failed to create calls repo: %w", err)
+	}
+
+	err = cfg.WatchConfig(callsRepoConfigWatcher, ".API.Calls")
+	if err != nil {
+		return fmt.Errorf("failed to watch config for calls repo: %w", err)
 	}
 
 	beRouter := router.New(derivAPI, http.NewService())

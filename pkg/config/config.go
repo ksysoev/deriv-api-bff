@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"reflect"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/api"
@@ -51,10 +50,17 @@ func (cfg *Config) addConfigSource(s Source) {
 	cfg.sources = append(cfg.sources, &s)
 }
 
-func (cfg *Config) WatchConfig(key string) error {
-	// TODO implement this function
-	// iterate over all sources and call their watch config
-	return errors.New(key)
+func (cfg *Config) WatchConfig(event *Event[any], key string) error {
+	for _, s := range cfg.sources {
+		src := *s
+		err := src.WatchConfig(event, key)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // TODO: add godoc

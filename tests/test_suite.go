@@ -123,7 +123,7 @@ func (s *testSuite) startAppWithConfig(cfgYAML string) (url string, err error) {
 	derivAPI := deriv.NewService(&cfg.Deriv)
 
 	connRegistry := repo.NewConnectionRegistry()
-	event := config.NewEvent[map[string]any]()
+	event := config.NewEvent[any]()
 
 	calls, err := repo.NewCallsRepository(&cfg.API, event)
 	if err != nil {

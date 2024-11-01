@@ -12,7 +12,7 @@ import (
 )
 
 func TestNewCallsRepository(t *testing.T) {
-	event := config.NewEvent[map[string]any]()
+	event := config.NewEvent[any]()
 	tests := []struct {
 		cfg     *config.CallsConfig
 		name    string
@@ -145,7 +145,7 @@ func TestGetCall(t *testing.T) {
 				},
 			},
 		},
-	}, &config.Event[map[string]any]{})
+	}, &config.Event[any]{})
 	assert.NoError(t, err)
 	assert.NotNil(t, repo)
 
@@ -269,7 +269,7 @@ func TestTopSortDFS(t *testing.T) {
 }
 
 func TestUpdateCalls_ExistingMethod_Success(t *testing.T) {
-	event := config.NewEvent[map[string]any]()
+	event := config.NewEvent[any]()
 	oldCallsConfig := &config.CallsConfig{
 		Calls: []config.CallConfig{
 			{
@@ -347,7 +347,7 @@ func TestUpdateCalls_NewMethod_Success(t *testing.T) {
 		},
 	}
 
-	callsRepo, err := NewCallsRepository(oldCallsConfig, &config.Event[map[string]any]{})
+	callsRepo, err := NewCallsRepository(oldCallsConfig, &config.Event[any]{})
 	if err != nil {
 		t.Errorf("Unexpected Error: %v", err)
 	}
@@ -408,7 +408,7 @@ func TestUpdateCalls_Failure(t *testing.T) {
 		},
 	}
 
-	callsRepo, err := NewCallsRepository(oldCallsConfig, &config.Event[map[string]any]{})
+	callsRepo, err := NewCallsRepository(oldCallsConfig, &config.Event[any]{})
 	if err != nil {
 		t.Errorf("Unexpected Error: %v", err)
 	}
@@ -653,7 +653,7 @@ func TestOnUpdateEvent(t *testing.T) {
 		},
 	}
 
-	event := config.NewEvent[map[string]any]()
+	event := config.NewEvent[any]()
 	callsRepo, err := NewCallsRepository(oldCallsConfig, event)
 	newCallsMap := make(map[string]any)
 
