@@ -16,7 +16,7 @@ api:
         param2:
           type: number
         param3:
-          type: bool
+          type: boolean
       backend:
         - name: testcall
           url_template: "{{host}}/testcall/${params.param1}/${params.param2}/${params.param3}"

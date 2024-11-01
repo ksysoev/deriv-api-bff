@@ -12,7 +12,7 @@ api:
         param2:
           type: number
         param3:
-          type: bool
+          type: boolean
       backend:
         - response_body: "data"
           request_template:

@@ -53,7 +53,8 @@ api:
         country: 
           type: "string"
       backend:
-        - method: "GET"
+        - name: "country"
+          method: "GET"
           url_template: 'http://nginx/country/${params.country}.json'
           allow: 
             - region

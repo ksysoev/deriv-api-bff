@@ -49,3 +49,10 @@ func TestHeadersFromContext_NoHeaders(t *testing.T) {
 		t.Error("Expected nil headers from context without headers, got non-nil")
 	}
 }
+
+func TestHeadersFromContext_NilContext(t *testing.T) {
+	//nolint:staticcheck // Test nil context
+	if QueryParamsFromContext(nil) != nil {
+		t.Error("Expected nil headers from context without headers, got non-nil")
+	}
+}

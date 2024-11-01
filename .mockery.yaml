@@ -10,6 +10,9 @@ packages:
       Validator:
       RenderParser:
       WaitComposer:
+  github.com/ksysoev/deriv-api-bff/pkg/core/validator:
+    interfaces:
+      schemaValidator:
   github.com/ksysoev/deriv-api-bff/pkg/core:
     interfaces:
       CallsRepo:

@@ -44,7 +44,8 @@ func TestNewQueryParamsMiddleware(t *testing.T) {
 }
 
 func TestQueryParamsFromContext_NilContext(t *testing.T) {
-	queryParams := QueryParamsFromContext(context.TODO())
+	//nolint:staticcheck // Test nil context
+	queryParams := QueryParamsFromContext(nil)
 	if queryParams != nil {
 		t.Error("Expected nil query parameters from nil context, got non-nil")
 	}
