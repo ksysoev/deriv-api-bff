@@ -15,7 +15,7 @@ func TestNewFieldValidator(t *testing.T) {
 			config: Config{
 				"name":  &FieldSchema{Type: "string"},
 				"age":   &FieldSchema{Type: "number"},
-				"admin": &FieldSchema{Type: "bool"},
+				"admin": &FieldSchema{Type: "boolean"},
 			},
 			wantErr: false,
 		},
@@ -42,7 +42,7 @@ func TestFieldValidator_Validate(t *testing.T) {
 	config := Config{
 		"name":  &FieldSchema{Type: "string"},
 		"age":   &FieldSchema{Type: "number"},
-		"admin": &FieldSchema{Type: "bool"},
+		"admin": &FieldSchema{Type: "boolean"},
 	}
 
 	validator, err := New(config)
@@ -105,7 +105,7 @@ func TestFieldValidator_validateField(t *testing.T) {
 	config := Config{
 		"name":  &FieldSchema{Type: "string"},
 		"age":   &FieldSchema{Type: "number"},
-		"admin": &FieldSchema{Type: "bool"},
+		"admin": &FieldSchema{Type: "boolean"},
 		"array": &FieldSchema{Type: "array"},
 	}
 

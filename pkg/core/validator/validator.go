@@ -1,7 +1,10 @@
 package validator
 
 import (
+	"encoding/json"
 	"fmt"
+
+	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
 type Config map[string]*FieldSchema
@@ -11,7 +14,8 @@ type FieldSchema struct {
 }
 
 type FieldValidator struct {
-	fields Config
+	fields     Config
+	jsonSchema *jsonschema.Schema
 }
 
 // New creates a new FieldValidator based on the provided configuration.
@@ -20,12 +24,38 @@ type FieldValidator struct {
 // It returns an error if any field in the configuration has an unknown type.
 func New(cfg Config) (*FieldValidator, error) {
 	for field, fieldConfig := range cfg {
-		if fieldConfig.Type != "string" && fieldConfig.Type != "number" && fieldConfig.Type != "bool" {
+		if fieldConfig.Type != "string" && fieldConfig.Type != "number" && fieldConfig.Type != "boolean" {
 			return nil, fmt.Errorf("unknown type %s for field %s", fieldConfig.Type, field)
 		}
 	}
 
-	return &FieldValidator{fields: cfg}, nil
+	schema := map[string]interface{}{
+		"type":                 "object",
+		"properties":           make(map[string]interface{}),
+		"additionalProperties": false,
+		"required":             make([]string, 0),
+	}
+
+	for field, fieldConfig := range cfg {
+		schema["properties"].(map[string]interface{})[field] = map[string]interface{}{"type": fieldConfig.Type}
+
+		schema["required"] = append(schema["required"].([]string), field)
+	}
+
+	scchemaJson, err := json.Marshal(schema)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal schema: %w", err)
+	}
+
+	val, err := jsonschema.CompileString("", string(scchemaJson))
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile schema: %w", err)
+	}
+
+	return &FieldValidator{
+		fields:     cfg,
+		jsonSchema: val,
+	}, nil
 }
 
 // Validate checks the provided data against the field configurations in the FieldValidator.
@@ -55,6 +85,12 @@ func (v *FieldValidator) Validate(data map[string]any) error {
 		return errValidation.APIError()
 	}
 
+	err := v.jsonSchema.Validate(data)
+
+	if err != nil {
+		return fmt.Errorf("failed to validate data: %w", err)
+	}
+
 	return nil
 }
 
@@ -64,7 +100,7 @@ func (v *FieldValidator) Validate(data map[string]any) error {
 // Possible error conditions include:
 // - The value is not of type string when config.Type is "string".
 // - The value is not of type float64 when config.Type is "number".
-// - The value is not of type bool when config.Type is "bool".
+// - The value is not of type bool when config.Type is "boolean".
 // - The config.Type is unknown.
 func (v *FieldValidator) validateField(config *FieldSchema, value any) error {
 	switch config.Type {
@@ -76,7 +112,7 @@ func (v *FieldValidator) validateField(config *FieldSchema, value any) error {
 		if _, ok := value.(float64); !ok {
 			return fmt.Errorf("field %s is not an int", value)
 		}
-	case "bool":
+	case "boolean":
 		if _, ok := value.(bool); !ok {
 			return fmt.Errorf("field %s is not a bool", value)
 		}
