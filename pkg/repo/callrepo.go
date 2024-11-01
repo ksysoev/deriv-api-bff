@@ -46,6 +46,7 @@ func NewCallsRepository(cfg *config.CallsConfig, event *config.Event[any]) (*Cal
 
 		if !ok {
 			slog.Error("Error while trying to update calls config: incoming config is not of type `map[any]`")
+			return
 		}
 
 		r.UpdateCalls(ccMap)
@@ -127,6 +128,7 @@ func (r *CallsRepository) UpdateCalls(callsMap map[string]any) {
 
 	if err != nil {
 		slog.Warn(fmt.Sprintf("Error while decoding calls config map: %v", err))
+		return
 	}
 
 	for _, call := range calls.Calls {

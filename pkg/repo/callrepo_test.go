@@ -665,3 +665,31 @@ func TestOnUpdateEvent(t *testing.T) {
 
 	assert.NotEmpty(t, callsRepo.GetCall("testMethodNew"))
 }
+
+func TestOnUpdateEvent_Failure(t *testing.T) {
+	oldCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
+			{
+				Method: "testMethod",
+				Params: validator.Config{"param1": {Type: "string"}},
+				Backend: []*config.BackendConfig{
+					{
+						FieldsMap:       map[string]string{"field1": "value1"},
+						ResponseBody:    "responseBody1",
+						RequestTemplate: map[string]any{"template1": "t1"},
+						Allow:           []string{"allow1"},
+					},
+				},
+			},
+		},
+	}
+
+	event := config.NewEvent[any]()
+	callsRepo, err := NewCallsRepository(oldCallsConfig, event)
+
+	assert.NoError(t, err)
+
+	event.Notify(context.Background(), "")
+
+	assert.Nil(t, callsRepo.GetCall("testMethodNew"))
+}

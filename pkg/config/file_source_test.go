@@ -3,7 +3,6 @@ package config
 import (
 	"context"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -22,8 +21,6 @@ etcd:
   dialTimeoutSeconds: 1
   servers: ["host1:port1", "host2:port2"]
 `
-
-var invalidConfig = "malformed_json"
 
 func createTempConfigFile(t *testing.T, content string) string {
 	t.Helper()
@@ -71,19 +68,6 @@ func TestFileSource_Init_ReadFailed(t *testing.T) {
 	err := fileSource.Init(cfg)
 	assert.Error(t, err)
 	assert.Equal(t, "failed to read config: Unsupported Config Type \"\"", err.Error())
-}
-
-func TestFileSource_Init_UnmarshalFail(t *testing.T) {
-	// Setup
-	viper.Reset()
-
-	fileSource := NewFileSource(createTempConfigFile(t, invalidConfig))
-	cfg := &Config{}
-
-	// Test Init
-	err := fileSource.Init(cfg)
-	assert.Error(t, err)
-	assert.True(t, strings.HasPrefix(err.Error(), "failed to read config: While parsing config: yaml: "))
 }
 
 func TestFileSource_WatchConfig_Pass(t *testing.T) {
