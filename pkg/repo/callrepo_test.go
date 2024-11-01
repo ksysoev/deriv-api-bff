@@ -238,6 +238,17 @@ func TestTopSortDFS(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 		},
+		{
+			name: "Duplcate names",
+			input: []*BackendConfig{
+				{Name: "response1", DependsOn: []string{"response3"}},
+				{Name: "response2", DependsOn: []string{"response1"}},
+				{Name: "response3", DependsOn: []string{"response2"}},
+				{Name: "response1", DependsOn: []string{"response3"}},
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -519,7 +530,7 @@ func TestCreateHandler(t *testing.T) {
 						Name:         "backend1",
 						FieldsMap:    map[string]string{"field1": "value1"},
 						ResponseBody: "responseBody1",
-						URLTemplate:  "{{.InvalidTemplate",
+						URLTemplate:  "http://localhost/${invalid",
 						Allow:        []string{"allow1"},
 					},
 				},
@@ -547,6 +558,21 @@ func TestCreateHandler(t *testing.T) {
 						RequestTemplate: map[string]any{"key1": "value1"},
 						DependsOn:       []string{"backend1"},
 						Allow:           []string{"allow2"},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Missing name in backend config",
+			call: CallConfig{
+				Method: "testMethod",
+				Params: validator.Config{"param1": {Type: "string"}},
+				Backend: []*BackendConfig{
+					{
+						FieldsMap:   map[string]string{"field1": "value1"},
+						URLTemplate: "http://localhost/${params.param1}",
+						Allow:       []string{"allow1"},
 					},
 				},
 			},
