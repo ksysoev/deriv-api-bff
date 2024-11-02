@@ -11,10 +11,9 @@ type CallsRepository struct {
 	calls map[string]core.Handler
 }
 
-// NewCallsRepository creates a new instance of CallsRepository based on the provided configuration.
-// It takes cfg of type *CallsConfig which contains the configuration for the calls.
-// It returns a pointer to CallsRepository and an error if the repository creation fails.
-// It returns an error if the validator creation fails or if there is an error parsing the request template.
+// NewCallsRepository creates and returns a new instance of CallsRepository.
+// It initializes the calls map to store core.Handler instances keyed by string.
+// It returns a pointer to the newly created CallsRepository.
 func NewCallsRepository() *CallsRepository {
 	r := &CallsRepository{
 		calls: make(map[string]core.Handler),
@@ -23,9 +22,9 @@ func NewCallsRepository() *CallsRepository {
 	return r
 }
 
-// GetCall retrieves a CallRunConfig based on the provided method name.
+// GetCall retrieves a handler function associated with the given method name.
 // It takes a single parameter method of type string, which specifies the method name.
-// It returns a pointer to a CallRunConfig if the method exists in the repository, otherwise it returns nil.
+// It returns a core.Handler which is the handler function associated with the specified method.
 func (r *CallsRepository) GetCall(method string) core.Handler {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -33,10 +32,9 @@ func (r *CallsRepository) GetCall(method string) core.Handler {
 	return r.calls[method]
 }
 
-// UpdateCalls refreshes the CallsConfig and rebuilds the handlers for calls accordingly
-// It takes a single parameter that is pointer to the new calls config.
-// The current implementation will completely overwrite the old config with new config.
-// It returns an error to if any while building the handlers, otherwise it returns nil.
+// UpdateCalls updates the repository with a new set of call handlers.
+// It takes a callsMap parameter which is a map where the key is a string and the value is a core.Handler.
+// This function does not return any values.
 func (r *CallsRepository) UpdateCalls(callsMap map[string]core.Handler) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
