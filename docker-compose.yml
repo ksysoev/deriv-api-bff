@@ -30,3 +30,11 @@ services:
     volumes:
       - ./samples/static:/var/www
       - ./samples/nginx.conf:/etc/nginx/conf.d/default.conf
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - "./samples/prometheus.yml:/etc/prometheus/prometheus.yml"
+    ports:
+      - 9090:9090
+    depends_on:
+      - deriv-api-bff

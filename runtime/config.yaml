@@ -6,7 +6,7 @@ deriv:
   endpoint: "wss://ws.derivws.com/websockets/v3"
 otel:
   prometheus:
-    listen: ":8080"
+    listen: ":8081"
     path: "/metrics"
 etcd:
   servers: ["localhost:2379"]

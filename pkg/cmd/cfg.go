@@ -17,6 +17,7 @@ type Config struct {
 	Deriv  deriv.Config     `mapstructure:"deriv"`
 	API    repo.CallsConfig `mapstructure:"api"`
 	Etcd   repo.EtcdConfig  `mapstructure:"etcd"`
+	Otel   OtelConfig       `mapstructure:"otel"`
 }
 
 // initConfig initializes the configuration by reading from the specified config file.
