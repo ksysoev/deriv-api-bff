@@ -10,15 +10,16 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-func NewRedMetricsMiddleware(name string) func(next wasabi.RequestHandler) wasabi.RequestHandler {
-	meter := otel.GetMeterProvider().Meter(name)
+func NewRedMetricsMiddleware(scope string) func(next wasabi.RequestHandler) wasabi.RequestHandler {
+	meter := otel.GetMeterProvider().Meter(scope)
 	timing, err := meter.Float64Histogram(
 		"request_duration",
 		metric.WithDescription("Request duration"),
-		metric.WithUnit("s"),
+		metric.WithUnit("milliseconds"),
 	)
+
 	if err != nil {
-		panic(err)
+		panic("failed to initialize metric" + err.Error())
 	}
 
 	return func(next wasabi.RequestHandler) wasabi.RequestHandler {
@@ -29,17 +30,17 @@ func NewRedMetricsMiddleware(name string) func(next wasabi.RequestHandler) wasab
 
 			elapsed := time.Since(start)
 
-			hasError := "f"
+			isError := "f"
 			if err != nil {
-				hasError = "t"
+				isError = "t"
 			}
 
 			timing.Record(
 				req.Context(),
-				elapsed.Seconds(),
+				float64(elapsed.Milliseconds()),
 				metric.WithAttributes(
 					attribute.String("routing_key", req.RoutingKey()),
-					attribute.String("has_error", hasError),
+					attribute.String("error", isError),
 				),
 			)
 			return err
