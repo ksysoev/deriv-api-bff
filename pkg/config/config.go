@@ -7,15 +7,25 @@ import (
 )
 
 type Config struct {
-	sources []*Source
-	Server  api.Config   `mapstructure:"server"`
+	Otel    OtelConfig   `mapstructure:"otel"`
 	Deriv   deriv.Config `mapstructure:"deriv"`
-	API     CallsConfig  `mapstructure:"api"`
-	Etcd    EtcdConfig   `mapstructure:"etcd"`
+	sources []*Source
+	API     CallsConfig `mapstructure:"api"`
+	Server  api.Config  `mapstructure:"server"`
+	Etcd    EtcdConfig  `mapstructure:"etcd"`
 }
 
 type CallsConfig struct {
 	Calls []CallConfig `mapstructure:"calls" yaml:"calls"`
+}
+
+type OtelConfig struct {
+	Prometheus *PrometheusConfig `mapstructure:"prometheus"`
+}
+
+type PrometheusConfig struct {
+	Listen string `mapstructure:"listen"`
+	Path   string `mapstructure:"path"`
 }
 
 type EtcdConfig struct {

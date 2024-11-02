@@ -51,6 +51,7 @@ func NewSevice(cfg *Config, handler BFFService) *Service {
 
 	dispatcher := dispatch.NewRouterDispatcher(s, parse)
 	dispatcher.Use(middleware.NewErrorHandlingMiddleware())
+	dispatcher.Use(middleware.NewMetricsMiddleware("bff-deriv"))
 	dispatcher.Use(reqmid.NewTrottlerMiddleware(cfg.MaxRequests))
 
 	registry := channel.NewConnectionRegistry(

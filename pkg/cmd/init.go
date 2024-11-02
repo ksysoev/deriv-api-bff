@@ -76,6 +76,10 @@ func ServerCommand(arg *args) *cobra.Command {
 				return err
 			}
 
+			if err := initMetricProvider(cmd.Context(), &cfg.Otel); err != nil {
+				return err
+			}
+
 			return runServer(cmd.Context(), cfg)
 		},
 	}
