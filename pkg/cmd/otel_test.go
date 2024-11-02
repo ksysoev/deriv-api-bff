@@ -5,19 +5,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ksysoev/deriv-api-bff/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestServePrometheus(t *testing.T) {
 	tests := []struct {
-		cfg     *config.PrometheusConfig
+		cfg     *PrometheusConfig
 		name    string
 		wantErr bool
 	}{
 		{
 			name: "valid config",
-			cfg: &config.PrometheusConfig{
+			cfg: &PrometheusConfig{
 				Listen: ":0",
 				Path:   "/metrics",
 			},
@@ -25,7 +24,7 @@ func TestServePrometheus(t *testing.T) {
 		},
 		{
 			name: "invalid config - empty listen",
-			cfg: &config.PrometheusConfig{
+			cfg: &PrometheusConfig{
 				Listen: ":InvalidPort",
 				Path:   "/metrics",
 			},
@@ -49,13 +48,13 @@ func TestServePrometheus(t *testing.T) {
 }
 func TestInitPrometheus(t *testing.T) {
 	tests := []struct {
-		cfg     *config.PrometheusConfig
+		cfg     *PrometheusConfig
 		name    string
 		wantErr bool
 	}{
 		{
 			name: "valid config",
-			cfg: &config.PrometheusConfig{
+			cfg: &PrometheusConfig{
 				Listen: ":0",
 				Path:   "/metrics",
 			},
@@ -63,7 +62,7 @@ func TestInitPrometheus(t *testing.T) {
 		},
 		{
 			name: "invalid config - empty listen",
-			cfg: &config.PrometheusConfig{
+			cfg: &PrometheusConfig{
 				Listen: "",
 				Path:   "/metrics",
 			},
@@ -71,7 +70,7 @@ func TestInitPrometheus(t *testing.T) {
 		},
 		{
 			name: "invalid config - empty path",
-			cfg: &config.PrometheusConfig{
+			cfg: &PrometheusConfig{
 				Listen: ":0",
 				Path:   "",
 			},
@@ -79,7 +78,7 @@ func TestInitPrometheus(t *testing.T) {
 		},
 		{
 			name: "invalid config - empty listen and path",
-			cfg: &config.PrometheusConfig{
+			cfg: &PrometheusConfig{
 				Listen: "",
 				Path:   "",
 			},
@@ -103,14 +102,14 @@ func TestInitPrometheus(t *testing.T) {
 }
 func TestInitMetricProvider(t *testing.T) {
 	tests := []struct {
-		cfg     *config.OtelConfig
+		cfg     *OtelConfig
 		name    string
 		wantErr bool
 	}{
 		{
 			name: "valid config with Prometheus",
-			cfg: &config.OtelConfig{
-				Prometheus: &config.PrometheusConfig{
+			cfg: &OtelConfig{
+				Prometheus: &PrometheusConfig{
 					Listen: ":0",
 					Path:   "/metrics",
 				},
@@ -119,8 +118,8 @@ func TestInitMetricProvider(t *testing.T) {
 		},
 		{
 			name: "invalid Prometheus config - empty listen",
-			cfg: &config.OtelConfig{
-				Prometheus: &config.PrometheusConfig{
+			cfg: &OtelConfig{
+				Prometheus: &PrometheusConfig{
 					Listen: "",
 					Path:   "/metrics",
 				},
@@ -129,8 +128,8 @@ func TestInitMetricProvider(t *testing.T) {
 		},
 		{
 			name: "invalid Prometheus config - empty path",
-			cfg: &config.OtelConfig{
-				Prometheus: &config.PrometheusConfig{
+			cfg: &OtelConfig{
+				Prometheus: &PrometheusConfig{
 					Listen: ":0",
 					Path:   "",
 				},
@@ -139,7 +138,7 @@ func TestInitMetricProvider(t *testing.T) {
 		},
 		{
 			name: "nil Prometheus config",
-			cfg: &config.OtelConfig{
+			cfg: &OtelConfig{
 				Prometheus: nil,
 			},
 			wantErr: false,
