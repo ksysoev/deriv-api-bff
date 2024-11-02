@@ -50,6 +50,11 @@ func initPrometheus(ctx context.Context, cfg *config.PrometheusConfig) error {
 	return nil
 }
 
+// servePrometheus serves Prometheus metrics over HTTP.
+// It takes a context `ctx` and a Prometheus configuration `cfg` of type *config.PrometheusConfig.
+// It returns an error if the server fails to start or if there is an issue closing the server.
+// The function listens on the address specified in `cfg.Listen` and serves metrics at the path specified in `cfg.Path`.
+// If the context is canceled, the server shuts down gracefully.
 func servePrometheus(ctx context.Context, cfg *config.PrometheusConfig) error {
 	mux := http.NewServeMux()
 	mux.Handle(cfg.Path, promhttp.Handler())
@@ -75,5 +80,10 @@ func servePrometheus(ctx context.Context, cfg *config.PrometheusConfig) error {
 		}
 	}()
 
-	return httpSrv.Serve(lis)
+	err = httpSrv.Serve(lis)
+	if err == http.ErrServerClosed {
+		return nil
+	}
+
+	return err
 }

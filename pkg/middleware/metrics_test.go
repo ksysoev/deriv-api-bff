@@ -18,7 +18,7 @@ func TestNewMetricsMiddleware(t *testing.T) {
 
 	middleware := NewMetricsMiddleware("test_scope")
 
-	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
 		time.Sleep(10 * time.Millisecond)
 		return nil
 	})
@@ -39,7 +39,7 @@ func TestNewMetricsMiddleware_Error(t *testing.T) {
 
 	middleware := NewMetricsMiddleware("test_scope")
 
-	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
 		time.Sleep(10 * time.Millisecond)
 		return assert.AnError
 	})
