@@ -1,27 +1,31 @@
 package repo
 
 import (
+	"context"
 	"testing"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/config"
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/validator"
+	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewCallsRepository(t *testing.T) {
+	event := config.NewEvent[any]()
 	tests := []struct {
-		cfg     *CallsConfig
+		cfg     *config.CallsConfig
 		name    string
 		wantErr bool
 	}{
 		{
 			name: "valid config",
-			cfg: &CallsConfig{
-				Calls: []CallConfig{
+			cfg: &config.CallsConfig{
+				Calls: []config.CallConfig{
 					{
 						Method: "testMethod",
 						Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
-						Backend: []*BackendConfig{
+						Backend: []*config.BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
 								ResponseBody:    "responseBody1",
@@ -36,12 +40,12 @@ func TestNewCallsRepository(t *testing.T) {
 		},
 		{
 			name: "invalid template",
-			cfg: &CallsConfig{
-				Calls: []CallConfig{
+			cfg: &config.CallsConfig{
+				Calls: []config.CallConfig{
 					{
 						Method: "testMethod",
 						Params: validator.Config{"param1": validator.FieldSchema{Type: "value1"}},
-						Backend: []*BackendConfig{
+						Backend: []*config.BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
 								ResponseBody:    "responseBody1",
@@ -56,12 +60,12 @@ func TestNewCallsRepository(t *testing.T) {
 		},
 		{
 			name: "circular dependency",
-			cfg: &CallsConfig{
-				Calls: []CallConfig{
+			cfg: &config.CallsConfig{
+				Calls: []config.CallConfig{
 					{
 						Method: "testMethod",
 						Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
-						Backend: []*BackendConfig{
+						Backend: []*config.BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
 								ResponseBody:    "responseBody1",
@@ -84,12 +88,12 @@ func TestNewCallsRepository(t *testing.T) {
 		},
 		{
 			name: "valid dependency",
-			cfg: &CallsConfig{
-				Calls: []CallConfig{
+			cfg: &config.CallsConfig{
+				Calls: []config.CallConfig{
 					{
 						Method: "testMethod",
 						Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
-						Backend: []*BackendConfig{
+						Backend: []*config.BackendConfig{
 							{
 								FieldsMap:       map[string]string{"field1": "value1"},
 								ResponseBody:    "responseBody1",
@@ -113,7 +117,7 @@ func TestNewCallsRepository(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewCallsRepository(tt.cfg)
+			got, err := NewCallsRepository(tt.cfg, event)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -126,12 +130,12 @@ func TestNewCallsRepository(t *testing.T) {
 }
 
 func TestGetCall(t *testing.T) {
-	repo, err := NewCallsRepository(&CallsConfig{
-		Calls: []CallConfig{
+	repo, err := NewCallsRepository(&config.CallsConfig{
+		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
 				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
@@ -141,7 +145,7 @@ func TestGetCall(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, &config.Event[any]{})
 	assert.NoError(t, err)
 	assert.NotNil(t, repo)
 
@@ -177,17 +181,17 @@ func TestGetCall(t *testing.T) {
 func TestTopSortDFS(t *testing.T) {
 	tests := []struct {
 		name    string
-		input   []*BackendConfig
-		want    []*BackendConfig
+		input   []*config.BackendConfig
+		want    []*config.BackendConfig
 		wantErr bool
 	}{
 		{
 			name: "no dependencies",
-			input: []*BackendConfig{
+			input: []*config.BackendConfig{
 				{Name: "response1"},
 				{Name: "response2"},
 			},
-			want: []*BackendConfig{
+			want: []*config.BackendConfig{
 				{Name: "response1"},
 				{Name: "response2"},
 			},
@@ -195,11 +199,11 @@ func TestTopSortDFS(t *testing.T) {
 		},
 		{
 			name: "simple dependency",
-			input: []*BackendConfig{
+			input: []*config.BackendConfig{
 				{Name: "response1", DependsOn: []string{"response2"}},
 				{Name: "response2"},
 			},
-			want: []*BackendConfig{
+			want: []*config.BackendConfig{
 				{Name: "response2"},
 				{Name: "response1", DependsOn: []string{"response2"}},
 			},
@@ -207,7 +211,7 @@ func TestTopSortDFS(t *testing.T) {
 		},
 		{
 			name: "circular dependency",
-			input: []*BackendConfig{
+			input: []*config.BackendConfig{
 				{Name: "response1", DependsOn: []string{"response2"}},
 				{Name: "response2", DependsOn: []string{"response1"}},
 			},
@@ -216,12 +220,12 @@ func TestTopSortDFS(t *testing.T) {
 		},
 		{
 			name: "complex dependency",
-			input: []*BackendConfig{
+			input: []*config.BackendConfig{
 				{Name: "response1", DependsOn: []string{"response3"}},
 				{Name: "response2", DependsOn: []string{"response1"}},
 				{Name: "response3"},
 			},
-			want: []*BackendConfig{
+			want: []*config.BackendConfig{
 				{Name: "response3"},
 				{Name: "response1", DependsOn: []string{"response3"}},
 				{Name: "response2", DependsOn: []string{"response1"}},
@@ -230,7 +234,7 @@ func TestTopSortDFS(t *testing.T) {
 		},
 		{
 			name: "complex cicular dependency",
-			input: []*BackendConfig{
+			input: []*config.BackendConfig{
 				{Name: "response1", DependsOn: []string{"response3"}},
 				{Name: "response2", DependsOn: []string{"response1"}},
 				{Name: "response3", DependsOn: []string{"response2"}},
@@ -240,7 +244,7 @@ func TestTopSortDFS(t *testing.T) {
 		},
 		{
 			name: "Duplcate names",
-			input: []*BackendConfig{
+			input: []*config.BackendConfig{
 				{Name: "response1", DependsOn: []string{"response3"}},
 				{Name: "response2", DependsOn: []string{"response1"}},
 				{Name: "response3", DependsOn: []string{"response2"}},
@@ -265,12 +269,13 @@ func TestTopSortDFS(t *testing.T) {
 }
 
 func TestUpdateCalls_ExistingMethod_Success(t *testing.T) {
-	oldCallsConfig := &CallsConfig{
-		Calls: []CallConfig{
+	event := config.NewEvent[any]()
+	oldCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
 				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
@@ -282,19 +287,19 @@ func TestUpdateCalls_ExistingMethod_Success(t *testing.T) {
 		},
 	}
 
-	callsRepo, err := NewCallsRepository(oldCallsConfig)
+	callsRepo, err := NewCallsRepository(oldCallsConfig, event)
 	if err != nil {
 		t.Errorf("Unexpected Error: %v", err)
 	}
 
 	oldHandler := callsRepo.GetCall("testMethod")
 
-	newCallsConfig := &CallsConfig{
-		Calls: []CallConfig{
+	newCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
 				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
@@ -313,7 +318,11 @@ func TestUpdateCalls_ExistingMethod_Success(t *testing.T) {
 		},
 	}
 
-	callsRepo.UpdateCalls(newCallsConfig)
+	newCallsMap := make(map[string]any)
+
+	_ = mapstructure.Decode(newCallsConfig, &newCallsMap)
+
+	callsRepo.UpdateCalls(newCallsMap)
 
 	newHandler := callsRepo.GetCall("testMethod")
 
@@ -321,12 +330,12 @@ func TestUpdateCalls_ExistingMethod_Success(t *testing.T) {
 }
 
 func TestUpdateCalls_NewMethod_Success(t *testing.T) {
-	oldCallsConfig := &CallsConfig{
-		Calls: []CallConfig{
+	oldCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
 				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
@@ -338,19 +347,19 @@ func TestUpdateCalls_NewMethod_Success(t *testing.T) {
 		},
 	}
 
-	callsRepo, err := NewCallsRepository(oldCallsConfig)
+	callsRepo, err := NewCallsRepository(oldCallsConfig, &config.Event[any]{})
 	if err != nil {
 		t.Errorf("Unexpected Error: %v", err)
 	}
 
 	oldHandler := callsRepo.GetCall("testMethod")
 
-	newCallsConfig := &CallsConfig{
-		Calls: []CallConfig{
+	newCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
 			{
 				Method: "testMethodNew",
 				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
@@ -369,7 +378,11 @@ func TestUpdateCalls_NewMethod_Success(t *testing.T) {
 		},
 	}
 
-	callsRepo.UpdateCalls(newCallsConfig)
+	newCallsMap := make(map[string]any)
+
+	_ = mapstructure.Decode(newCallsConfig, &newCallsMap)
+
+	callsRepo.UpdateCalls(newCallsMap)
 
 	newHandler := callsRepo.GetCall("testMethodNew")
 
@@ -378,12 +391,12 @@ func TestUpdateCalls_NewMethod_Success(t *testing.T) {
 }
 
 func TestUpdateCalls_Failure(t *testing.T) {
-	oldCallsConfig := &CallsConfig{
-		Calls: []CallConfig{
+	oldCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
 				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
@@ -395,19 +408,19 @@ func TestUpdateCalls_Failure(t *testing.T) {
 		},
 	}
 
-	callsRepo, err := NewCallsRepository(oldCallsConfig)
+	callsRepo, err := NewCallsRepository(oldCallsConfig, &config.Event[any]{})
 	if err != nil {
 		t.Errorf("Unexpected Error: %v", err)
 	}
 
 	oldHandler := callsRepo.GetCall("testMethod")
 
-	newCallsConfig := &CallsConfig{
-		Calls: []CallConfig{
+	newCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
 			{
 				Method: "testMethod",
 				Params: validator.Config{"param1": validator.FieldSchema{Type: "value1"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:       map[string]string{"field1": "value1"},
 						ResponseBody:    "responseBody1",
@@ -419,7 +432,11 @@ func TestUpdateCalls_Failure(t *testing.T) {
 		},
 	}
 
-	callsRepo.UpdateCalls(newCallsConfig)
+	newCallsMap := make(map[string]any)
+
+	_ = mapstructure.Decode(newCallsConfig, &newCallsMap)
+
+	callsRepo.UpdateCalls(newCallsMap)
 
 	newHandler := callsRepo.GetCall("testMethod")
 	assert.Equal(t, oldHandler, newHandler, "old handler and new handler must be same")
@@ -429,15 +446,15 @@ func TestCreateHandler(t *testing.T) {
 	tests := []struct {
 		setupFunc func()
 		name      string
-		call      CallConfig
+		call      config.CallConfig
 		wantErr   bool
 	}{
 		{
 			name: "valid deriv handler creation",
-			call: CallConfig{
+			call: config.CallConfig{
 				Method: "testMethod",
 				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -451,10 +468,10 @@ func TestCreateHandler(t *testing.T) {
 		},
 		{
 			name: "valid http handler creation",
-			call: CallConfig{
+			call: config.CallConfig{
 				Method: "testMethod",
 				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -469,10 +486,10 @@ func TestCreateHandler(t *testing.T) {
 		},
 		{
 			name: "invalid processor configuration",
-			call: CallConfig{
+			call: config.CallConfig{
 				Method: "testMethod",
 				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -488,10 +505,10 @@ func TestCreateHandler(t *testing.T) {
 		},
 		{
 			name: "invalid validator config",
-			call: CallConfig{
+			call: config.CallConfig{
 				Method: "testMethod",
 				Params: validator.Config{"param1": validator.FieldSchema{Type: "invalidType"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -505,10 +522,10 @@ func TestCreateHandler(t *testing.T) {
 		},
 		{
 			name: "invalid request template",
-			call: CallConfig{
+			call: config.CallConfig{
 				Method: "testMethod",
 				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -522,10 +539,10 @@ func TestCreateHandler(t *testing.T) {
 		},
 		{
 			name: "invalid url template",
-			call: CallConfig{
+			call: config.CallConfig{
 				Method: "testMethod",
 				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						Name:         "backend1",
 						FieldsMap:    map[string]string{"field1": "value1"},
@@ -539,10 +556,10 @@ func TestCreateHandler(t *testing.T) {
 		},
 		{
 			name: "circular dependency",
-			call: CallConfig{
+			call: config.CallConfig{
 				Method: "testMethod",
 				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						Name:            "backend1",
 						FieldsMap:       map[string]string{"field1": "value1"},
@@ -565,10 +582,10 @@ func TestCreateHandler(t *testing.T) {
 		},
 		{
 			name: "Missing name in backend config",
-			call: CallConfig{
+			call: config.CallConfig{
 				Method: "testMethod",
 				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
-				Backend: []*BackendConfig{
+				Backend: []*config.BackendConfig{
 					{
 						FieldsMap:   map[string]string{"field1": "value1"},
 						URLTemplate: "http://localhost/${params.param1}",
@@ -593,4 +610,86 @@ func TestCreateHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOnUpdateEvent(t *testing.T) {
+	oldCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
+			{
+				Method: "testMethod",
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
+				Backend: []*config.BackendConfig{
+					{
+						FieldsMap:       map[string]string{"field1": "value1"},
+						ResponseBody:    "responseBody1",
+						RequestTemplate: map[string]any{"template1": "t1"},
+						Allow:           []string{"allow1"},
+					},
+				},
+			},
+		},
+	}
+	newCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
+			{
+				Method: "testMethodNew",
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
+				Backend: []*config.BackendConfig{
+					{
+						FieldsMap:       map[string]string{"field1": "value1"},
+						ResponseBody:    "responseBody1",
+						RequestTemplate: map[string]any{"template1": "t1"},
+						DependsOn:       []string{"responseBody2"},
+						Allow:           []string{"allow1"},
+					},
+					{
+						FieldsMap:       map[string]string{"field2": "value2"},
+						ResponseBody:    "responseBody2",
+						RequestTemplate: map[string]any{"template2": "t2"},
+						Allow:           []string{"allow2"},
+					},
+				},
+			},
+		},
+	}
+
+	event := config.NewEvent[any]()
+	callsRepo, err := NewCallsRepository(oldCallsConfig, event)
+	newCallsMap := make(map[string]any)
+
+	assert.NoError(t, err)
+
+	_ = mapstructure.Decode(newCallsConfig, &newCallsMap)
+
+	event.Notify(context.Background(), newCallsMap)
+
+	assert.NotEmpty(t, callsRepo.GetCall("testMethodNew"))
+}
+
+func TestOnUpdateEvent_Failure(t *testing.T) {
+	oldCallsConfig := &config.CallsConfig{
+		Calls: []config.CallConfig{
+			{
+				Method: "testMethod",
+				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
+				Backend: []*config.BackendConfig{
+					{
+						FieldsMap:       map[string]string{"field1": "value1"},
+						ResponseBody:    "responseBody1",
+						RequestTemplate: map[string]any{"template1": "t1"},
+						Allow:           []string{"allow1"},
+					},
+				},
+			},
+		},
+	}
+
+	event := config.NewEvent[any]()
+	callsRepo, err := NewCallsRepository(oldCallsConfig, event)
+
+	assert.NoError(t, err)
+
+	event.Notify(context.Background(), "")
+
+	assert.Nil(t, callsRepo.GetCall("testMethodNew"))
 }

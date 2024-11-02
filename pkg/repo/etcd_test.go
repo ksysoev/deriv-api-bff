@@ -6,13 +6,14 @@ import (
 	"testing"
 
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	"github.com/ksysoev/deriv-api-bff/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.etcd.io/etcd/clientv3"
 )
 
 func TestNew_Success(t *testing.T) {
-	cfg := EtcdConfig{
+	cfg := config.EtcdConfig{
 		Servers:            []string{"localhost:7000"},
 		DialTimeoutSeconds: 1,
 	}
@@ -28,7 +29,7 @@ func TestNew_Success(t *testing.T) {
 }
 
 func TestNew_Error(t *testing.T) {
-	cfg := EtcdConfig{}
+	cfg := config.EtcdConfig{}
 	ctx := context.Background()
 	etcd, err := NewEtcdHandler(ctx, cfg)
 
