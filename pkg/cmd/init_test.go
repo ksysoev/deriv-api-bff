@@ -91,12 +91,10 @@ func TestServerCommand(t *testing.T) {
 }
 
 func TestConfigCommand(t *testing.T) {
-	configPath := createTempConfigFile(t, validConfig)
-
 	arg := &args{
 		build:      "test-build",
 		version:    "test-version",
-		ConfigPath: configPath,
+		ConfigPath: "configPath",
 		LogLevel:   "debug",
 		TextFormat: true,
 	}

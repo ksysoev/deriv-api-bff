@@ -1,53 +1,31 @@
 package repo
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"sync"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/config"
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/composer"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handler"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/processor"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/validator"
+	"github.com/mitchellh/mapstructure"
 )
 
-type CallsConfig struct {
-	Calls []CallConfig `mapstructure:"calls" yaml:"calls"`
-}
-
-type EtcdConfig struct {
-	Servers            []string `mapstructure:"servers" yaml:"servers"`
-	DialTimeoutSeconds int      `mapstructure:"dialTimeoutSeconds" yaml:"dialTimeoutSeconds"`
-}
-
-type CallConfig struct {
-	Method  string           `mapstructure:"method" yaml:"method"`
-	Params  validator.Config `mapstructure:"params" yaml:"params"`
-	Backend []*BackendConfig `mapstructure:"backend" yaml:"backend"`
-}
-
-type BackendConfig struct {
-	Name            string            `mapstructure:"name" yaml:"name"`
-	FieldsMap       map[string]string `mapstructure:"fields_map" yaml:"fields_map"`
-	ResponseBody    string            `mapstructure:"response_body" yaml:"response_body"`
-	RequestTemplate map[string]any    `mapstructure:"request_template" yaml:"request_template"`
-	Method          string            `mapstructure:"method" yaml:"method"`
-	URLTemplate     string            `mapstructure:"url_template" yaml:"url_template"`
-	DependsOn       []string          `mapstructure:"depends_on" yaml:"depends_on"`
-	Allow           []string          `mapstructure:"allow" yaml:"allow"`
-}
-
 type CallsRepository struct {
-	mu    *sync.Mutex
-	calls map[string]core.Handler
+	mu            *sync.Mutex
+	calls         map[string]core.Handler
+	onUpdateEvent *config.Event[any]
 }
 
 // NewCallsRepository creates a new instance of CallsRepository based on the provided configuration.
 // It takes cfg of type *CallsConfig which contains the configuration for the calls.
 // It returns a pointer to CallsRepository and an error if the repository creation fails.
 // It returns an error if the validator creation fails or if there is an error parsing the request template.
-func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
+func NewCallsRepository(cfg *config.CallsConfig, event *config.Event[any]) (*CallsRepository, error) {
 	handlerMap := make(map[string]core.Handler)
 
 	for _, call := range cfg.Calls {
@@ -58,14 +36,26 @@ func NewCallsRepository(cfg *CallsConfig) (*CallsRepository, error) {
 	}
 
 	r := &CallsRepository{
-		calls: handlerMap,
-		mu:    &sync.Mutex{},
+		calls:         handlerMap,
+		mu:            &sync.Mutex{},
+		onUpdateEvent: event,
 	}
+
+	r.onUpdateEvent.RegisterHandler(func(_ context.Context, cc any) {
+		ccMap, ok := cc.(map[string]any)
+
+		if !ok {
+			slog.Error("Error while trying to update calls config: incoming config is not of type `map[any]`")
+			return
+		}
+
+		r.UpdateCalls(ccMap)
+	})
 
 	return r, nil
 }
 
-func createHandler(call CallConfig, handlerMap map[string]core.Handler) error {
+func createHandler(call config.CallConfig, handlerMap map[string]core.Handler) error {
 	valid, err := validator.New(call.Params)
 	if err != nil {
 		return fmt.Errorf("failed to create validator: %w", err)
@@ -130,8 +120,16 @@ func (r *CallsRepository) GetCall(method string) core.Handler {
 // It takes a single parameter that is pointer to the new calls config.
 // The current implementation will completely overwrite the old config with new config.
 // It returns an error to if any while building the handlers, otherwise it returns nil.
-func (r *CallsRepository) UpdateCalls(calls *CallsConfig) {
+func (r *CallsRepository) UpdateCalls(callsMap map[string]any) {
 	newHandlerMap := make(map[string]core.Handler)
+	calls := &config.CallsConfig{}
+
+	err := mapstructure.Decode(&callsMap, calls)
+
+	if err != nil {
+		slog.Warn(fmt.Sprintf("Error while decoding calls config map: %v", err))
+		return
+	}
 
 	for _, call := range calls.Calls {
 		err := createHandler(call, newHandlerMap)
@@ -150,11 +148,11 @@ func (r *CallsRepository) UpdateCalls(calls *CallsConfig) {
 // It takes a slice of BackendConfig as input and returns a sorted slice of BackendConfig and an error.
 // It returns an error if a circular dependency is detected among the BackendConfig elements.
 // Each BackendConfig element must have a unique ResponseBody and a list of dependencies specified in DependsOn.
-func topSortDFS(be []*BackendConfig) ([]*BackendConfig, error) {
+func topSortDFS(be []*config.BackendConfig) ([]*config.BackendConfig, error) {
 	graph := createDepGraph(be)
 	visited := make(map[string]bool, len(be))
 	recStack := make(map[string]bool, len(be))
-	sorted := make([]*BackendConfig, 0, len(be))
+	sorted := make([]*config.BackendConfig, 0, len(be))
 
 	indexMap := make(map[string]int, len(be))
 	for i, b := range be {
@@ -203,7 +201,7 @@ func topSortDFS(be []*BackendConfig) ([]*BackendConfig, error) {
 // createDepGraph constructs a dependency graph from a slice of BackendConfig.
 // It takes a single parameter be which is a slice of BackendConfig.
 // It returns a map where the keys are response bodies and the values are slices of dependencies.
-func createDepGraph(be []*BackendConfig) map[string][]string {
+func createDepGraph(be []*config.BackendConfig) map[string][]string {
 	graph := make(map[string][]string)
 
 	for _, b := range be {

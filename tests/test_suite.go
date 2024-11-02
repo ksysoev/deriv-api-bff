@@ -13,7 +13,7 @@ import (
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/ksysoev/deriv-api-bff/pkg/api"
-	"github.com/ksysoev/deriv-api-bff/pkg/cmd"
+	"github.com/ksysoev/deriv-api-bff/pkg/config"
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/prov/deriv"
 	httpprov "github.com/ksysoev/deriv-api-bff/pkg/prov/http"
@@ -110,7 +110,7 @@ func (s *testSuite) createTestWSEchoServer() http.HandlerFunc {
 // It returns a string representing the URL of the started server, a function to close the server, and an error if the server fails to start.
 // It returns an error if the calls repository cannot be created or if the server does not start within the specified timeout.
 func (s *testSuite) startAppWithConfig(cfgYAML string) (url string, err error) {
-	var cfg cmd.Config
+	var cfg config.Config
 
 	if err := yaml.Unmarshal([]byte(cfgYAML), &cfg); err != nil {
 		return "", fmt.Errorf("failed to unmarshal config: %w", err)
@@ -121,8 +121,9 @@ func (s *testSuite) startAppWithConfig(cfgYAML string) (url string, err error) {
 	derivAPI := deriv.NewService(&cfg.Deriv)
 
 	connRegistry := repo.NewConnectionRegistry()
+	event := config.NewEvent[any]()
 
-	calls, err := repo.NewCallsRepository(&cfg.API)
+	calls, err := repo.NewCallsRepository(&cfg.API, event)
 	if err != nil {
 		return "", fmt.Errorf("failed to create calls repo: %w", err)
 	}
@@ -205,7 +206,7 @@ func (s *testSuite) testRequest(url string, req, expectedResp any) {
 // It takes cfg of type *cmd.Config.
 // It does not return any values.
 // It logs an error message and fails the test if marshalling the configuration fails.
-func (s *testSuite) DebugConfig(cfg *cmd.Config) {
+func (s *testSuite) DebugConfig(cfg *config.Config) {
 	d, err := yaml.Marshal(cfg)
 	if err != nil {
 		s.T().Fatalf("failed to marshal config: %v", err)

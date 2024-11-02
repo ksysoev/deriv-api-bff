@@ -43,6 +43,7 @@ func NewRedMetricsMiddleware(scope string) func(next wasabi.RequestHandler) wasa
 					attribute.String("error", isError),
 				),
 			)
+
 			return err
 		})
 	}

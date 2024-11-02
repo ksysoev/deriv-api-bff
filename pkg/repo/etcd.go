@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/config"
 	"go.etcd.io/etcd/clientv3"
 )
 
@@ -49,7 +50,7 @@ func (etcdHandler *EtcdHandler) Close() error {
 	return etcdHandler.cli.Close()
 }
 
-func NewEtcdHandler(ctx context.Context, etcdConfig EtcdConfig) (Etcd, error) {
+func NewEtcdHandler(ctx context.Context, etcdConfig config.EtcdConfig) (Etcd, error) {
 	conf := clientv3.Config{
 		Endpoints:   etcdConfig.Servers,
 		DialTimeout: time.Duration(etcdConfig.DialTimeoutSeconds * int(time.Second)),
