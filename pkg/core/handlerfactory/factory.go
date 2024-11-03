@@ -22,6 +22,10 @@ func New(cfg Config) (string, core.Handler, error) {
 		return "", nil, fmt.Errorf("failed to create validator: %w", err)
 	}
 
+	if cfg.Method == "" {
+		return "", nil, fmt.Errorf("method must be provided")
+	}
+
 	for _, req := range cfg.Backend {
 		if req.Name == "" {
 			req.Name = req.ResponseBody

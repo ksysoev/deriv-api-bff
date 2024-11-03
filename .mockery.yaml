@@ -27,3 +27,8 @@ packages:
     interfaces:
       DerivAPI:
       HTTPAPI:
+  github.com/ksysoev/deriv-api-bff/pkg/config:
+    interfaces:
+      BFFService:
+      LocalSource:
+      RemoteSource:
