@@ -12,38 +12,47 @@ type BFFService interface {
 	UpdateHandlers(handlers map[string]core.Handler)
 }
 
-type SourceConfig struct {
-	Etcd EtcdConfig `mapstructure:"etcd"`
-	Path string     `mapstructure:"path"`
+type LocalSource interface {
+	LoadConfig(ctx context.Context) ([]handlerfactory.Config, error)
+}
+
+type RemoteSource interface {
+	LoadConfig(ctx context.Context) ([]handlerfactory.Config, error)
+	PutConfig(ctx context.Context, cfg []handlerfactory.Config) error
 }
 
 type Service struct {
-	bffService   BFFService
-	localSource  *FileSource
-	remoteSource *EtcdSource
-	curCfg       []handlerfactory.Config
+	bff    BFFService
+	local  LocalSource
+	remote RemoteSource
+	curCfg []handlerfactory.Config
 }
 
-func New(cfg SourceConfig, bffService BFFService) (*Service, error) {
-	if cfg.Path == "" && cfg.Etcd.Servers == "" {
-		return nil, fmt.Errorf("no configuration source provided")
-	}
+type Option func(*Service)
 
+func WithLocalSource(local LocalSource) Option {
+	return func(s *Service) {
+		s.local = local
+	}
+}
+
+func WithRemoteSource(remote RemoteSource) Option {
+	return func(s *Service) {
+		s.remote = remote
+	}
+}
+
+func New(bff BFFService, opts ...Option) (*Service, error) {
 	svc := &Service{
-		bffService: bffService,
+		bff: bff,
 	}
 
-	if cfg.Path != "" {
-		svc.localSource = NewFileSource(cfg.Path)
+	for _, opt := range opts {
+		opt(svc)
 	}
 
-	if cfg.Etcd.Servers != "" {
-		var err error
-
-		svc.remoteSource, err = NewEtcdSource(cfg.Etcd)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create remote source: %w", err)
-		}
+	if svc.local == nil && svc.remote == nil {
+		return nil, fmt.Errorf("local or remote source is required")
 	}
 
 	return svc, nil
@@ -55,10 +64,10 @@ func (c *Service) LoadHandlers(ctx context.Context) error {
 		err error
 	)
 
-	if c.localSource != nil {
-		cfg, err = c.localSource.LoadConfig(ctx)
-	} else if c.remoteSource != nil {
-		cfg, err = c.remoteSource.LoadConfig(ctx)
+	if c.local != nil {
+		cfg, err = c.local.LoadConfig(ctx)
+	} else if c.remote != nil {
+		cfg, err = c.remote.LoadConfig(ctx)
 	}
 
 	if err != nil {
@@ -72,13 +81,13 @@ func (c *Service) LoadHandlers(ctx context.Context) error {
 
 	c.curCfg = cfg
 
-	c.bffService.UpdateHandlers(handlers)
+	c.bff.UpdateHandlers(handlers)
 
 	return nil
 }
 
 func (c *Service) PutConfig(ctx context.Context) error {
-	if c.remoteSource == nil || c.localSource == nil {
+	if c.remote == nil || c.local == nil {
 		return fmt.Errorf("local and remote sources are required")
 	}
 
@@ -88,7 +97,7 @@ func (c *Service) PutConfig(ctx context.Context) error {
 		}
 	}
 
-	return c.remoteSource.PutConfig(ctx, c.curCfg)
+	return c.remote.PutConfig(ctx, c.curCfg)
 }
 
 func createHandlers(cfg []handlerfactory.Config) (map[string]core.Handler, error) {

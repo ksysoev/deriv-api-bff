@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/api"
-	"github.com/ksysoev/deriv-api-bff/pkg/config"
+	"github.com/ksysoev/deriv-api-bff/pkg/config/source"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +16,7 @@ func TestRunServer(t *testing.T) {
 		Server: api.Config{
 			Listen: ":0",
 		},
-		APISource: config.SourceConfig{
+		APISource: source.Config{
 			Path: callsPath,
 		},
 	}

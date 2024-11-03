@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ksysoev/deriv-api-bff/pkg/config"
+	"github.com/ksysoev/deriv-api-bff/pkg/config/source"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -77,13 +77,13 @@ func TestInitConfig_Missing(t *testing.T) {
 	assert.Nil(t, cfg)
 }
 
-func TestUploadConfig_Success(t *testing.T) {
+func TestUploadConfig(t *testing.T) {
 	ctx := context.Background()
 
 	path := createTempConfigFile(t, callsConfig)
 
 	cfg := &Config{
-		APISource: config.SourceConfig{
+		APISource: source.Config{
 			Path: path,
 		},
 	}
@@ -96,18 +96,18 @@ func TestUploadConfig_Success(t *testing.T) {
 func TestUploadConfig_FailCreateService(t *testing.T) {
 	ctx := context.Background()
 	cfg := &Config{
-		APISource: config.SourceConfig{},
+		APISource: source.Config{},
 	}
 
 	err := uploadConfig(ctx, cfg)
 	assert.Error(t, err)
-	assert.Equal(t, "failed to create config service: no configuration source provided", err.Error())
+	assert.Equal(t, "failed to create config service: local or remote source is required", err.Error())
 }
 
 func TestUploadConfig_FailLoadHandlers(t *testing.T) {
 	ctx := context.Background()
 	cfg := &Config{
-		APISource: config.SourceConfig{
+		APISource: source.Config{
 			Path: "invalid_path",
 		},
 	}

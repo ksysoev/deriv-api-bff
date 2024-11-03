@@ -8,6 +8,7 @@ import (
 
 	"github.com/ksysoev/deriv-api-bff/pkg/api"
 	"github.com/ksysoev/deriv-api-bff/pkg/config"
+	"github.com/ksysoev/deriv-api-bff/pkg/config/source"
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/prov/deriv"
 	"github.com/ksysoev/deriv-api-bff/pkg/repo"
@@ -15,10 +16,10 @@ import (
 )
 
 type Config struct {
-	Otel      OtelConfig          `mapstructure:"otel"`
-	APISource config.SourceConfig `mapstructure:"api_source"`
-	Deriv     deriv.Config        `mapstructure:"deriv"`
-	Server    api.Config          `mapstructure:"server"`
+	Otel      OtelConfig    `mapstructure:"otel"`
+	APISource source.Config `mapstructure:"api_source"`
+	Deriv     deriv.Config  `mapstructure:"deriv"`
+	Server    api.Config    `mapstructure:"server"`
 }
 
 // initConfig initializes the configuration by reading from the specified config file.
@@ -52,7 +53,12 @@ func uploadConfig(ctx context.Context, cfg *Config) error {
 	calls := repo.NewCallsRepository()
 	requestHandler := core.NewService(calls, nil, nil)
 
-	svc, err := config.New(cfg.APISource, requestHandler)
+	sourceOpts, err := source.CreateOptions(&cfg.APISource)
+	if err != nil {
+		return fmt.Errorf("failed to create config source: %w", err)
+	}
+
+	svc, err := config.New(requestHandler, sourceOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to create config service: %w", err)
 	}
