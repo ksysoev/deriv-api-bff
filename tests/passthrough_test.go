@@ -1,7 +1,7 @@
 package tests
 
 func (s *testSuite) TestPassthrough() {
-	url, err := s.startAppWithConfig("server:\n  listen: localhost:0\n")
+	url, err := s.startAppWithConfig("")
 	if err != nil {
 		s.T().Fatal("failed to start app with config", err)
 	}

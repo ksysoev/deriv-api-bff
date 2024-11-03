@@ -13,8 +13,9 @@ import (
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/ksysoev/deriv-api-bff/pkg/api"
-	"github.com/ksysoev/deriv-api-bff/pkg/config"
+	"github.com/ksysoev/deriv-api-bff/pkg/cmd"
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/handlerfactory"
 	"github.com/ksysoev/deriv-api-bff/pkg/prov/deriv"
 	httpprov "github.com/ksysoev/deriv-api-bff/pkg/prov/http"
 	"github.com/ksysoev/deriv-api-bff/pkg/prov/router"
@@ -110,20 +111,20 @@ func (s *testSuite) createTestWSEchoServer() http.HandlerFunc {
 // It returns a string representing the URL of the started server, a function to close the server, and an error if the server fails to start.
 // It returns an error if the calls repository cannot be created or if the server does not start within the specified timeout.
 func (s *testSuite) startAppWithConfig(cfgYAML string) (url string, err error) {
-	var cfg config.Config
+	var cfg []handlerfactory.Config
 
-	if err := yaml.Unmarshal([]byte(cfgYAML), &cfg); err != nil {
+	err = yaml.Unmarshal([]byte(cfgYAML), &cfg)
+	if err != nil {
 		return "", fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	cfg.Deriv.Endpoint = s.echoWSURL()
+	handlers, err := createHandlers(cfg)
 
-	derivAPI := deriv.NewService(&cfg.Deriv)
+	derivAPI := deriv.NewService(&deriv.Config{Endpoint: s.echoWSURL()})
 
 	connRegistry := repo.NewConnectionRegistry()
-	event := config.NewEvent[any]()
 
-	calls, err := repo.NewCallsRepository(&cfg.API, event)
+	calls := repo.NewCallsRepository()
 	if err != nil {
 		return "", fmt.Errorf("failed to create calls repo: %w", err)
 	}
@@ -131,7 +132,9 @@ func (s *testSuite) startAppWithConfig(cfgYAML string) (url string, err error) {
 	beRouter := router.New(derivAPI, httpprov.NewService())
 	requestHandler := core.NewService(calls, beRouter, connRegistry)
 
-	server := api.NewSevice(&cfg.Server, requestHandler)
+	requestHandler.UpdateHandlers(handlers)
+
+	server := api.NewSevice(&api.Config{Listen: ":0"}, requestHandler)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -206,7 +209,7 @@ func (s *testSuite) testRequest(url string, req, expectedResp any) {
 // It takes cfg of type *cmd.Config.
 // It does not return any values.
 // It logs an error message and fails the test if marshalling the configuration fails.
-func (s *testSuite) DebugConfig(cfg *config.Config) {
+func (s *testSuite) DebugConfig(cfg *cmd.Config) {
 	d, err := yaml.Marshal(cfg)
 	if err != nil {
 		s.T().Fatalf("failed to marshal config: %v", err)
@@ -219,4 +222,23 @@ func (s *testSuite) addHTTPContent(path, content string) {
 	s.mux.HandleFunc(path, func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(content))
 	})
+}
+
+func createHandlers(cfg []handlerfactory.Config) (map[string]core.Handler, error) {
+	handlers := make(map[string]core.Handler, len(cfg))
+
+	for _, c := range cfg {
+		name, handler, err := handlerfactory.New(c)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create handler: %w", err)
+		}
+
+		if _, ok := handlers[name]; ok {
+			return nil, fmt.Errorf("duplicate handler name: %s", name)
+		}
+
+		handlers[name] = handler
+	}
+
+	return handlers, nil
 }
