@@ -7,8 +7,9 @@ import (
 	"strings"
 	"time"
 
+	clientv3 "go.etcd.io/etcd/client/v3"
+
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handlerfactory"
-	"go.etcd.io/etcd/clientv3"
 )
 
 const defaultTimeoutSeconds = 5
