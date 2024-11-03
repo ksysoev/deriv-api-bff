@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -14,15 +13,10 @@ import (
 )
 
 type Config struct {
-	Otel      OtelConfig      `mapstructure:"otel"`
-	Deriv     deriv.Config    `mapstructure:"deriv"`
-	Server    api.Config      `mapstructure:"server"`
-	APISource APISourceConfig `mapstructure:"api_source"`
-}
-
-type APISourceConfig struct {
-	Etcd config.EtcdConfig `mapstructure:"etcd"`
-	Path string            `mapstructure:"path"`
+	Otel      OtelConfig          `mapstructure:"otel"`
+	Deriv     deriv.Config        `mapstructure:"deriv"`
+	Server    api.Config          `mapstructure:"server"`
+	APISource config.SourceConfig `mapstructure:"api_source"`
 }
 
 // initConfig initializes the configuration by reading from the specified config file.
@@ -38,15 +32,15 @@ func initConfig(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("failed to read config: %w", err)
 	}
 
-	var cfg *Config
+	var cfg Config
 
-	if err := viper.Unmarshal(cfg); err != nil {
+	if err := viper.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
 	slog.Debug("Config loaded", slog.Any("config", cfg))
 
-	return cfg, nil
+	return &cfg, nil
 }
 
 // putCallConfigToEtcd loads the calls config from a specific config file and pushes it to Etcd
@@ -60,19 +54,19 @@ func putCallConfigToEtcd(etcdHandler repo.Etcd, configPath string) error {
 	// 	return err
 	// }
 	//TODO: Implement the function
-	callConfig := &config.CallConfig{}
+	// callConfig := &config.CallConfig{}
 
-	callConfigJSON, err := json.Marshal(callConfig)
+	// callConfigJSON, err := json.Marshal(callConfig)
 
-	if err != nil {
-		return err
-	}
+	// if err != nil {
+	// 	return err
+	// }
 
-	err = etcdHandler.Put("CallConfig", string(callConfigJSON))
+	// err = etcdHandler.Put("CallConfig", string(callConfigJSON))
 
-	if err != nil {
-		return err
-	}
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }

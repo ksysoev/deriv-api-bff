@@ -2,86 +2,99 @@ package config
 
 import (
 	"fmt"
-	"log/slog"
+	"os"
+	"path/filepath"
 	"sync"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handlerfactory"
-	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 type FileSource struct {
-	mu            sync.RWMutex
-	reader        *viper.Viper
-	currentConfig []handlerfactory.Config
-	path          string
-	onChange      func([]handlerfactory.Config)
+	mu   sync.RWMutex
+	path string
 }
 
-type configUpdates struct {
-	Value any
-	Found bool
-}
-
-func NewFileSource(path string) (*FileSource, error) {
-	reader := viper.New()
-	reader.SetConfigFile(path)
-
+func NewFileSource(path string) *FileSource {
 	return &FileSource{
-		reader: reader,
-	}, nil
-}
-
-func (fs *FileSource) WatchConfig(onChange func([]handlerfactory.Config)) error {
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
-
-	if fs.onChange != nil {
-		return fmt.Errorf("config watcher already set")
+		path: path,
 	}
-
-	fs.onChange = onChange
-
-	fs.reader.WatchConfig()
-	fs.reader.OnConfigChange(fs.onFileChange)
-
-	return nil
-}
-
-func (fs *FileSource) GetConfig() []handlerfactory.Config {
-	fs.mu.RLock()
-	defer fs.mu.RUnlock()
-
-	return fs.currentConfig
 }
 
 func (fs *FileSource) LoadConfig() ([]handlerfactory.Config, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	if err := fs.reader.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("failed to read config: %w", err)
+	fi, err := os.Stat(fs.path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat file: %w", err)
 	}
 
 	var cfg []handlerfactory.Config
 
-	if err := viper.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	switch mode := fi.Mode(); {
+	case mode.IsDir():
+		cfg, err = readDir(fs.path)
+	case mode.IsRegular():
+		cfg, err = readFile(fs.path)
+	default:
+		return nil, fmt.Errorf("unsupported file type")
 	}
 
-	fs.currentConfig = cfg
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config: %w", err)
+	}
 
 	return cfg, nil
 }
 
-func (fs *FileSource) onFileChange(in fsnotify.Event) {
-	slog.Debug(fmt.Sprintf("config file changed at %s", in.Name))
-
-	cfg, err := fs.LoadConfig()
+func readDir(path string) ([]handlerfactory.Config, error) {
+	files, err := os.ReadDir(path)
 	if err != nil {
-		slog.Error("Failed to load config on change", slog.Any("error", err))
-		return
+		return nil, fmt.Errorf("failed to read directory: %w", err)
 	}
 
-	fs.onChange(cfg)
+	var data []handlerfactory.Config
+	for _, file := range files {
+		// TODO: Shall we do recursive reading?
+		if file.IsDir() {
+			continue
+		}
+
+		if !isYamlFile(file.Name()) {
+			continue
+		}
+
+		cfg, err := readFile(file.Name())
+		if err != nil {
+			return nil, fmt.Errorf("failed to read file: %w", err)
+		}
+
+		data = append(data, cfg...)
+	}
+
+	return data, nil
+}
+
+func readFile(path string) ([]handlerfactory.Config, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file: %w", err)
+	}
+
+	defer file.Close()
+
+	y := yaml.NewDecoder(file)
+
+	var data []handlerfactory.Config
+	err = y.Decode(&data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode file: %w", err)
+	}
+
+	return data, nil
+}
+
+func isYamlFile(path string) bool {
+	return filepath.Ext(path) == ".yaml" || filepath.Ext(path) == ".yml"
 }

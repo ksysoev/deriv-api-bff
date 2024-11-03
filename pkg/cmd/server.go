@@ -19,20 +19,20 @@ import (
 func runServer(ctx context.Context, cfg *Config) error {
 	derivAPI := deriv.NewService(&cfg.Deriv)
 	connRegistry := repo.NewConnectionRegistry()
-	callsRepoConfigWatcher := config.NewEvent[any]()
-
-	calls, err := repo.NewCallsRepository(&cfg.API, callsRepoConfigWatcher)
-	if err != nil {
-		return fmt.Errorf("failed to create calls repo: %w", err)
-	}
-
-	err = cfg.WatchConfig(callsRepoConfigWatcher, "api.calls")
-	if err != nil {
-		return fmt.Errorf("failed to watch config for calls repo: %w", err)
-	}
+	calls := repo.NewCallsRepository()
 
 	beRouter := router.New(derivAPI, http.NewService())
 	requestHandler := core.NewService(calls, beRouter, connRegistry)
+
+	cfgSvc, err := config.New(cfg.APISource, requestHandler)
+
+	if err != nil {
+		return fmt.Errorf("failed to create config service: %w", err)
+	}
+
+	if err := cfgSvc.LoadHandlers(); err != nil {
+		return fmt.Errorf("failed to load handlers: %w", err)
+	}
 
 	server := api.NewSevice(&cfg.Server, requestHandler)
 
