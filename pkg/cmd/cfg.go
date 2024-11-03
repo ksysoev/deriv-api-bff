@@ -45,13 +45,11 @@ func initConfig(configPath string) (*Config, error) {
 	return &cfg, nil
 }
 
-// putCallConfigToEtcd loads the calls config from a specific config file and pushes it to Etcd
-// The function also accepts etcd settings like host and dial timeout.
-// The function will return the Etcd key it had used to put the CallConfig
-// The function may return empty key and an error in case of any errors.
-func putConfig(ctx context.Context, cfg *Config) error {
+// uploadConfig uploads the configuration using the provided context and configuration object.
+// It takes ctx of type context.Context and cfg of type *Config.
+// It returns an error if the configuration service creation fails, handlers loading fails, or pushing the configuration fails.
+func uploadConfig(ctx context.Context, cfg *Config) error {
 	calls := repo.NewCallsRepository()
-
 	requestHandler := core.NewService(calls, nil, nil)
 
 	svc, err := config.New(cfg.APISource, requestHandler)
@@ -63,9 +61,5 @@ func putConfig(ctx context.Context, cfg *Config) error {
 		return fmt.Errorf("failed to load handlers: %w", err)
 	}
 
-	if err := svc.PutConfig(ctx); err != nil {
-		return fmt.Errorf("failed to push config: %w", err)
-	}
-
-	return nil
+	return svc.PutConfig(ctx)
 }

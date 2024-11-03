@@ -121,7 +121,7 @@ func ReadConfigCommand(arg *args) *cobra.Command {
 				return err
 			}
 
-			return putConfig(cmd.Context(), cfg)
+			return uploadConfig(cmd.Context(), cfg)
 		},
 	}
 }
