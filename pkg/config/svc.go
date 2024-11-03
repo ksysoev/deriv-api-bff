@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
@@ -16,15 +17,11 @@ type SourceConfig struct {
 	Path string     `mapstructure:"path"`
 }
 
-type EtcdConfig struct {
-	Servers            []string `mapstructure:"servers" yaml:"servers"`
-	DialTimeoutSeconds int      `mapstructure:"dialTimeoutSeconds" yaml:"dialTimeoutSeconds"`
-}
-
 type ConfigService struct {
-	bffService BFFService
-	sources    SourceConfig
-	curCfg     []handlerfactory.Config
+	bffService   BFFService
+	localSource  *FileSource
+	remoteSource *EtcdSource
+	curCfg       []handlerfactory.Config
 }
 
 func New(cfg SourceConfig, bffService BFFService) (*ConfigService, error) {
@@ -32,32 +29,67 @@ func New(cfg SourceConfig, bffService BFFService) (*ConfigService, error) {
 		return nil, fmt.Errorf("no configuration source provided")
 	}
 
-	return &ConfigService{
-		sources:    cfg,
+	svc := &ConfigService{
 		bffService: bffService,
-	}, nil
-}
-
-func (c *ConfigService) LoadHandlers() error {
-	if c.sources.Path != "" {
-		fs := NewFileSource(c.sources.Path)
-		cfg, err := fs.LoadConfig()
-
-		if err != nil {
-			return fmt.Errorf("failed to load config from file: %w", err)
-		}
-
-		handlers, err := createHandlers(cfg)
-		if err != nil {
-			return fmt.Errorf("failed to create handlers: %w", err)
-		}
-
-		c.curCfg = cfg
-
-		c.bffService.UpdateHandlers(handlers)
 	}
 
+	if cfg.Path != "" {
+		svc.localSource = NewFileSource(cfg.Path)
+	}
+
+	if cfg.Etcd.Servers != "" {
+		var err error
+
+		svc.remoteSource, err = NewEtcdSource(cfg.Etcd)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create remote source: %w", err)
+		}
+	}
+
+	return svc, nil
+}
+
+func (c *ConfigService) LoadHandlers(ctx context.Context) error {
+	var (
+		cfg []handlerfactory.Config
+		err error
+	)
+
+	if c.localSource != nil {
+		cfg, err = c.localSource.LoadConfig(ctx)
+	} else if c.remoteSource != nil {
+		cfg, err = c.remoteSource.LoadConfig(ctx)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	handlers, err := createHandlers(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create handlers: %w", err)
+	}
+
+	c.curCfg = cfg
+
+	c.bffService.UpdateHandlers(handlers)
+
 	return nil
+}
+
+func (c *ConfigService) PutConfig(ctx context.Context) error {
+	if c.remoteSource == nil || c.localSource == nil {
+		return fmt.Errorf("local and remote sources are required")
+	}
+
+	if c.curCfg == nil {
+		if err := c.LoadHandlers(ctx); err != nil {
+			return fmt.Errorf("failed to load handlers: %w", err)
+		}
+	}
+
+	return c.remoteSource.PutConfig(ctx, c.curCfg)
+
 }
 
 func createHandlers(cfg []handlerfactory.Config) (map[string]core.Handler, error) {

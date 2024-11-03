@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -21,7 +22,7 @@ func NewFileSource(path string) *FileSource {
 	}
 }
 
-func (fs *FileSource) LoadConfig() ([]handlerfactory.Config, error) {
+func (fs *FileSource) LoadConfig(_ context.Context) ([]handlerfactory.Config, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
