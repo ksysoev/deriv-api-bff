@@ -30,7 +30,7 @@ func runServer(ctx context.Context, cfg *Config) error {
 		return fmt.Errorf("failed to create config service: %w", err)
 	}
 
-	if err := cfgSvc.LoadHandlers(); err != nil {
+	if err := cfgSvc.LoadHandlers(ctx); err != nil {
 		return fmt.Errorf("failed to load handlers: %w", err)
 	}
 

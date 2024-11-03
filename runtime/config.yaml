@@ -10,7 +10,7 @@ otel:
     path: "/metrics"
 api_source:
   etcd:
-    servers: ["localhost:2379"]
-    dialTimeoutSeconds: 5
+    servers: "localhost:2379"
+    prefix: "api::"
   path: "./runtime/calls.yaml"
    

@@ -12,11 +12,11 @@ import (
 	"go.etcd.io/etcd/clientv3"
 )
 
-const defaultTimeoutSeconds = 5
+const defaultTimeoutSeconds = 1
 
 type EtcdConfig struct {
-	KeyPrefix string `mapstructure:"key_prefix"`
-	Servers   string `mapstructure:"servers"`
+	Prefix  string `mapstructure:"prefix"`
+	Servers string `mapstructure:"servers"`
 }
 
 type EtcdSource struct {
@@ -32,7 +32,7 @@ func NewEtcdSource(cfg EtcdConfig) (*EtcdSource, error) {
 		return nil, fmt.Errorf("no etcd servers provided")
 	}
 
-	if cfg.KeyPrefix == "" {
+	if cfg.Prefix == "" {
 		return nil, fmt.Errorf("no etcd key prefix provided")
 	}
 
@@ -46,12 +46,15 @@ func NewEtcdSource(cfg EtcdConfig) (*EtcdSource, error) {
 	}
 
 	return &EtcdSource{
-		prefix: cfg.KeyPrefix,
+		prefix: cfg.Prefix,
 		cli:    cli,
 	}, nil
 }
 
 func (es *EtcdSource) LoadConfig(ctx context.Context) ([]handlerfactory.Config, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeoutSeconds*time.Second)
+	defer cancel()
+
 	data, err := es.cli.Get(ctx, es.prefix, clientv3.WithPrefix())
 
 	if err != nil {
@@ -88,7 +91,10 @@ func (es *EtcdSource) PutConfig(ctx context.Context, cfg []handlerfactory.Config
 			return fmt.Errorf("failed to marshal config: %w", err)
 		}
 
+		ctx, cancel := context.WithTimeout(ctx, defaultTimeoutSeconds*time.Second)
 		_, err = es.cli.Put(ctx, es.prefix+c.Method, string(data))
+
+		cancel()
 
 		if err != nil {
 			return fmt.Errorf("failed to put config: %w", err)

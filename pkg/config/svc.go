@@ -25,7 +25,7 @@ type ConfigService struct {
 }
 
 func New(cfg SourceConfig, bffService BFFService) (*ConfigService, error) {
-	if cfg.Path == "" && cfg.Etcd.Servers == nil {
+	if cfg.Path == "" && cfg.Etcd.Servers == "" {
 		return nil, fmt.Errorf("no configuration source provided")
 	}
 
@@ -81,12 +81,14 @@ func (c *ConfigService) PutConfig(ctx context.Context) error {
 	if c.remoteSource == nil || c.localSource == nil {
 		return fmt.Errorf("local and remote sources are required")
 	}
-
+	fmt.Println("Loading handlers")
 	if c.curCfg == nil {
 		if err := c.LoadHandlers(ctx); err != nil {
 			return fmt.Errorf("failed to load handlers: %w", err)
 		}
 	}
+
+	fmt.Println("Putting config")
 
 	return c.remoteSource.PutConfig(ctx, c.curCfg)
 

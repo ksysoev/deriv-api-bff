@@ -1,12 +1,14 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/api"
 	"github.com/ksysoev/deriv-api-bff/pkg/config"
+	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/prov/deriv"
 	"github.com/ksysoev/deriv-api-bff/pkg/repo"
 	"github.com/spf13/viper"
@@ -47,26 +49,23 @@ func initConfig(configPath string) (*Config, error) {
 // The function also accepts etcd settings like host and dial timeout.
 // The function will return the Etcd key it had used to put the CallConfig
 // The function may return empty key and an error in case of any errors.
-func putCallConfigToEtcd(etcdHandler repo.Etcd, configPath string) error {
-	// cfg, err := initConfig(configPath)
+func putConfig(ctx context.Context, cfg *Config) error {
+	calls := repo.NewCallsRepository()
 
-	// if err != nil {
-	// 	return err
-	// }
-	//TODO: Implement the function
-	// callConfig := &config.CallConfig{}
+	requestHandler := core.NewService(calls, nil, nil)
 
-	// callConfigJSON, err := json.Marshal(callConfig)
+	svc, err := config.New(cfg.APISource, requestHandler)
+	if err != nil {
+		return fmt.Errorf("failed to create config service: %w", err)
+	}
 
-	// if err != nil {
-	// 	return err
-	// }
+	if err := svc.LoadHandlers(ctx); err != nil {
+		return fmt.Errorf("failed to load handlers: %w", err)
+	}
 
-	// err = etcdHandler.Put("CallConfig", string(callConfigJSON))
-
-	// if err != nil {
-	// 	return err
-	// }
+	if err := svc.PutConfig(ctx); err != nil {
+		return fmt.Errorf("failed to push config: %w", err)
+	}
 
 	return nil
 }

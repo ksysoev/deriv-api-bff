@@ -115,21 +115,13 @@ func ReadConfigCommand(arg *args) *cobra.Command {
 
 			slog.Info("Trying to load config...", slog.String("version", arg.version), slog.String("build", arg.build))
 
-			return nil
+			cfg, err := initConfig(arg.ConfigPath)
 
-			// cfg, err := initConfig(arg.ConfigPath)
+			if err != nil {
+				return err
+			}
 
-			// if err != nil {
-			// 	return err
-			// }
-
-			// etcd, err := repo.NewEtcdHandler(cmd.Context(), cfg.Etcd)
-
-			// if err != nil {
-			// 	return err
-			// }
-
-			// return putCallConfigToEtcd(etcd, arg.ConfigPath)
+			return putConfig(cmd.Context(), cfg)
 		},
 	}
 }
