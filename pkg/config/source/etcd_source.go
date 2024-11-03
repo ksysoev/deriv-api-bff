@@ -50,8 +50,8 @@ func NewEtcdSource(cfg EtcdConfig) (*EtcdSource, error) {
 }
 
 func (es *EtcdSource) LoadConfig(ctx context.Context) ([]handlerfactory.Config, error) {
-	// ctx, cancel := context.WithTimeout(ctx, defaultTimeoutSeconds*time.Second)
-	// defer cancel()
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeoutSeconds*time.Second)
+	defer cancel()
 
 	data, err := es.cli.Get(ctx, es.prefix, clientv3.WithPrefix())
 
