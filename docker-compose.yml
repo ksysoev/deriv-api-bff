@@ -23,6 +23,7 @@ services:
       ]
     depends_on:
       - nginx
+      - etcd
   nginx:
     image: nginx:alpine
     ports:
