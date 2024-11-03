@@ -19,6 +19,7 @@ type Waiter func() (reqID string, respChan <-chan []byte)
 
 type CallsRepo interface {
 	GetCall(method string) Handler
+	UpdateCalls(map[string]Handler)
 }
 
 type Handler interface {
@@ -88,4 +89,8 @@ func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *request.Requ
 	}
 
 	return clientConn.Send(wasabi.MsgTypeText, data)
+}
+
+func (s *Service) UpdateHandlers(handlers map[string]Handler) {
+	s.ch.UpdateCalls(handlers)
 }

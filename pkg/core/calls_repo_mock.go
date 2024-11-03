@@ -67,6 +67,39 @@ func (_c *MockCallsRepo_GetCall_Call) RunAndReturn(run func(string) Handler) *Mo
 	return _c
 }
 
+// UpdateCalls provides a mock function with given fields: _a0
+func (_m *MockCallsRepo) UpdateCalls(_a0 map[string]Handler) {
+	_m.Called(_a0)
+}
+
+// MockCallsRepo_UpdateCalls_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateCalls'
+type MockCallsRepo_UpdateCalls_Call struct {
+	*mock.Call
+}
+
+// UpdateCalls is a helper method to define mock.On call
+//   - _a0 map[string]Handler
+func (_e *MockCallsRepo_Expecter) UpdateCalls(_a0 interface{}) *MockCallsRepo_UpdateCalls_Call {
+	return &MockCallsRepo_UpdateCalls_Call{Call: _e.mock.On("UpdateCalls", _a0)}
+}
+
+func (_c *MockCallsRepo_UpdateCalls_Call) Run(run func(_a0 map[string]Handler)) *MockCallsRepo_UpdateCalls_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(map[string]Handler))
+	})
+	return _c
+}
+
+func (_c *MockCallsRepo_UpdateCalls_Call) Return() *MockCallsRepo_UpdateCalls_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockCallsRepo_UpdateCalls_Call) RunAndReturn(run func(map[string]Handler)) *MockCallsRepo_UpdateCalls_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockCallsRepo creates a new instance of MockCallsRepo. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockCallsRepo(t interface {

@@ -1,21 +1,21 @@
 package config
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/handlerfactory"
 	"github.com/spf13/viper"
 )
 
 type FileSource struct {
-	mu             *sync.RWMutex
-	currentConfig  *Config
-	watchKeys      map[string]*Event[any]
-	configFilePath string
+	mu            sync.RWMutex
+	reader        *viper.Viper
+	currentConfig []handlerfactory.Config
+	path          string
+	onChange      func([]handlerfactory.Config)
 }
 
 type configUpdates struct {
@@ -23,132 +23,65 @@ type configUpdates struct {
 	Found bool
 }
 
-func (fileSource *FileSource) Init(cfg *Config) error {
-	fileSource.mu.Lock()
-	defer fileSource.mu.Unlock()
+func NewFileSource(path string) (*FileSource, error) {
+	reader := viper.New()
+	reader.SetConfigFile(path)
 
-	viper.SetConfigFile(fileSource.configFilePath)
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.AutomaticEnv()
-	viper.OnConfigChange(fileSource.onFileChange)
-	viper.WatchConfig()
-
-	if err := viper.ReadInConfig(); err != nil {
-		return fmt.Errorf("failed to read config: %w", err)
-	}
-
-	if err := viper.Unmarshal(cfg); err != nil {
-		return fmt.Errorf("failed to unmarshal config: %w", err)
-	}
-
-	slog.Debug("Config loaded", slog.Any("config", cfg))
-	cfg.addConfigSource(fileSource)
-
-	fileSource.currentConfig = cfg
-
-	return nil
-}
-
-func (fileSource *FileSource) GetConfigurations() (*Config, error) {
-	fileSource.mu.RLock()
-	defer fileSource.mu.RUnlock()
-
-	return fileSource.currentConfig, nil
-}
-
-func (fileSource *FileSource) WatchConfig(event *Event[any], key string) error {
-	fileSource.mu.Lock()
-	defer fileSource.mu.Unlock()
-
-	if len(event.subscribers) == 0 {
-		return fmt.Errorf("watch on %s failed. Linked event has no handlers", key)
-	}
-
-	fileSource.watchKeys[key] = event
-
-	return nil
-}
-
-func (fileSource *FileSource) GetWatchKeys() map[string]*Event[any] {
-	fileSource.mu.RLock()
-	defer fileSource.mu.RUnlock()
-
-	return fileSource.watchKeys
-}
-
-func (fileSource *FileSource) GetPriority() Priority { return P1 }
-
-func (fileSource *FileSource) Name() string { return "VIPER_FILE_SOURCE" }
-
-func (fileSource *FileSource) Close() error { return nil }
-
-func NewFileSource(filePath string) *FileSource {
 	return &FileSource{
-		configFilePath: filePath,
-		currentConfig:  &Config{},
-		mu:             new(sync.RWMutex),
-		watchKeys:      make(map[string]*Event[any]),
-	}
+		reader: reader,
+	}, nil
 }
 
-func (fileSource *FileSource) onFileChange(in fsnotify.Event) {
+func (fs *FileSource) WatchConfig(onChange func([]handlerfactory.Config)) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	if fs.onChange != nil {
+		return fmt.Errorf("config watcher already set")
+	}
+
+	fs.onChange = onChange
+
+	fs.reader.WatchConfig()
+	fs.reader.OnConfigChange(fs.onFileChange)
+
+	return nil
+}
+
+func (fs *FileSource) GetConfig() []handlerfactory.Config {
+	fs.mu.RLock()
+	defer fs.mu.RUnlock()
+
+	return fs.currentConfig
+}
+
+func (fs *FileSource) LoadConfig() ([]handlerfactory.Config, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	if err := fs.reader.ReadInConfig(); err != nil {
+		return nil, fmt.Errorf("failed to read config: %w", err)
+	}
+
+	var cfg []handlerfactory.Config
+
+	if err := viper.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+
+	fs.currentConfig = cfg
+
+	return cfg, nil
+}
+
+func (fs *FileSource) onFileChange(in fsnotify.Event) {
 	slog.Debug(fmt.Sprintf("config file changed at %s", in.Name))
 
-	fileSource.mu.Lock()
-	defer fileSource.mu.Unlock()
-
-	newConfig := &Config{}
-
-	if err := viper.Unmarshal(newConfig); err != nil {
-		slog.Error(fmt.Sprintf("Error while unmarshal on update from file %s: %v", in.Name, err))
+	cfg, err := fs.LoadConfig()
+	if err != nil {
+		slog.Error("Failed to load config on change", slog.Any("error", err))
 		return
 	}
 
-	fileSource.currentConfig = newConfig
-
-	keys := make([]string, len(fileSource.watchKeys))
-	i := 0
-
-	for k := range fileSource.watchKeys {
-		keys[i] = k
-		i++
-	}
-
-	watchedUpdates := findKeyValue(viper.AllSettings(), keys)
-
-	for idx, key := range keys {
-		update := watchedUpdates[idx]
-		if update.Found {
-			event := fileSource.watchKeys[key]
-
-			event.Notify(context.Background(), update.Value)
-		}
-	}
-}
-
-func findKeyValue(m map[string]any, keyList []string) []configUpdates {
-	results := make([]configUpdates, len(keyList))
-
-	curr := m
-
-	for i, k := range keyList {
-		children := strings.Split(k, ".")
-
-		for _, child := range children {
-			v, exists := curr[child]
-			if exists {
-				results[i] = configUpdates{Value: v, Found: true}
-
-				if nested, ok := v.(map[string]any); ok {
-					curr = nested
-				} else {
-					break
-				}
-			} else {
-				results[i] = configUpdates{Value: nil, Found: false}
-			}
-		}
-	}
-
-	return results
+	fs.onChange(cfg)
 }
