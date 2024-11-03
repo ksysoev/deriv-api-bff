@@ -91,6 +91,9 @@ func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *request.Requ
 	return clientConn.Send(wasabi.MsgTypeText, data)
 }
 
+// UpdateHandlers updates the service's handlers with the provided map of handlers.
+// It takes a single parameter handlers which is a map where the keys are strings and the values are of type Handler.
+// This function does not return any values.
 func (s *Service) UpdateHandlers(handlers map[string]Handler) {
 	s.ch.UpdateCalls(handlers)
 }

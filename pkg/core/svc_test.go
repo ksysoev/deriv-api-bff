@@ -164,3 +164,20 @@ func TestService_ProcessRequest_APIError(t *testing.T) {
 	err := svc.ProcessRequest(mockConn, mockRequest)
 	assert.Nil(t, err)
 }
+
+func TestService_UpdateHandlers(t *testing.T) {
+	mockCallsRepo := NewMockCallsRepo(t)
+	mockAPIProvider := NewMockAPIProvider(t)
+	mockConnRegistry := NewMockConnRegistry(t)
+
+	expectedHandlers := map[string]Handler{
+		"handler1": NewMockHandler(t),
+		"handler2": NewMockHandler(t),
+	}
+
+	mockCallsRepo.EXPECT().UpdateCalls(expectedHandlers).Return()
+
+	service := NewService(mockCallsRepo, mockAPIProvider, mockConnRegistry)
+
+	service.UpdateHandlers(expectedHandlers)
+}
