@@ -17,19 +17,19 @@ type SourceConfig struct {
 	Path string     `mapstructure:"path"`
 }
 
-type ConfigService struct {
+type Service struct {
 	bffService   BFFService
 	localSource  *FileSource
 	remoteSource *EtcdSource
 	curCfg       []handlerfactory.Config
 }
 
-func New(cfg SourceConfig, bffService BFFService) (*ConfigService, error) {
+func New(cfg SourceConfig, bffService BFFService) (*Service, error) {
 	if cfg.Path == "" && cfg.Etcd.Servers == "" {
 		return nil, fmt.Errorf("no configuration source provided")
 	}
 
-	svc := &ConfigService{
+	svc := &Service{
 		bffService: bffService,
 	}
 
@@ -49,7 +49,7 @@ func New(cfg SourceConfig, bffService BFFService) (*ConfigService, error) {
 	return svc, nil
 }
 
-func (c *ConfigService) LoadHandlers(ctx context.Context) error {
+func (c *Service) LoadHandlers(ctx context.Context) error {
 	var (
 		cfg []handlerfactory.Config
 		err error
@@ -77,7 +77,7 @@ func (c *ConfigService) LoadHandlers(ctx context.Context) error {
 	return nil
 }
 
-func (c *ConfigService) PutConfig(ctx context.Context) error {
+func (c *Service) PutConfig(ctx context.Context) error {
 	if c.remoteSource == nil || c.localSource == nil {
 		return fmt.Errorf("local and remote sources are required")
 	}
@@ -89,7 +89,6 @@ func (c *ConfigService) PutConfig(ctx context.Context) error {
 	}
 
 	return c.remoteSource.PutConfig(ctx, c.curCfg)
-
 }
 
 func createHandlers(cfg []handlerfactory.Config) (map[string]core.Handler, error) {

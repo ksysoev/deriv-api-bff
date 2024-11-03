@@ -16,9 +16,9 @@ import (
 
 type Config struct {
 	Otel      OtelConfig          `mapstructure:"otel"`
+	APISource config.SourceConfig `mapstructure:"api_source"`
 	Deriv     deriv.Config        `mapstructure:"deriv"`
 	Server    api.Config          `mapstructure:"server"`
-	APISource config.SourceConfig `mapstructure:"api_source"`
 }
 
 // initConfig initializes the configuration by reading from the specified config file.

@@ -12,8 +12,8 @@ import (
 )
 
 type FileSource struct {
-	mu   sync.RWMutex
 	path string
+	mu   sync.RWMutex
 }
 
 func NewFileSource(path string) *FileSource {
@@ -56,6 +56,7 @@ func readDir(path string) ([]handlerfactory.Config, error) {
 	}
 
 	var data []handlerfactory.Config
+
 	for _, file := range files {
 		// TODO: Shall we do recursive reading?
 		if file.IsDir() {
@@ -88,8 +89,8 @@ func readFile(path string) ([]handlerfactory.Config, error) {
 	y := yaml.NewDecoder(file)
 
 	var data []handlerfactory.Config
-	err = y.Decode(&data)
-	if err != nil {
+
+	if err = y.Decode(&data); err != nil {
 		return nil, fmt.Errorf("failed to decode file: %w", err)
 	}
 

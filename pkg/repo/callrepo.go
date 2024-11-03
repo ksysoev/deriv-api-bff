@@ -7,8 +7,8 @@ import (
 )
 
 type CallsRepository struct {
-	mu    sync.RWMutex
 	calls map[string]core.Handler
+	mu    sync.RWMutex
 }
 
 // NewCallsRepository creates and returns a new instance of CallsRepository.

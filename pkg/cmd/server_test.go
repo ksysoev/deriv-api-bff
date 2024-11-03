@@ -1,9 +1,9 @@
 package cmd
 
-var validPartialConfig = `
-server:
-  listen: ":0"
-`
+// var validPartialConfig = `
+// server:
+//   listen: ":0"
+// `
 
 // func TestRunServer(t *testing.T) {
 // 	cfg := &config.Config{

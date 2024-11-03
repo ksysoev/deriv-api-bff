@@ -119,16 +119,13 @@ func (s *testSuite) startAppWithConfig(cfgYAML string) (url string, err error) {
 	}
 
 	handlers, err := createHandlers(cfg)
-
-	derivAPI := deriv.NewService(&deriv.Config{Endpoint: s.echoWSURL()})
-
-	connRegistry := repo.NewConnectionRegistry()
-
-	calls := repo.NewCallsRepository()
 	if err != nil {
-		return "", fmt.Errorf("failed to create calls repo: %w", err)
+		return "", fmt.Errorf("failed to create handlers: %w", err)
 	}
 
+	derivAPI := deriv.NewService(&deriv.Config{Endpoint: s.echoWSURL()})
+	connRegistry := repo.NewConnectionRegistry()
+	calls := repo.NewCallsRepository()
 	beRouter := router.New(derivAPI, httpprov.NewService())
 	requestHandler := core.NewService(calls, beRouter, connRegistry)
 

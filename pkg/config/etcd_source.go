@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handlerfactory"
@@ -20,9 +19,8 @@ type EtcdConfig struct {
 }
 
 type EtcdSource struct {
-	prefix string
-	mu     sync.RWMutex
 	cli    *clientv3.Client
+	prefix string
 }
 
 func NewEtcdSource(cfg EtcdConfig) (*EtcdSource, error) {
@@ -83,7 +81,6 @@ func (es *EtcdSource) LoadConfig(ctx context.Context) ([]handlerfactory.Config, 
 
 func (es *EtcdSource) PutConfig(ctx context.Context, cfg []handlerfactory.Config) error {
 	//TODO: add logic for removing keys that are not in the new config
-
 	for _, c := range cfg {
 		data, err := json.Marshal(c)
 
