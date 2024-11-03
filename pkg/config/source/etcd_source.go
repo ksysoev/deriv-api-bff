@@ -11,7 +11,7 @@ import (
 	"go.etcd.io/etcd/clientv3"
 )
 
-const defaultTimeoutSeconds = 1
+const defaultTimeoutSeconds = 5
 
 type EtcdConfig struct {
 	Prefix  string `mapstructure:"prefix"`
@@ -50,17 +50,13 @@ func NewEtcdSource(cfg EtcdConfig) (*EtcdSource, error) {
 }
 
 func (es *EtcdSource) LoadConfig(ctx context.Context) ([]handlerfactory.Config, error) {
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeoutSeconds*time.Second)
-	defer cancel()
+	// ctx, cancel := context.WithTimeout(ctx, defaultTimeoutSeconds*time.Second)
+	// defer cancel()
 
 	data, err := es.cli.Get(ctx, es.prefix, clientv3.WithPrefix())
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config from etcd: %w", err)
-	}
-
-	if data.Count == 0 {
-		return nil, fmt.Errorf("no config found")
 	}
 
 	cfg := make([]handlerfactory.Config, 0, data.Count)
