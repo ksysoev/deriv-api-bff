@@ -54,9 +54,7 @@ func New(cfg Config) (string, core.Handler, error) {
 		procs = append(procs, p)
 	}
 
-	factory := func(waiter core.Waiter) handler.WaitComposer {
-		return composer.New(graph, waiter)
-	}
+	factory := createComposerFactory(graph)
 
 	return cfg.Method, handler.New(valid, procs, factory), nil
 }
@@ -126,4 +124,10 @@ func createDepGraph(be []*processor.Config) map[string][]string {
 	}
 
 	return graph
+}
+
+func createComposerFactory(graph map[string][]string) func(core.Waiter) handler.WaitComposer {
+	return func(waiter core.Waiter) handler.WaitComposer {
+		return composer.New(graph, waiter)
+	}
 }
