@@ -14,13 +14,14 @@ type Processor interface {
 }
 
 type Config struct {
-	Name         string
-	Method       string
-	URLTemplate  string
-	Tmplt        map[string]any
-	FieldMap     map[string]string
-	ResponseBody string
-	Allow        []string
+	Name         string            `mapstructure:"name" yaml:"name"`
+	Method       string            `mapstructure:"method" yaml:"method"`
+	URLTemplate  string            `mapstructure:"url_template" yaml:"url_template"`
+	Tmplt        map[string]any    `mapstructure:"request_template" yaml:"request_template"`
+	FieldMap     map[string]string `mapstructure:"fields_map" yaml:"fields_map"`
+	DependsOn    []string          `mapstructure:"depends_on" yaml:"depends_on"`
+	ResponseBody string            `mapstructure:"response_body" yaml:"response_body"`
+	Allow        []string          `mapstructure:"allow" yaml:"allow"`
 }
 
 // New creates a new Processor based on the provided configuration.

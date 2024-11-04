@@ -1,14 +1,23 @@
 package cmd
 
 import (
-	"errors"
+	"context"
 	"os"
-	"strings"
 	"testing"
 
-	"github.com/ksysoev/deriv-api-bff/pkg/repo"
+	"github.com/ksysoev/deriv-api-bff/pkg/config/source"
 	"github.com/stretchr/testify/assert"
 )
+
+var callsConfig = `
+- method: "testMethod"
+  backend:
+    - response_body: "ping"
+      allow: 
+        - value
+      request_template:
+        ping: 1
+`
 
 var validConfig = `
 server:
@@ -17,9 +26,11 @@ deriv:
   endpoint: "wss://localhost/"
 api:
   calls:
-etcd:
-  dialTimeoutSeconds: 1
-  servers: ["host1:port1", "host2:port2"]
+api_source:
+  etcd:
+    servers: "localhost:2379"
+    prefix: "api::"
+  path: "./runtime/calls.yaml"
 `
 
 func createTempConfigFile(t *testing.T, content string) string {
@@ -46,8 +57,7 @@ func TestInitConfig_Valid(t *testing.T) {
 	assert.NotNil(t, cfg)
 	assert.Equal(t, ":0", cfg.Server.Listen)
 	assert.Equal(t, "wss://localhost/", cfg.Deriv.Endpoint)
-	assert.Equal(t, 1, cfg.Etcd.DialTimeoutSeconds)
-	assert.ElementsMatch(t, []string{"host1:port1", "host2:port2"}, cfg.Etcd.Servers)
+	assert.Equal(t, "localhost:2379", cfg.APISource.Etcd.Servers)
 }
 
 func TestInitConfig_InvalidContent(t *testing.T) {
@@ -67,41 +77,58 @@ func TestInitConfig_Missing(t *testing.T) {
 	assert.Nil(t, cfg)
 }
 
-func TestPutCallConfig_Success(t *testing.T) {
-	configPath := createTempConfigFile(t, validConfig)
-	mockEtcd := repo.NewMockEtcd(t)
+func TestUploadConfig(t *testing.T) {
+	ctx := context.Background()
 
-	mockEtcd.EXPECT().Put("CallConfig", "null").Return(nil)
+	path := createTempConfigFile(t, callsConfig)
 
-	err := putCallConfigToEtcd(mockEtcd, configPath)
-
-	if err != nil {
-		t.Errorf("Unexpected error: %s", err)
+	cfg := &Config{
+		APISource: source.Config{
+			Path: path,
+		},
 	}
+
+	err := uploadConfig(ctx, cfg)
+	assert.Error(t, err)
+	assert.Equal(t, "local and remote sources are required", err.Error())
 }
 
-func TestPutCallConfig_Fail_OnPut(t *testing.T) {
-	configPath := createTempConfigFile(t, validConfig)
-	mockEtcd := repo.NewMockEtcd(t)
-	expectedErr := errors.New("test error")
-
-	mockEtcd.EXPECT().Put("CallConfig", "null").Return(expectedErr)
-
-	err := putCallConfigToEtcd(mockEtcd, configPath)
-
-	if err != expectedErr {
-		t.Errorf("Unexpected error: %s", err)
+func TestUploadConfig_FailCreateService(t *testing.T) {
+	ctx := context.Background()
+	cfg := &Config{
+		APISource: source.Config{},
 	}
+
+	err := uploadConfig(ctx, cfg)
+	assert.Error(t, err)
+	assert.Equal(t, "failed to create config service: local or remote source is required", err.Error())
 }
 
-func TestPutCallConfig_Fail_OnConfigRead(t *testing.T) {
-	configPath := createTempConfigFile(t, "invalid content")
-	mockEtcd := repo.NewMockEtcd(t)
-	expectedErr := "failed to read config:"
-
-	err := putCallConfigToEtcd(mockEtcd, configPath)
-
-	if !strings.HasPrefix(err.Error(), expectedErr) {
-		t.Errorf("Unexpected error: %s", err)
+func TestUploadConfig_FailLoadHandlers(t *testing.T) {
+	ctx := context.Background()
+	cfg := &Config{
+		APISource: source.Config{
+			Path: "invalid_path",
+		},
 	}
+
+	err := uploadConfig(ctx, cfg)
+	assert.Error(t, err)
+	assert.Equal(t, "failed to load handlers: failed to load config: failed to stat file: stat invalid_path: no such file or directory", err.Error())
+}
+
+func TestUploadConfig_FailCreateSource(t *testing.T) {
+	ctx := context.Background()
+
+	cfg := &Config{
+		APISource: source.Config{
+			Etcd: source.EtcdConfig{
+				Servers: "localhost:2379",
+				Prefix:  "",
+			},
+		},
+	}
+
+	err := uploadConfig(ctx, cfg)
+	assert.Error(t, err)
 }

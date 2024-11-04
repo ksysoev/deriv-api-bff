@@ -5,25 +5,21 @@ import (
 )
 
 const testHTTRequestParamsConfig = `
-server:
-  listen: "localhost:0"
-api:
-  calls:
-    - method: testcall
-      params:
-        param1:
-          type: string
-        param2:
-          type: number
-        param3:
-          type: boolean
-      backend:
-        - name: testcall
-          url_template: "{{host}}/testcall/${params.param1}/${params.param2}/${params.param3}"
-          method: "GET"
-          allow: 
-            - data1
-            - data2
+- method: testcall
+  params:
+    param1:
+        type: string
+    param2:
+        type: number
+    param3:
+        type: boolean
+  backend:
+    - name: testcall
+      url_template: "{{host}}/testcall/${params.param1}/${params.param2}/${params.param3}"
+      method: "GET"
+      allow: 
+        - data1
+        - data2
 `
 
 func (s *testSuite) TestHTTPRequestParams() {
@@ -56,22 +52,18 @@ func (s *testSuite) TestHTTPRequestParams() {
 }
 
 const testHTTPRequestAggregationConfig = `
-server:
-  listen: "localhost:0"
-api:
-  calls:
-    - method: testcall
-      backend:
-        - name: testcall1
-          url_template: "{{host}}/testcall1"
-          method: GET
-          allow: 
-            - data1
-        - name: testcall2
-          url_template: "{{host}}/testcall2"
-          method: POST
-          allow: 
-            - data2
+- method: testcall
+  backend:
+    - name: testcall1
+      url_template: "{{host}}/testcall1"
+      method: GET
+      allow: 
+        - data1
+    - name: testcall2
+      url_template: "{{host}}/testcall2"
+      method: POST
+      allow: 
+        - data2
 `
 
 func (s *testSuite) TestHTTPRequestAggregation() {
@@ -100,24 +92,20 @@ func (s *testSuite) TestHTTPRequestAggregation() {
 }
 
 const testHTTPRequestChainConfig = `
-server:
-  listen: "localhost:0"
-api:
-  calls:
-    - method: testcall
-      backend:
-        - name: testcall1
-          url_template: "{{host}}/testcall1"
-          method: GET
-          allow: 
-            - data1
-        - name: testcall2
-          depends_on:
-            - testcall1
-          url_template: "{{host}}/testcall2/${resp.testcall1.data1}"
-          method: POST
-          allow: 
-            - data2
+- method: testcall
+  backend:
+    - name: testcall1
+      url_template: "{{host}}/testcall1"
+      method: GET
+      allow: 
+        - data1
+    - name: testcall2
+      depends_on:
+        - testcall1
+      url_template: "{{host}}/testcall2/${resp.testcall1.data1}"
+      method: POST
+      allow: 
+        - data2
 `
 
 func (s *testSuite) TestHTTPRequestChain() {

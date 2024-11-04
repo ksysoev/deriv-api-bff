@@ -8,65 +8,9 @@ otel:
   prometheus:
     listen: ":8081"
     path: "/metrics"
-etcd:
-  servers: ["localhost:2379"]
-  dialTimeoutSeconds: 5
-api:
-  calls:
-    - method: "aggregate"
-      params:
-        country: 
-          type: "string"
-      backend:
-        - response_body: "landing_company"
-          allow: 
-            - virtual_company
-            - name
-          fields_map:
-            financial_company: "financial"
-            gaming_company: "gaming"
-          request_template: 
-            landing_company: "${params.country}"
-        - response_body: "website_status"
-          allow: 
-            - api_call_limits
-            - clients_country
-          request_template:
-            website_status: 1
-    - method: "chain"
-      backend:
-        - response_body: "landing_company"
-          depends_on: 
-            - "website_status"
-          allow: 
-            - virtual_company
-            - name
-          fields_map:
-            financial_company: "financial"
-            gaming_company: "gaming"
-          request_template:
-            landing_company: '${resp.website_status.clients_country}'
-        - response_body: "website_status"
-          allow: 
-            - api_call_limits
-            - clients_country
-          request_template: 
-            website_status: 1
-    - method: "config_country"
-      params:
-        country: 
-          type: "string"
-      backend:
-        - name: "country"
-          method: "GET"
-          url_template: 'http://nginx/country/${params.country}.json'
-          allow: 
-            - region
-            - subregion
-            - name
-            - alpha2Code
-            - alpha3Code
-            - callingCodes
-            - capital
-          fields_map:
-            title: "title"
+api_source:
+  etcd:
+    servers: "localhost:2379"
+    prefix: "api::"
+  path: "./runtime/calls.yaml"
+   

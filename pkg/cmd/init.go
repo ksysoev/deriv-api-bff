@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/ksysoev/deriv-api-bff/pkg/repo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -35,7 +34,7 @@ func InitCommands(build, version string) (*cobra.Command, error) {
 	cmd.AddCommand(ServerCommand(args))
 
 	configCmd := ConfigCommand(args)
-	configCmd.AddCommand(ReadConfigCommand(args))
+	configCmd.AddCommand(UploadConfigCommand(args))
 	cmd.AddCommand(configCmd)
 
 	cmd.PersistentFlags().StringVar(&args.ConfigPath, "config", "./runtime/config.yaml", "config file path")
@@ -92,19 +91,19 @@ func ConfigCommand(_ *args) *cobra.Command {
 		Use:   "config",
 		Short: "Config related commands for Deriv API BFF",
 		Long:  "Use this command to invoke various config related operations. Use --help for help",
-		Run: func(_ *cobra.Command, _ []string) {
-			fmt.Println("Usage `config [sub-command]`")
+		RunE: func(_ *cobra.Command, _ []string) error {
+			return fmt.Errorf("no subcommand provided")
 		},
 	}
 }
 
-// ReadConfigCommand creates a new cobra.Command to load the calls config for Deriv API.
+// UploadConfigCommand creates a new cobra.Command to load the calls config for Deriv API.
 // The config is loaded and then pushed to etcd for watching changes.
 // It can take cfgPath of type *string which is the path to the configuration file as an argument.
 // It also takes the etcd host URL and dial timeout in seconds as argument
 // It returns a pointer to a cobra.Command which can be executed to load the config.
 // It returns an error if the logger initialization fails, the configuration cannot be loaded, or there is error thrown by etcd.
-func ReadConfigCommand(arg *args) *cobra.Command {
+func UploadConfigCommand(arg *args) *cobra.Command {
 	return &cobra.Command{
 		Use:   "upload",
 		Short: "Read config and push call config to etcd",
@@ -122,13 +121,7 @@ func ReadConfigCommand(arg *args) *cobra.Command {
 				return err
 			}
 
-			etcd, err := repo.NewEtcdHandler(cmd.Context(), cfg.Etcd)
-
-			if err != nil {
-				return err
-			}
-
-			return putCallConfigToEtcd(etcd, arg.ConfigPath)
+			return uploadConfig(cmd.Context(), cfg)
 		},
 	}
 }

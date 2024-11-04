@@ -23,6 +23,7 @@ services:
       ]
     depends_on:
       - nginx
+      - etcd
   nginx:
     image: nginx:alpine
     ports:
@@ -38,3 +39,20 @@ services:
       - 9090:9090
     depends_on:
       - deriv-api-bff
+  etcd:
+    image: "quay.io/coreos/etcd:v3.4.34"
+    command: [
+      "etcd",
+      "--name=etcd0",
+      "--advertise-client-urls=http://0.0.0.0:2379,http://0.0.0.0:4001",
+      "--listen-client-urls=http://0.0.0.0:2379,http://0.0.0.0:4001",
+      "--initial-advertise-peer-urls=http://0.0.0.0:2380",
+      "--listen-peer-urls=http://0.0.0.0:2380",
+      "--initial-cluster-token=etcd-cluster-1",
+      "--initial-cluster=etcd0=http://0.0.0.0:2380",
+      "--initial-cluster-state=new"
+    ]
+    ports:
+    - "2379:2379"
+    - 2380
+    - 4001

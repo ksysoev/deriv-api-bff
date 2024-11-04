@@ -8,14 +8,25 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ksysoev/deriv-api-bff/pkg/config"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/sdk/metric"
 )
 
-func initMetricProvider(ctx context.Context, cfg *config.OtelConfig) error {
+type OtelConfig struct {
+	Prometheus *PrometheusConfig `mapstructure:"prometheus"`
+}
+
+type PrometheusConfig struct {
+	Listen string `mapstructure:"listen"`
+	Path   string `mapstructure:"path"`
+}
+
+// initMetricProvider initializes the metric provider based on the given configuration.
+// It takes ctx of type context.Context and cfg of type *config.OtelConfig.
+// It returns an error if the Prometheus initialization fails.
+func initMetricProvider(ctx context.Context, cfg *OtelConfig) error {
 	if cfg.Prometheus != nil {
 		if err := initPrometheus(ctx, cfg.Prometheus); err != nil {
 			return fmt.Errorf("failed to initialize Prometheus: %w", err)
@@ -25,7 +36,11 @@ func initMetricProvider(ctx context.Context, cfg *config.OtelConfig) error {
 	return nil
 }
 
-func initPrometheus(ctx context.Context, cfg *config.PrometheusConfig) error {
+// initPrometheus initializes Prometheus metrics exporter and starts the server to serve metrics.
+// It takes a context.Context and a *config.PrometheusConfig as parameters.
+// It returns an error if the Prometheus listen address or path is empty, or if the Prometheus exporter fails to create.
+// If the server fails to start, it logs the error.
+func initPrometheus(ctx context.Context, cfg *PrometheusConfig) error {
 	if cfg.Listen == "" || cfg.Path == "" {
 		return fmt.Errorf("prometheus listen address and path are required")
 	}
@@ -55,7 +70,7 @@ func initPrometheus(ctx context.Context, cfg *config.PrometheusConfig) error {
 // It returns an error if the server fails to start or if there is an issue closing the server.
 // The function listens on the address specified in `cfg.Listen` and serves metrics at the path specified in `cfg.Path`.
 // If the context is canceled, the server shuts down gracefully.
-func servePrometheus(ctx context.Context, cfg *config.PrometheusConfig) error {
+func servePrometheus(ctx context.Context, cfg *PrometheusConfig) error {
 	mux := http.NewServeMux()
 	mux.Handle(cfg.Path, promhttp.Handler())
 
