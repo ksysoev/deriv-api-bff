@@ -7,6 +7,10 @@ type Config struct {
 	Path string     `mapstructure:"path"`
 }
 
+// CreateOptions generates a slice of configuration options based on the provided Config.
+// It takes cfg of type *Config.
+// It returns a slice of config.Option and an error.
+// It returns an error if creating the Etcd source fails.
 func CreateOptions(cfg *Config) ([]config.Option, error) {
 	opts := make([]config.Option, 0, 2)
 
