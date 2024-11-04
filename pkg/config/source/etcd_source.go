@@ -24,12 +24,12 @@ type EtcdSource struct {
 	prefix string
 }
 
+// NewEtcdSource creates a new EtcdSource instance configured with the provided EtcdConfig.
+// It takes cfg of type EtcdConfig which includes the servers and prefix for the etcd client.
+// It returns a pointer to EtcdSource and an error.
+// It returns an error if no etcd key prefix is provided or if the etcd client creation fails.
 func NewEtcdSource(cfg EtcdConfig) (*EtcdSource, error) {
 	serves := strings.Split(cfg.Servers, ",")
-
-	if len(serves) == 0 {
-		return nil, fmt.Errorf("no etcd servers provided")
-	}
 
 	if cfg.Prefix == "" {
 		return nil, fmt.Errorf("no etcd key prefix provided")
@@ -50,6 +50,10 @@ func NewEtcdSource(cfg EtcdConfig) (*EtcdSource, error) {
 	}, nil
 }
 
+// LoadConfig loads configuration data from an etcd source.
+// It takes a context.Context as a parameter to manage the request's lifetime.
+// It returns a slice of handlerfactory.Config and an error.
+// It returns an error if it fails to get the config from etcd or if it fails to unmarshal the config data.
 func (es *EtcdSource) LoadConfig(ctx context.Context) ([]handlerfactory.Config, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeoutSeconds*time.Second)
 	defer cancel()
@@ -76,6 +80,10 @@ func (es *EtcdSource) LoadConfig(ctx context.Context) ([]handlerfactory.Config, 
 	return cfg, nil
 }
 
+// PutConfig stores the provided configuration in the etcd key-value store.
+// It takes a context ctx of type context.Context and a slice of handlerfactory.Config cfg.
+// It returns an error if marshalling the config fails or if putting the config into etcd fails.
+// The function creates a context with a timeout for each put operation.
 func (es *EtcdSource) PutConfig(ctx context.Context, cfg []handlerfactory.Config) error {
 	//TODO: add logic for removing keys that are not in the new config
 	for _, c := range cfg {

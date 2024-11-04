@@ -8,10 +8,12 @@ import (
 	"time"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handlerfactory"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/validator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/etcd"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 func TestEtcdSource_Int(t *testing.T) {
@@ -30,15 +32,39 @@ func TestEtcdSource_Int(t *testing.T) {
 	etcdHost, err := ctr.ClientEndpoints(ctx)
 	require.NoError(t, err)
 
+	_, err = NewEtcdSource(EtcdConfig{
+		Servers: "",
+		Prefix:  "",
+	})
+	assert.Error(t, err, "should fail to create etcd source")
+
 	source, err := NewEtcdSource(EtcdConfig{
+		Servers: "",
+		Prefix:  "test1::",
+	})
+	require.NoError(t, err)
+
+	configs, err := source.LoadConfig(ctx)
+
+	assert.Error(t, err, "failed to load config")
+	assert.Nil(t, configs)
+
+	err = source.PutConfig(ctx, []handlerfactory.Config{
+		{
+			Method: "Test",
+		},
+	})
+	assert.Error(t, err, "failed to put config")
+
+	source, err = NewEtcdSource(EtcdConfig{
 		Servers: strings.Join(etcdHost, ","),
-		Prefix:  "test::",
+		Prefix:  "test2::",
 	})
 
 	assert.NoError(t, err, "failed to create etcd source")
 	assert.NotNil(t, source)
 
-	configs, err := source.LoadConfig(ctx)
+	configs, err = source.LoadConfig(ctx)
 
 	assert.NoError(t, err, "failed to load config")
 	assert.NotNil(t, configs)
@@ -60,4 +86,25 @@ func TestEtcdSource_Int(t *testing.T) {
 
 	assert.NoError(t, err, "failed to load config")
 	assert.Equal(t, expected, configs)
+
+	err = source.PutConfig(ctx, []handlerfactory.Config{
+		{
+			Method: "Test",
+			Params: validator.Config{"test": make(chan int)},
+		},
+	})
+	assert.Error(t, err, "failed to marshal config")
+
+	etcdClient, err := clientv3.New(clientv3.Config{
+		Endpoints:   etcdHost,
+		DialTimeout: defaultTimeoutSeconds * time.Second,
+	})
+	require.NoError(t, err)
+
+	_, err = etcdClient.Put(ctx, "test2::Test", "invalid json")
+	require.NoError(t, err)
+
+	configs, err = source.LoadConfig(ctx)
+	assert.Error(t, err, "failed to load config")
+	assert.Nil(t, configs)
 }
