@@ -30,18 +30,27 @@ type Service struct {
 
 type Option func(*Service)
 
+// WithLocalSource sets the local source for the service.
+// It takes a parameter local of type LocalSource and returns an Option.
+// This function modifies the Service instance to use the provided local source.
 func WithLocalSource(local LocalSource) Option {
 	return func(s *Service) {
 		s.local = local
 	}
 }
 
+// WithRemoteSource sets the remote source for the Service.
+// It takes a parameter remote of type RemoteSource and returns an Option.
+// This function modifies the Service to use the provided remote source.
 func WithRemoteSource(remote RemoteSource) Option {
 	return func(s *Service) {
 		s.remote = remote
 	}
 }
 
+// New creates a new Service instance with the provided BFFService and optional configurations.
+// It takes a BFFService instance and a variadic number of Option functions to configure the Service.
+// It returns a pointer to the created Service and an error if neither local nor remote source is provided.
 func New(bff BFFService, opts ...Option) (*Service, error) {
 	svc := &Service{
 		bff: bff,
@@ -58,6 +67,9 @@ func New(bff BFFService, opts ...Option) (*Service, error) {
 	return svc, nil
 }
 
+// LoadHandlers loads the configuration and updates the handlers for the service.
+// It takes a context.Context parameter to manage the request lifetime.
+// It returns an error if loading the configuration or creating handlers fails.
 func (c *Service) LoadHandlers(ctx context.Context) error {
 	var (
 		cfg []handlerfactory.Config
@@ -100,6 +112,10 @@ func (c *Service) PutConfig(ctx context.Context) error {
 	return c.remote.PutConfig(ctx, c.curCfg)
 }
 
+// createHandlers initializes a map of handlers based on the provided configuration.
+// It takes a slice of handlerfactory.Config as input.
+// It returns a map where the keys are handler names (strings) and the values are core.Handler instances.
+// It returns an error if a handler cannot be created or if there are duplicate handler names in the configuration.
 func createHandlers(cfg []handlerfactory.Config) (map[string]core.Handler, error) {
 	handlers := make(map[string]core.Handler, len(cfg))
 
