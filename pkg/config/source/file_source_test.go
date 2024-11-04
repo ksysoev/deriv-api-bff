@@ -2,13 +2,13 @@ package source
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handlerfactory"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewFileSource(t *testing.T) {
@@ -80,7 +80,7 @@ func TestReadFile(t *testing.T) {
 			defer os.Remove(tmpFile.Name())
 
 			// Write the test content to the temporary file
-			_, err = tmpFile.Write([]byte(tt.fileContent))
+			_, err = tmpFile.WriteString(tt.fileContent)
 			assert.NoError(t, err)
 
 			// Close the file to flush the content
@@ -151,14 +151,14 @@ func TestReadDir(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a temporary directory
 			tmpDir, err := os.MkdirTemp("", "testdir")
-			fmt.Println(tmpDir)
-			assert.NoError(t, err)
+			require.NoError(t, err)
+
 			defer os.RemoveAll(tmpDir)
 
 			// Create the test files in the temporary directory
 			for name, content := range tt.files {
-				err := os.WriteFile(filepath.Join(tmpDir, name), []byte(content), 0644)
-				assert.NoError(t, err)
+				err := os.WriteFile(filepath.Join(tmpDir, name), []byte(content), 0o600)
+				require.NoError(t, err)
 			}
 
 			// Call the readDir function
@@ -184,6 +184,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "Load config from valid YAML file",
 			setup: func(t *testing.T) string {
+				t.Helper()
 				tmpFile, err := os.CreateTemp("", "testfile*.yaml")
 				assert.NoError(t, err)
 				defer tmpFile.Close()
@@ -192,7 +193,7 @@ func TestLoadConfig(t *testing.T) {
 - method: config1
 - method: config2
 `
-				_, err = tmpFile.Write([]byte(content))
+				_, err = tmpFile.WriteString(content)
 				assert.NoError(t, err)
 
 				return tmpFile.Name()
@@ -206,6 +207,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "Load config from directory with valid YAML files",
 			setup: func(t *testing.T) string {
+				t.Helper()
 				tmpDir, err := os.MkdirTemp("", "testdir")
 				assert.NoError(t, err)
 
@@ -219,7 +221,7 @@ func TestLoadConfig(t *testing.T) {
 				}
 
 				for name, content := range files {
-					err := os.WriteFile(filepath.Join(tmpDir, name), []byte(content), 0644)
+					err := os.WriteFile(filepath.Join(tmpDir, name), []byte(content), 0o600)
 					assert.NoError(t, err)
 				}
 
@@ -234,12 +236,13 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "Load config from invalid YAML file",
 			setup: func(t *testing.T) string {
+				t.Helper()
 				tmpFile, err := os.CreateTemp("", "testfile*.yaml")
 				assert.NoError(t, err)
 				defer tmpFile.Close()
 
 				content := `invalid yaml content`
-				_, err = tmpFile.Write([]byte(content))
+				_, err = tmpFile.WriteString(content)
 				assert.NoError(t, err)
 
 				return tmpFile.Name()
@@ -250,12 +253,13 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "Load config from unsupported file type",
 			setup: func(t *testing.T) string {
+				t.Helper()
 				tmpFile, err := os.CreateTemp("", "testfile*.txt")
 				assert.NoError(t, err)
 				defer tmpFile.Close()
 
 				content := `some text content`
-				_, err = tmpFile.Write([]byte(content))
+				_, err = tmpFile.WriteString(content)
 				assert.NoError(t, err)
 
 				return tmpFile.Name()
@@ -266,6 +270,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "Load config from empty directory",
 			setup: func(t *testing.T) string {
+				t.Helper()
 				tmpDir, err := os.MkdirTemp("", "testdir")
 				assert.NoError(t, err)
 				return tmpDir
