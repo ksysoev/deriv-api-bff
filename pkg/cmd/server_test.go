@@ -43,3 +43,24 @@ func TestRunServer_Error(t *testing.T) {
 
 	assert.Error(t, err)
 }
+
+func TestRunServer_FailToCreateSources(t *testing.T) {
+	cfg := &Config{
+		Server: api.Config{
+			Listen: ":0",
+		},
+		APISource: source.Config{
+			Etcd: source.EtcdConfig{
+				Servers: "localhost:2379",
+				Prefix:  "",
+			},
+		},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := runServer(ctx, cfg)
+
+	assert.Error(t, err)
+}

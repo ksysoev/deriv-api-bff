@@ -61,6 +61,7 @@ func TestNewService(t *testing.T) {
 		})
 	}
 }
+
 func TestService_LoadHandlers(t *testing.T) {
 	ctx := context.Background()
 
@@ -98,6 +99,16 @@ func TestService_LoadHandlers(t *testing.T) {
 			local:   false,
 			cfg:     nil,
 			err:     fmt.Errorf("error loading config"),
+			wantErr: true,
+		},
+		{
+			name:  "Duplicate handler names",
+			local: false,
+			cfg: []handlerfactory.Config{
+				{Method: "handler1"},
+				{Method: "handler1"},
+			},
+			err:     nil,
 			wantErr: true,
 		},
 	}

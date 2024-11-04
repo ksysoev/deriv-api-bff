@@ -116,3 +116,19 @@ func TestUploadConfig_FailLoadHandlers(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, "failed to load handlers: failed to load config: failed to stat file: stat invalid_path: no such file or directory", err.Error())
 }
+
+func TestUploadConfig_FailCreateSource(t *testing.T) {
+	ctx := context.Background()
+
+	cfg := &Config{
+		APISource: source.Config{
+			Etcd: source.EtcdConfig{
+				Servers: "localhost:2379",
+				Prefix:  "",
+			},
+		},
+	}
+
+	err := uploadConfig(ctx, cfg)
+	assert.Error(t, err)
+}
