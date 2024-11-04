@@ -5,7 +5,7 @@ go 1.23.1
 require (
 	github.com/coder/websocket v1.8.12
 	github.com/coreos/etcd v3.3.27+incompatible
-	github.com/fsnotify/fsnotify v1.7.0
+	github.com/fsnotify/fsnotify v1.8.0
 	github.com/google/uuid v1.6.0
 	github.com/ksysoev/wasabi v0.5.1
 	github.com/mitchellh/mapstructure v1.5.0
