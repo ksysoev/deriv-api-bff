@@ -126,6 +126,10 @@ func createDepGraph(be []*processor.Config) map[string][]string {
 	return graph
 }
 
+// createComposerFactory creates a factory function that returns a WaitComposer.
+// It takes a graph parameter of type map[string][]string which represents the dependencies,
+// and a waiter parameter of type core.Waiter which is used to manage waiting operations.
+// It returns a function that takes a core.Waiter and returns a handler.WaitComposer.
 func createComposerFactory(graph map[string][]string) func(core.Waiter) handler.WaitComposer {
 	return func(waiter core.Waiter) handler.WaitComposer {
 		return composer.New(graph, waiter)

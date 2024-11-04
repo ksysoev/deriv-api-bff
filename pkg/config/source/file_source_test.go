@@ -99,6 +99,17 @@ func TestReadFile(t *testing.T) {
 		})
 	}
 }
+
+func TestReadFile_NotExistFile(t *testing.T) {
+	tmpFile, err := os.CreateTemp("", "testfile*.yaml")
+	require.NoError(t, err)
+	tmpFile.Close()
+
+	result, err := readFile(tmpFile.Name() + "/nonexistent")
+	assert.Error(t, err)
+	assert.Nil(t, result)
+}
+
 func TestReadDir(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -172,6 +183,17 @@ func TestReadDir(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReadDir_NotExistDir(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "testdir")
+	require.NoError(t, err)
+
+	defer os.RemoveAll(tmpDir)
+
+	result, err := readDir(tmpDir + "/nonexistent")
+	assert.Error(t, err)
+	assert.Nil(t, result)
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -273,6 +295,32 @@ func TestLoadConfig(t *testing.T) {
 				t.Helper()
 				tmpDir, err := os.MkdirTemp("", "testdir")
 				assert.NoError(t, err)
+				return tmpDir
+			},
+			expected:    nil,
+			expectError: false,
+		},
+		{
+			name: "Invalid Path",
+			setup: func(t *testing.T) string {
+				t.Helper()
+				tmpDir, err := os.MkdirTemp("", "testdir")
+				assert.NoError(t, err)
+				return tmpDir + "/nonexistent"
+			},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name: "Skip directories",
+			setup: func(t *testing.T) string {
+				t.Helper()
+				tmpDir, err := os.MkdirTemp("", "testdir")
+				assert.NoError(t, err)
+
+				err = os.Mkdir(filepath.Join(tmpDir, "subdir"), 0o700)
+				assert.NoError(t, err)
+
 				return tmpDir
 			},
 			expected:    nil,
