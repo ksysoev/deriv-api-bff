@@ -10,12 +10,12 @@ const testRequestParamsConfig = `
     param3:
       type: boolean
   backend:
-    - response_body: data
-      request_template: 
+    - request_template: 
         data:
             param1: ${params.param1}
             param2: ${params.param2}
             param3: ${params.param3}
+        msg_type: data
       allow:
         - param1
         - param2
@@ -50,16 +50,16 @@ func (s *testSuite) TestRequestParams() {
 const testAggergationConfig = `
 - method: testcall
   backend:
-    - response_body: data1
-      request_template:
+    - request_template:
         data1:
             field1: value1
+        msg_type: data1
       allow: 
         - field1
-    - response_body: data2
-      request_template:
+    - request_template:
         data2:
             field2: value2
+        msg_type: data2
       allow:
         - field2
 `
@@ -84,18 +84,19 @@ func (s *testSuite) TestAggregation() {
 const testChainConfig = `
 - method: testcall
   backend:
-    - response_body: data1
+    - name: data1
       request_template:
         data1:
             field1: value1
+        msg_type: data1
       allow: 
         - field1
-    - response_body: data2
-      depends_on:
+    - depends_on:
         - data1
       request_template:
         data2:
             field2: ${resp.data1.field1}
+        msg_type: data2
       allow:
         - field2
 `

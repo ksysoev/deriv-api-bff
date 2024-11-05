@@ -3,8 +3,7 @@
     country: 
       type: "string"
   backend:
-    - response_body: "landing_company"
-      allow: 
+    - allow: 
         - virtual_company
         - name
       fields_map:
@@ -12,16 +11,14 @@
         gaming_company: "gaming"
       request_template: 
         landing_company: "${params.country}"
-    - response_body: "website_status"
-      allow: 
+    - allow: 
         - api_call_limits
         - clients_country
       request_template:
         website_status: 1
 - method: "chain"
   backend:
-    - response_body: "landing_company"
-      depends_on: 
+    - depends_on: 
         - "website_status"
       allow: 
         - virtual_company
@@ -31,7 +28,7 @@
         gaming_company: "gaming"
       request_template:
         landing_company: '${resp.website_status.clients_country}'
-    - response_body: "website_status"
+    - name: "website_status"
       allow: 
         - api_call_limits
         - clients_country
@@ -42,8 +39,7 @@
     country: 
       type: "string"
   backend:
-    - name: "country"
-      method: "GET"
+    - method: "GET"
       url_template: 'http://nginx/country/${params.country}.json'
       allow: 
         - region
