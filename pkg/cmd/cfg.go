@@ -75,10 +75,6 @@ func uploadConfig(ctx context.Context, cfg *Config) error {
 // It returns an error if the configuration is invalid or if there is a failure in creating the config source or service.
 // It returns nil if the configuration is successfully verified and handlers are loaded.
 func verifyConfig(ctx context.Context, cfg *Config) error {
-	if cfg.APISource.Path == "" {
-		return fmt.Errorf("local source for configuration is required")
-	}
-
 	sourceOpts, err := source.CreateOptions(&cfg.APISource)
 	if err != nil {
 		return fmt.Errorf("failed to create config source: %w", err)

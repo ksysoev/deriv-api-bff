@@ -147,7 +147,7 @@ func TestVerifyConfig_Valid(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestVerifyConfig_MissingPath(t *testing.T) {
+func TestVerifyConfig_MissingSources(t *testing.T) {
 	ctx := context.Background()
 
 	cfg := &Config{
@@ -158,7 +158,6 @@ func TestVerifyConfig_MissingPath(t *testing.T) {
 
 	err := verifyConfig(ctx, cfg)
 	assert.Error(t, err)
-	assert.Equal(t, "local source for configuration is required", err.Error())
 }
 
 func TestVerifyConfig_FailCreateSource(t *testing.T) {
@@ -189,6 +188,23 @@ func TestVerifyConfig_FailCreateService(t *testing.T) {
 	err := verifyConfig(ctx, cfg)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no such file or directory")
+}
+
+func TestVerifyConfig_FailToCreateSources(t *testing.T) {
+	ctx := context.Background()
+
+	cfg := &Config{
+		APISource: source.Config{
+			Path: "invalid_path",
+			Etcd: source.EtcdConfig{
+				Servers: "localhost:2379",
+				Prefix:  "",
+			},
+		},
+	}
+
+	err := verifyConfig(ctx, cfg)
+	assert.Error(t, err)
 }
 
 func TestVerifyConfig_FailLoadHandlers(t *testing.T) {
