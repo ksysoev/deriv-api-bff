@@ -120,6 +120,7 @@ func (es *EtcdSource) PutConfig(ctx context.Context, cfg []handlerfactory.Config
 		if _, ok := indx[key]; !ok {
 			ctx, cancel := context.WithTimeout(ctx, defaultTimeoutSeconds*time.Second)
 			_, err := es.cli.Delete(ctx, string(kv.Key))
+
 			cancel()
 
 			if err != nil {
