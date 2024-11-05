@@ -35,6 +35,7 @@ func InitCommands(build, version string) (*cobra.Command, error) {
 
 	configCmd := ConfigCommand(args)
 	configCmd.AddCommand(UploadConfigCommand(args))
+	configCmd.AddCommand(VerifyConfigCommand(args))
 	cmd.AddCommand(configCmd)
 
 	cmd.PersistentFlags().StringVar(&args.ConfigPath, "config", "./runtime/config.yaml", "config file path")
@@ -122,6 +123,33 @@ func UploadConfigCommand(arg *args) *cobra.Command {
 			}
 
 			return uploadConfig(cmd.Context(), cfg)
+		},
+	}
+}
+
+// VerifyConfigCommand creates a new cobra.Command to verify the configuration for correctness.
+// It takes arg of type *args which contains the necessary parameters for the command.
+// It returns a pointer to a cobra.Command which can be executed to perform the verification.
+// It returns an error if initializing the logger or configuration fails, or if the configuration verification fails.
+func VerifyConfigCommand(arg *args) *cobra.Command {
+	return &cobra.Command{
+		Use:   "verify",
+		Short: "Verify the config",
+		Long:  "Verify the config for correctness",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := initLogger(arg); err != nil {
+				return err
+			}
+
+			slog.Info("Verifying config...", slog.String("version", arg.version), slog.String("build", arg.build))
+
+			cfg, err := initConfig(arg.ConfigPath)
+
+			if err != nil {
+				return err
+			}
+
+			return verifyConfig(cmd.Context(), cfg)
 		},
 	}
 }

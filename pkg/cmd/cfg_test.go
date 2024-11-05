@@ -132,3 +132,75 @@ func TestUploadConfig_FailCreateSource(t *testing.T) {
 	err := uploadConfig(ctx, cfg)
 	assert.Error(t, err)
 }
+func TestVerifyConfig_Valid(t *testing.T) {
+	ctx := context.Background()
+
+	path := createTempConfigFile(t, callsConfig)
+
+	cfg := &Config{
+		APISource: source.Config{
+			Path: path,
+		},
+	}
+
+	err := verifyConfig(ctx, cfg)
+	assert.NoError(t, err)
+}
+
+func TestVerifyConfig_MissingPath(t *testing.T) {
+	ctx := context.Background()
+
+	cfg := &Config{
+		APISource: source.Config{
+			Path: "",
+		},
+	}
+
+	err := verifyConfig(ctx, cfg)
+	assert.Error(t, err)
+	assert.Equal(t, "local source for configuration is required", err.Error())
+}
+
+func TestVerifyConfig_FailCreateSource(t *testing.T) {
+	ctx := context.Background()
+
+	cfg := &Config{
+		APISource: source.Config{
+			Etcd: source.EtcdConfig{
+				Servers: "localhost:2379",
+				Prefix:  "",
+			},
+		},
+	}
+
+	err := verifyConfig(ctx, cfg)
+	assert.Error(t, err)
+}
+
+func TestVerifyConfig_FailCreateService(t *testing.T) {
+	ctx := context.Background()
+
+	cfg := &Config{
+		APISource: source.Config{
+			Path: "invalid_path",
+		},
+	}
+
+	err := verifyConfig(ctx, cfg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no such file or directory")
+}
+
+func TestVerifyConfig_FailLoadHandlers(t *testing.T) {
+	ctx := context.Background()
+
+	cfg := &Config{
+		APISource: source.Config{
+			Path: "invalid_path",
+		},
+	}
+
+	err := verifyConfig(ctx, cfg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load handlers")
+}
