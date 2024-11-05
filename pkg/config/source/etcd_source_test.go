@@ -21,7 +21,7 @@ func TestEtcdSource_Int(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	ctr, err := etcd.Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14", etcd.WithNodes("etcd-1", "etcd-2", "etcd-3"))
+	ctr, err := etcd.Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14", etcd.WithNodes("etcd-1", "etcd-2"))
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -123,4 +123,30 @@ func TestEtcdSource_Int(t *testing.T) {
 	configs, err = source.LoadConfig(ctx)
 	assert.Error(t, err, "failed to load config")
 	assert.Nil(t, configs)
+
+	expected = []handlerfactory.Config{
+		{
+			Method: "Test2",
+			Backend: []*processor.Config{
+				{
+					Tmplt: map[string]any{"ping": "pong"},
+				},
+			},
+		},
+		{
+			Method: "Test3",
+			Backend: []*processor.Config{
+				{
+					Tmplt: map[string]any{"ping": "pong"},
+				},
+			},
+		},
+	}
+
+	err = source.PutConfig(ctx, expected)
+	require.NoError(t, err)
+
+	configs, err = source.LoadConfig(ctx)
+	assert.NoError(t, err, "failed to load config")
+	assert.Equal(t, expected, configs)
 }
