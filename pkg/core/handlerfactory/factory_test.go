@@ -155,6 +155,18 @@ func TestCreateHandler(t *testing.T) {
 			name: "Missing method in backend config",
 			call: Config{
 				Method: "",
+				Backend: []*processor.Config{
+					{
+						Tmplt: map[string]any{"ping": "pong"},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Missing params in backend config",
+			call: Config{
+				Method: "testMethod",
 			},
 			wantErr: true,
 		},
