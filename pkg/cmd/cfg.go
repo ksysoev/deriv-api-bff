@@ -69,3 +69,30 @@ func uploadConfig(ctx context.Context, cfg *Config) error {
 
 	return svc.PutConfig(ctx)
 }
+
+// verifyConfig verifies the provided configuration.
+// It takes ctx of type context.Context and cfg of type *Config.
+// It returns an error if the configuration is invalid or if there is a failure in creating the config source or service.
+// It returns nil if the configuration is successfully verified and handlers are loaded.
+func verifyConfig(ctx context.Context, cfg *Config) error {
+	sourceOpts, err := source.CreateOptions(&cfg.APISource)
+	if err != nil {
+		return fmt.Errorf("failed to create config source: %w", err)
+	}
+
+	calls := repo.NewCallsRepository()
+	requestHandler := core.NewService(calls, nil, nil)
+
+	svc, err := config.New(requestHandler, sourceOpts...)
+	if err != nil {
+		return fmt.Errorf("failed to create config service: %w", err)
+	}
+
+	if err := svc.LoadHandlers(ctx); err != nil {
+		return fmt.Errorf("failed to load handlers: %w", err)
+	}
+
+	slog.Info("Configuration is valid")
+
+	return nil
+}

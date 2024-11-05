@@ -39,7 +39,7 @@ func TestInitCommands(t *testing.T) {
 	assert.ElementsMatchf(t, []string{"server", "config"}, mapToNames(subCommands), "commands should match")
 
 	configCommands := findByName(subCommands, "config").Commands()
-	assert.Equal(t, 1, len(configCommands))
+	assert.Equal(t, 2, len(configCommands))
 	assert.Equal(t, "upload", configCommands[0].Use)
 }
 
@@ -198,5 +198,49 @@ func TestInitCommands_InvalidLogText(t *testing.T) {
 	os.Setenv("LOGTEXT", "invalid")
 
 	_, err := InitCommands(build, version)
+	assert.Error(t, err)
+}
+func TestVerifyConfigCommand_ValidConfig(t *testing.T) {
+	configPath := createTempConfigFile(t, validConfig)
+
+	arg := &args{
+		build:      "test-build",
+		version:    "test-version",
+		ConfigPath: configPath,
+		LogLevel:   "debug",
+		TextFormat: true,
+	}
+
+	cmd := VerifyConfigCommand(arg)
+
+	assert.NotNil(t, cmd)
+	assert.Equal(t, "verify", cmd.Use)
+	assert.Equal(t, "Verify the config", cmd.Short)
+	assert.Equal(t, "Verify the config for correctness", cmd.Long)
+
+	err := cmd.ExecuteContext(cmd.Context())
+
+	assert.Error(t, err)
+}
+
+func TestVerifyConfigCommand_InvalidConfig(t *testing.T) {
+	configPath := createTempConfigFile(t, "invalid content")
+
+	arg := &args{
+		build:      "test-build",
+		version:    "test-version",
+		ConfigPath: configPath,
+		LogLevel:   "debug",
+		TextFormat: true,
+	}
+
+	cmd := VerifyConfigCommand(arg)
+
+	assert.NotNil(t, cmd)
+	assert.Equal(t, "verify", cmd.Use)
+	assert.Equal(t, "Verify the config", cmd.Short)
+	assert.Equal(t, "Verify the config for correctness", cmd.Long)
+
+	err := cmd.ExecuteContext(cmd.Context())
 	assert.Error(t, err)
 }
