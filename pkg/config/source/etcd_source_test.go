@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handlerfactory"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/processor"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/validator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -73,9 +74,19 @@ func TestEtcdSource_Int(t *testing.T) {
 	expected := []handlerfactory.Config{
 		{
 			Method: "Test",
+			Backend: []*processor.Config{
+				{
+					Tmplt: map[string]any{"ping": "pong"},
+				},
+			},
 		},
 		{
 			Method: "Test2",
+			Backend: []*processor.Config{
+				{
+					Tmplt: map[string]any{"ping": "pong"},
+				},
+			},
 		},
 	}
 
@@ -91,6 +102,11 @@ func TestEtcdSource_Int(t *testing.T) {
 		{
 			Method: "Test",
 			Params: validator.Config{"test": make(chan int)},
+			Backend: []*processor.Config{
+				{
+					Tmplt: map[string]any{"ping": "pong"},
+				},
+			},
 		},
 	})
 	assert.Error(t, err, "failed to marshal config")

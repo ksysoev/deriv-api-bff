@@ -26,6 +26,10 @@ func New(cfg Config) (string, core.Handler, error) {
 		return "", nil, fmt.Errorf("method must be provided")
 	}
 
+	if len(cfg.Backend) == 0 {
+		return "", nil, fmt.Errorf("at least one backend must be provided")
+	}
+
 	for i, req := range cfg.Backend {
 		if req.Name == "" {
 			req.Name = fmt.Sprintf("backend-%d", i)
