@@ -86,6 +86,8 @@ func (es *EtcdSource) LoadConfig(ctx context.Context) ([]handlerfactory.Config, 
 // The function creates a context with a timeout for each put operation.
 func (es *EtcdSource) PutConfig(ctx context.Context, cfg []handlerfactory.Config) error {
 	//TODO: add logic for removing keys that are not in the new config
+	indx := make(map[string]struct{}, len(cfg))
+
 	for _, c := range cfg {
 		data, err := json.Marshal(c)
 
@@ -100,6 +102,29 @@ func (es *EtcdSource) PutConfig(ctx context.Context, cfg []handlerfactory.Config
 
 		if err != nil {
 			return fmt.Errorf("failed to put config: %w", err)
+		}
+
+		indx[c.Method] = struct{}{}
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeoutSeconds*time.Second)
+	defer cancel()
+
+	data, err := es.cli.Get(ctx, es.prefix, clientv3.WithPrefix())
+	if err != nil {
+		return fmt.Errorf("failed to get config from etcd: %w", err)
+	}
+
+	for _, kv := range data.Kvs {
+		key := strings.TrimPrefix(string(kv.Key), es.prefix)
+		if _, ok := indx[key]; !ok {
+			ctx, cancel := context.WithTimeout(ctx, defaultTimeoutSeconds*time.Second)
+			_, err := es.cli.Delete(ctx, string(kv.Key))
+			cancel()
+
+			if err != nil {
+				return fmt.Errorf("failed to delete key: %w", err)
+			}
 		}
 	}
 
