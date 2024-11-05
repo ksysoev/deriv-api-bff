@@ -12,7 +12,7 @@ import (
 
 type Config struct {
 	Method  string              `json:"method" yaml:"method"`
-	Params  validator.Config    `json:"params" yaml:"params"`
+	Params  *validator.Config   `json:"params,omitempty" yaml:"params,omitempty"`
 	Backend []*processor.Config `json:"backend" yaml:"backend"`
 }
 

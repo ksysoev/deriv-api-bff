@@ -19,7 +19,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "valid deriv handler creation",
 			call: Config{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
+				Params: &validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*processor.Config{
 					{
 						Name:     "backend1",
@@ -35,7 +35,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "valid http handler creation",
 			call: Config{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
+				Params: &validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*processor.Config{
 					{
 						Name:        "backend1",
@@ -53,7 +53,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "invalid processor configuration",
 			call: Config{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
+				Params: &validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*processor.Config{
 					{
 						Name:     "backend1",
@@ -68,7 +68,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "invalid validator config",
 			call: Config{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "invalidType"}},
+				Params: &validator.Config{"param1": validator.FieldSchema{Type: "invalidType"}},
 				Backend: []*processor.Config{
 					{
 						Name:     "backend1",
@@ -84,7 +84,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "invalid request template",
 			call: Config{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
+				Params: &validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*processor.Config{
 					{
 						Name:     "backend1",
@@ -100,7 +100,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "invalid url template",
 			call: Config{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
+				Params: &validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*processor.Config{
 					{
 						Name:        "backend1",
@@ -116,7 +116,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "circular dependency",
 			call: Config{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
+				Params: &validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*processor.Config{
 					{
 						Name:      "backend1",
@@ -140,7 +140,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "Missing name in backend config",
 			call: Config{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
+				Params: &validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*processor.Config{
 					{
 						FieldMap:    map[string]string{"field1": "value1"},

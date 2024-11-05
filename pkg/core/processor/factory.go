@@ -14,13 +14,13 @@ type Processor interface {
 }
 
 type Config struct {
-	Name        string            `json:"name" yaml:"name"`
-	Method      string            `json:"method" yaml:"method"`
-	URLTemplate string            `json:"url_template" yaml:"url_template"`
-	Tmplt       map[string]any    `json:"request_template" yaml:"request_template"`
-	FieldMap    map[string]string `json:"fields_map" yaml:"fields_map"`
-	DependsOn   []string          `json:"depends_on" yaml:"depends_on"`
-	Allow       []string          `json:"allow" yaml:"allow"`
+	Name        string            `json:"name,omitempty" yaml:"name,omitempty"`
+	Method      string            `json:"method,omitempty" yaml:"method,omitempty"`
+	URLTemplate string            `json:"url_template,omitempty" yaml:"url_template,omitempty"`
+	Tmplt       map[string]any    `json:"request_template,omitempty" yaml:"request_template,omitempty"`
+	FieldMap    map[string]string `json:"fields_map,omitempty" yaml:"fields_map,omitempty"`
+	DependsOn   []string          `json:"depends_on,omitempty" yaml:"depends_on,omitempty"`
+	Allow       []string          `json:"allow,omitempty" yaml:"allow,omitempty"`
 }
 
 // New creates a new Processor based on the provided configuration.

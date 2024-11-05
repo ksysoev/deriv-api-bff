@@ -101,7 +101,7 @@ func TestEtcdSource_Int(t *testing.T) {
 	err = source.PutConfig(ctx, []handlerfactory.Config{
 		{
 			Method: "Test",
-			Params: validator.Config{"test": make(chan int)},
+			Params: &validator.Config{"test": make(chan int)},
 			Backend: []*processor.Config{
 				{
 					Tmplt: map[string]any{"ping": "pong"},

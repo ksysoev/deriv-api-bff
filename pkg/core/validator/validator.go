@@ -26,14 +26,14 @@ type FieldValidator struct {
 // It takes cfg of type Config, which maps field names to their configurations.
 // It returns a pointer to a FieldValidator and an error.
 // It returns an error if any field in the configuration has an unknown type.
-func New(cfg Config) (*FieldValidator, error) {
+func New(cfg *Config) (*FieldValidator, error) {
 	if cfg == nil {
-		cfg = make(Config)
+		cfg = &Config{}
 	}
 
-	required := make([]string, 0, len(cfg))
+	required := make([]string, 0, len(*cfg))
 
-	for field := range cfg {
+	for field := range *cfg {
 		required = append(required, field)
 	}
 
