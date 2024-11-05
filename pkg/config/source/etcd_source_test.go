@@ -17,11 +17,11 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-func TestEtcdSource_Int(t *testing.T) {
+func TestEtcdSource_Integration(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	ctr, err := etcd.Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14", etcd.WithNodes("etcd-1", "etcd-2", "etcd-3"))
+	ctr, err := etcd.Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14", etcd.WithNodes("etcd-1", "etcd-2"))
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -33,94 +33,162 @@ func TestEtcdSource_Int(t *testing.T) {
 	etcdHost, err := ctr.ClientEndpoints(ctx)
 	require.NoError(t, err)
 
-	_, err = NewEtcdSource(EtcdConfig{
-		Servers: "",
-		Prefix:  "",
-	})
-	assert.Error(t, err, "should fail to create etcd source")
-
-	source, err := NewEtcdSource(EtcdConfig{
-		Servers: "",
-		Prefix:  "test1::",
-	})
-	require.NoError(t, err)
-
-	configs, err := source.LoadConfig(ctx)
-
-	assert.Error(t, err, "failed to load config")
-	assert.Nil(t, configs)
-
-	err = source.PutConfig(ctx, []handlerfactory.Config{
-		{
-			Method: "Test",
-		},
-	})
-	assert.Error(t, err, "failed to put config")
-
-	source, err = NewEtcdSource(EtcdConfig{
-		Servers: strings.Join(etcdHost, ","),
-		Prefix:  "test2::",
+	t.Run("Fail to create etcd source with empty servers", func(t *testing.T) {
+		_, err := NewEtcdSource(EtcdConfig{
+			Servers: "",
+			Prefix:  "",
+		})
+		assert.Error(t, err, "should fail to create etcd source")
 	})
 
-	assert.NoError(t, err, "failed to create etcd source")
-	assert.NotNil(t, source)
+	t.Run("Fail to load config with empty servers", func(t *testing.T) {
+		source, err := NewEtcdSource(EtcdConfig{
+			Servers: "",
+			Prefix:  "test1::",
+		})
+		require.NoError(t, err)
 
-	configs, err = source.LoadConfig(ctx)
+		configs, err := source.LoadConfig(ctx)
+		assert.Error(t, err, "failed to load config")
+		assert.Nil(t, configs)
+	})
 
-	assert.NoError(t, err, "failed to load config")
-	assert.NotNil(t, configs)
-	assert.Len(t, configs, 0)
+	t.Run("Fail to put config with empty servers", func(t *testing.T) {
+		source, err := NewEtcdSource(EtcdConfig{
+			Servers: "",
+			Prefix:  "test1::",
+		})
+		require.NoError(t, err)
 
-	expected := []handlerfactory.Config{
-		{
-			Method: "Test",
-			Backend: []*processor.Config{
-				{
-					Tmplt: map[string]any{"ping": "pong"},
+		err = source.PutConfig(ctx, []handlerfactory.Config{
+			{
+				Method: "Test",
+			},
+		})
+		assert.Error(t, err, "failed to put config")
+	})
+
+	t.Run("Create etcd source with valid servers", func(t *testing.T) {
+		source, err := NewEtcdSource(EtcdConfig{
+			Servers: strings.Join(etcdHost, ","),
+			Prefix:  "test2::",
+		})
+		assert.NoError(t, err, "failed to create etcd source")
+		assert.NotNil(t, source)
+
+		configs, err := source.LoadConfig(ctx)
+		assert.NoError(t, err, "failed to load config")
+		assert.NotNil(t, configs)
+		assert.Len(t, configs, 0)
+	})
+
+	t.Run("Put and load valid config", func(t *testing.T) {
+		source, err := NewEtcdSource(EtcdConfig{
+			Servers: strings.Join(etcdHost, ","),
+			Prefix:  "test2::",
+		})
+		require.NoError(t, err)
+
+		expected := []handlerfactory.Config{
+			{
+				Method: "Test",
+				Backend: []*processor.Config{
+					{
+						Tmplt: map[string]any{"ping": "pong"},
+					},
 				},
 			},
-		},
-		{
-			Method: "Test2",
-			Backend: []*processor.Config{
-				{
-					Tmplt: map[string]any{"ping": "pong"},
+			{
+				Method: "Test2",
+				Backend: []*processor.Config{
+					{
+						Tmplt: map[string]any{"ping": "pong"},
+					},
 				},
 			},
-		},
-	}
+		}
 
-	err = source.PutConfig(ctx, expected)
-	require.NoError(t, err)
+		err = source.PutConfig(ctx, expected)
+		require.NoError(t, err)
 
-	configs, err = source.LoadConfig(ctx)
+		configs, err := source.LoadConfig(ctx)
+		assert.NoError(t, err, "failed to load config")
+		assert.Equal(t, expected, configs)
+	})
 
-	assert.NoError(t, err, "failed to load config")
-	assert.Equal(t, expected, configs)
+	t.Run("Fail to marshal invalid config", func(t *testing.T) {
+		source, err := NewEtcdSource(EtcdConfig{
+			Servers: strings.Join(etcdHost, ","),
+			Prefix:  "test2::",
+		})
+		require.NoError(t, err)
 
-	err = source.PutConfig(ctx, []handlerfactory.Config{
-		{
-			Method: "Test",
-			Params: &validator.Config{"test": make(chan int)},
-			Backend: []*processor.Config{
-				{
-					Tmplt: map[string]any{"ping": "pong"},
+		err = source.PutConfig(ctx, []handlerfactory.Config{
+			{
+				Method: "Test",
+				Params: &validator.Config{"test": make(chan int)},
+				Backend: []*processor.Config{
+					{
+						Tmplt: map[string]any{"ping": "pong"},
+					},
 				},
 			},
-		},
+		})
+		assert.Error(t, err, "failed to marshal config")
 	})
-	assert.Error(t, err, "failed to marshal config")
 
-	etcdClient, err := clientv3.New(clientv3.Config{
-		Endpoints:   etcdHost,
-		DialTimeout: defaultTimeoutSeconds * time.Second,
+	t.Run("Fail to load invalid JSON config", func(t *testing.T) {
+		source, err := NewEtcdSource(EtcdConfig{
+			Servers: strings.Join(etcdHost, ","),
+			Prefix:  "test2::",
+		})
+		require.NoError(t, err)
+
+		etcdClient, err := clientv3.New(clientv3.Config{
+			Endpoints:   etcdHost,
+			DialTimeout: defaultTimeoutSeconds * time.Second,
+		})
+		require.NoError(t, err)
+
+		_, err = etcdClient.Put(ctx, "test2::Test", "invalid json")
+		require.NoError(t, err)
+
+		configs, err := source.LoadConfig(ctx)
+		assert.Error(t, err, "failed to load config")
+		assert.Nil(t, configs)
 	})
-	require.NoError(t, err)
 
-	_, err = etcdClient.Put(ctx, "test2::Test", "invalid json")
-	require.NoError(t, err)
+	t.Run("Put and load another valid config", func(t *testing.T) {
+		source, err := NewEtcdSource(EtcdConfig{
+			Servers: strings.Join(etcdHost, ","),
+			Prefix:  "test2::",
+		})
+		require.NoError(t, err)
 
-	configs, err = source.LoadConfig(ctx)
-	assert.Error(t, err, "failed to load config")
-	assert.Nil(t, configs)
+		expected := []handlerfactory.Config{
+			{
+				Method: "Test2",
+				Backend: []*processor.Config{
+					{
+						Tmplt: map[string]any{"ping": "pong"},
+					},
+				},
+			},
+			{
+				Method: "Test3",
+				Backend: []*processor.Config{
+					{
+						Tmplt: map[string]any{"ping": "pong"},
+					},
+				},
+			},
+		}
+
+		err = source.PutConfig(ctx, expected)
+		require.NoError(t, err)
+
+		configs, err := source.LoadConfig(ctx)
+		assert.NoError(t, err, "failed to load config")
+		assert.Equal(t, expected, configs)
+	})
 }
