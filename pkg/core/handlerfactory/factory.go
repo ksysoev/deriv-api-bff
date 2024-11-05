@@ -11,9 +11,9 @@ import (
 )
 
 type Config struct {
-	Method  string              `mapstructure:"method" yaml:"method"`
-	Params  validator.Config    `mapstructure:"params" yaml:"params"`
-	Backend []*processor.Config `mapstructure:"backend" yaml:"backend"`
+	Method  string              `json:"method" yaml:"method"`
+	Params  validator.Config    `json:"params" yaml:"params"`
+	Backend []*processor.Config `json:"backend" yaml:"backend"`
 }
 
 func New(cfg Config) (string, core.Handler, error) {
