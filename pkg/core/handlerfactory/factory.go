@@ -26,13 +26,9 @@ func New(cfg Config) (string, core.Handler, error) {
 		return "", nil, fmt.Errorf("method must be provided")
 	}
 
-	for _, req := range cfg.Backend {
+	for i, req := range cfg.Backend {
 		if req.Name == "" {
-			req.Name = req.ResponseBody
-		}
-
-		if req.Name == "" {
-			return "", nil, fmt.Errorf("name or response_body must be provided")
+			req.Name = fmt.Sprintf("backend-%d", i)
 		}
 	}
 
