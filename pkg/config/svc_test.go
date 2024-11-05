@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	handlerfactory "github.com/ksysoev/deriv-api-bff/pkg/core/handlerfactory"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/processor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -74,16 +75,34 @@ func TestService_LoadHandlers(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			name:    "Load from local source",
-			local:   true,
-			cfg:     []handlerfactory.Config{{Method: "handler1"}},
+			name:  "Load from local source",
+			local: true,
+			cfg: []handlerfactory.Config{
+				{
+					Method: "handler1",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": 1},
+						},
+					},
+				},
+			},
 			err:     nil,
 			wantErr: false,
 		},
 		{
-			name:    "Load from remote source",
-			local:   false,
-			cfg:     []handlerfactory.Config{{Method: "handler1"}},
+			name:  "Load from remote source",
+			local: false,
+			cfg: []handlerfactory.Config{
+				{
+					Method: "handler1",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": 1},
+						},
+					},
+				},
+			},
 			err:     nil,
 			wantErr: false,
 		},
@@ -105,8 +124,22 @@ func TestService_LoadHandlers(t *testing.T) {
 			name:  "Duplicate handler names",
 			local: false,
 			cfg: []handlerfactory.Config{
-				{Method: "handler1"},
-				{Method: "handler1"},
+				{
+					Method: "handler1",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": 1},
+						},
+					},
+				},
+				{
+					Method: "handler1",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": 1},
+						},
+					},
+				},
 			},
 			err:     nil,
 			wantErr: true,
@@ -179,18 +212,36 @@ func TestService_PutConfig(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "Put config error",
-			local:   true,
-			remote:  true,
-			curCfg:  []handlerfactory.Config{{Method: "handler1"}},
+			name:   "Put config error",
+			local:  true,
+			remote: true,
+			curCfg: []handlerfactory.Config{
+				{
+					Method: "handler1",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": 1},
+						},
+					},
+				},
+			},
 			putErr:  fmt.Errorf("put config error"),
 			wantErr: true,
 		},
 		{
-			name:    "Successful put config",
-			local:   true,
-			remote:  true,
-			curCfg:  []handlerfactory.Config{{Method: "handler1"}},
+			name:   "Successful put config",
+			local:  true,
+			remote: true,
+			curCfg: []handlerfactory.Config{
+				{
+					Method: "handler1",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": 1},
+						},
+					},
+				},
+			},
 			wantErr: false,
 		},
 	}
@@ -243,16 +294,44 @@ func TestCreateHandlers(t *testing.T) {
 		{
 			name: "Valid config",
 			cfg: []handlerfactory.Config{
-				{Method: "handler1"},
-				{Method: "handler2"},
+				{
+					Method: "handler1",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": 1},
+						},
+					},
+				},
+				{
+					Method: "handler2",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": 1},
+						},
+					},
+				},
 			},
 			wantErr: false,
 		},
 		{
 			name: "Duplicate handler names",
 			cfg: []handlerfactory.Config{
-				{Method: "handler1"},
-				{Method: "handler1"},
+				{
+					Method: "handler1",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": 1},
+						},
+					},
+				},
+				{
+					Method: "handler1",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": 1},
+						},
+					},
+				},
 			},
 			wantErr: true,
 		},

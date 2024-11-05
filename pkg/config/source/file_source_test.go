@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handlerfactory"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/processor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -50,11 +51,31 @@ func TestReadFile(t *testing.T) {
 			name: "Valid YAML file",
 			fileContent: `
 - method: config1
+  backend:
+    - request_template:
+        ping: pong
 - method: config2
+  backend:
+    - request_template:
+        ping: pong
 `,
 			expected: []handlerfactory.Config{
-				{Method: "config1"},
-				{Method: "config2"},
+				{
+					Method: "config1",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": "pong"},
+						},
+					},
+				},
+				{
+					Method: "config2",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": "pong"},
+						},
+					},
+				},
 			},
 			expectError: false,
 		},
@@ -122,14 +143,34 @@ func TestReadDir(t *testing.T) {
 			files: map[string]string{
 				"config1.yaml": `
 - method: config1
+  backend:
+    - request_template:
+        ping: pong
 `,
 				"config2.yaml": `
 - method: config2
+  backend:
+    - request_template:
+        ping: pong
 `,
 			},
 			expected: []handlerfactory.Config{
-				{Method: "config1"},
-				{Method: "config2"},
+				{
+					Method: "config1",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": "pong"},
+						},
+					},
+				},
+				{
+					Method: "config2",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": "pong"},
+						},
+					},
+				},
 			},
 			expectError: false,
 		},
@@ -213,7 +254,13 @@ func TestLoadConfig(t *testing.T) {
 
 				content := `
 - method: config1
+  backend:
+    - request_template:
+        ping: pong
 - method: config2
+  backend:
+    - request_template:
+        ping: pong
 `
 				_, err = tmpFile.WriteString(content)
 				assert.NoError(t, err)
@@ -221,8 +268,22 @@ func TestLoadConfig(t *testing.T) {
 				return tmpFile.Name()
 			},
 			expected: []handlerfactory.Config{
-				{Method: "config1"},
-				{Method: "config2"},
+				{
+					Method: "config1",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": "pong"},
+						},
+					},
+				},
+				{
+					Method: "config2",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": "pong"},
+						},
+					},
+				},
 			},
 			expectError: false,
 		},
@@ -236,9 +297,15 @@ func TestLoadConfig(t *testing.T) {
 				files := map[string]string{
 					"config1.yaml": `
 - method: config1
+  backend:
+    - request_template:
+        ping: pong
 `,
 					"config2.yaml": `
 - method: config2
+  backend:
+    - request_template:
+        ping: pong
 `,
 				}
 
@@ -250,8 +317,22 @@ func TestLoadConfig(t *testing.T) {
 				return tmpDir
 			},
 			expected: []handlerfactory.Config{
-				{Method: "config1"},
-				{Method: "config2"},
+				{
+					Method: "config1",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": "pong"},
+						},
+					},
+				},
+				{
+					Method: "config2",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": "pong"},
+						},
+					},
+				},
 			},
 			expectError: false,
 		},

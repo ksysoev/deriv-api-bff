@@ -12,11 +12,10 @@ import (
 )
 
 type DerivProc struct {
-	name         string
-	tmpl         *tmpl.Tmpl
-	fieldMap     map[string]string
-	responseBody string
-	allow        []string
+	name     string
+	tmpl     *tmpl.Tmpl
+	fieldMap map[string]string
+	allow    []string
 }
 
 type templateData struct {
@@ -47,11 +46,10 @@ func NewDeriv(cfg *Config) (*DerivProc, error) {
 	}
 
 	return &DerivProc{
-		name:         cfg.Name,
-		tmpl:         reqTmpl,
-		fieldMap:     cfg.FieldMap,
-		responseBody: cfg.ResponseBody,
-		allow:        cfg.Allow,
+		name:     cfg.Name,
+		tmpl:     reqTmpl,
+		fieldMap: cfg.FieldMap,
+		allow:    cfg.Allow,
 	}, nil
 }
 
@@ -59,11 +57,7 @@ func NewDeriv(cfg *Config) (*DerivProc, error) {
 // It does not take any parameters.
 // It returns a string which is the response body of the Processor.
 func (p *DerivProc) Name() string {
-	if p.name != "" {
-		return p.name
-	}
-
-	return p.responseBody
+	return p.name
 }
 
 // Render generates and writes the rendered template to the provided writer.
@@ -104,14 +98,14 @@ func (p *DerivProc) Render(ctx context.Context, reqID string, params, deps map[s
 func (p *DerivProc) Parse(data []byte) (resp, filetered map[string]any, err error) {
 	resp, err = p.parse(data)
 	if err != nil {
-		return nil, nil, fmt.Errorf("fail to parse response %s: %w", p.responseBody, err)
+		return nil, nil, fmt.Errorf("fail to parse response %s: %w", p.name, err)
 	}
 
 	filetered = make(map[string]any, len(p.allow))
 
 	for _, key := range p.allow {
 		if _, ok := resp[key]; !ok {
-			slog.Warn("Response body does not contain expeted key", slog.String("key", key), slog.String("response_body", p.responseBody))
+			slog.Warn("Response body does not contain expeted key", slog.String("key", key), slog.String("name", p.name))
 			continue
 		}
 
@@ -147,7 +141,12 @@ func (p *DerivProc) parse(data []byte) (map[string]any, error) {
 		return nil, NewAPIError(errData)
 	}
 
-	rb, ok := rdata[p.responseBody]
+	msgType, ok := rdata["msg_type"].(string)
+	if !ok {
+		return nil, fmt.Errorf("msg_type not found or not a string")
+	}
+
+	rb, ok := rdata[msgType]
 	if !ok {
 		return nil, fmt.Errorf("response body not found")
 	}

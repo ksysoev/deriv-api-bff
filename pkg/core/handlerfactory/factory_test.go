@@ -19,14 +19,13 @@ func TestCreateHandler(t *testing.T) {
 			name: "valid deriv handler creation",
 			call: Config{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
+				Params: &validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*processor.Config{
 					{
-						Name:         "backend1",
-						FieldMap:     map[string]string{"field1": "value1"},
-						ResponseBody: "responseBody1",
-						Tmplt:        map[string]any{"key1": "value1"},
-						Allow:        []string{"allow1"},
+						Name:     "backend1",
+						FieldMap: map[string]string{"field1": "value1"},
+						Tmplt:    map[string]any{"key1": "value1"},
+						Allow:    []string{"allow1"},
 					},
 				},
 			},
@@ -36,7 +35,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "valid http handler creation",
 			call: Config{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
+				Params: &validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*processor.Config{
 					{
 						Name:        "backend1",
@@ -54,16 +53,12 @@ func TestCreateHandler(t *testing.T) {
 			name: "invalid processor configuration",
 			call: Config{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
+				Params: &validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*processor.Config{
 					{
-						Name:         "backend1",
-						FieldMap:     map[string]string{"field1": "value1"},
-						URLTemplate:  "http://localhost/",
-						Method:       "GET",
-						ResponseBody: "responseBody1",
-						Tmplt:        map[string]any{"key1": "value1"},
-						Allow:        []string{"allow1"},
+						Name:     "backend1",
+						FieldMap: map[string]string{"field1": "value1"},
+						Allow:    []string{"allow1"},
 					},
 				},
 			},
@@ -73,14 +68,13 @@ func TestCreateHandler(t *testing.T) {
 			name: "invalid validator config",
 			call: Config{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "invalidType"}},
+				Params: &validator.Config{"param1": validator.FieldSchema{Type: "invalidType"}},
 				Backend: []*processor.Config{
 					{
-						Name:         "backend1",
-						FieldMap:     map[string]string{"field1": "value1"},
-						ResponseBody: "responseBody1",
-						Tmplt:        map[string]any{"key1": "value1"},
-						Allow:        []string{"allow1"},
+						Name:     "backend1",
+						FieldMap: map[string]string{"field1": "value1"},
+						Tmplt:    map[string]any{"key1": "value1"},
+						Allow:    []string{"allow1"},
 					},
 				},
 			},
@@ -90,14 +84,13 @@ func TestCreateHandler(t *testing.T) {
 			name: "invalid request template",
 			call: Config{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
+				Params: &validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*processor.Config{
 					{
-						Name:         "backend1",
-						FieldMap:     map[string]string{"field1": "value1"},
-						ResponseBody: "responseBody1",
-						Tmplt:        nil,
-						Allow:        []string{"allow1"},
+						Name:     "backend1",
+						FieldMap: map[string]string{"field1": "value1"},
+						Tmplt:    nil,
+						Allow:    []string{"allow1"},
 					},
 				},
 			},
@@ -107,14 +100,13 @@ func TestCreateHandler(t *testing.T) {
 			name: "invalid url template",
 			call: Config{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
+				Params: &validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*processor.Config{
 					{
-						Name:         "backend1",
-						FieldMap:     map[string]string{"field1": "value1"},
-						ResponseBody: "responseBody1",
-						URLTemplate:  "http://localhost/${invalid",
-						Allow:        []string{"allow1"},
+						Name:        "backend1",
+						FieldMap:    map[string]string{"field1": "value1"},
+						URLTemplate: "http://localhost/${invalid",
+						Allow:       []string{"allow1"},
 					},
 				},
 			},
@@ -124,23 +116,21 @@ func TestCreateHandler(t *testing.T) {
 			name: "circular dependency",
 			call: Config{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
+				Params: &validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*processor.Config{
 					{
-						Name:         "backend1",
-						FieldMap:     map[string]string{"field1": "value1"},
-						ResponseBody: "responseBody1",
-						Tmplt:        map[string]any{"key1": "value1"},
-						DependsOn:    []string{"backend2"},
-						Allow:        []string{"allow1"},
+						Name:      "backend1",
+						FieldMap:  map[string]string{"field1": "value1"},
+						Tmplt:     map[string]any{"key1": "value1"},
+						DependsOn: []string{"backend2"},
+						Allow:     []string{"allow1"},
 					},
 					{
-						Name:         "backend2",
-						FieldMap:     map[string]string{"field2": "value2"},
-						ResponseBody: "responseBody2",
-						Tmplt:        map[string]any{"key1": "value1"},
-						DependsOn:    []string{"backend1"},
-						Allow:        []string{"allow2"},
+						Name:      "backend2",
+						FieldMap:  map[string]string{"field2": "value2"},
+						Tmplt:     map[string]any{"key1": "value1"},
+						DependsOn: []string{"backend1"},
+						Allow:     []string{"allow2"},
 					},
 				},
 			},
@@ -150,7 +140,7 @@ func TestCreateHandler(t *testing.T) {
 			name: "Missing name in backend config",
 			call: Config{
 				Method: "testMethod",
-				Params: validator.Config{"param1": validator.FieldSchema{Type: "string"}},
+				Params: &validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*processor.Config{
 					{
 						FieldMap:    map[string]string{"field1": "value1"},
@@ -165,6 +155,18 @@ func TestCreateHandler(t *testing.T) {
 			name: "Missing method in backend config",
 			call: Config{
 				Method: "",
+				Backend: []*processor.Config{
+					{
+						Tmplt: map[string]any{"ping": "pong"},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Missing params in backend config",
+			call: Config{
+				Method: "testMethod",
 			},
 			wantErr: true,
 		},

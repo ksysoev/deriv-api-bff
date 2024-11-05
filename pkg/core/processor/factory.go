@@ -14,14 +14,13 @@ type Processor interface {
 }
 
 type Config struct {
-	Name         string            `json:"name" yaml:"name"`
-	Method       string            `json:"method" yaml:"method"`
-	URLTemplate  string            `json:"url_template" yaml:"url_template"`
-	Tmplt        map[string]any    `json:"request_template" yaml:"request_template"`
-	FieldMap     map[string]string `json:"fields_map" yaml:"fields_map"`
-	DependsOn    []string          `json:"depends_on" yaml:"depends_on"`
-	ResponseBody string            `json:"response_body" yaml:"response_body"`
-	Allow        []string          `json:"allow" yaml:"allow"`
+	Name        string            `json:"name,omitempty" yaml:"name,omitempty"`
+	Method      string            `json:"method,omitempty" yaml:"method,omitempty"`
+	URLTemplate string            `json:"url_template,omitempty" yaml:"url_template,omitempty"`
+	Tmplt       map[string]any    `json:"request_template,omitempty" yaml:"request_template,omitempty"`
+	FieldMap    map[string]string `json:"fields_map,omitempty" yaml:"fields_map,omitempty"`
+	DependsOn   []string          `json:"depends_on,omitempty" yaml:"depends_on,omitempty"`
+	Allow       []string          `json:"allow,omitempty" yaml:"allow,omitempty"`
 }
 
 // New creates a new Processor based on the provided configuration.
@@ -30,12 +29,10 @@ type Config struct {
 // It returns an error if the configuration is ambiguous or invalid.
 func New(cfg *Config) (Processor, error) {
 	switch {
-	case isDerivConfig(cfg) && isHTTPConfig(cfg):
-		return nil, fmt.Errorf("ambiguous processor configuration")
-	case isDerivConfig(cfg):
-		return NewDeriv(cfg)
 	case isHTTPConfig(cfg):
 		return NewHTTP(cfg)
+	case isDerivConfig(cfg):
+		return NewDeriv(cfg)
 	default:
 		return nil, fmt.Errorf("invalid processor configuration")
 	}
@@ -45,7 +42,7 @@ func New(cfg *Config) (Processor, error) {
 // It takes a single parameter cfg of type *Config.
 // It returns a boolean value indicating whether the ResponseBody field of the configuration is not empty.
 func isDerivConfig(cfg *Config) bool {
-	return cfg.ResponseBody != "" && len(cfg.Tmplt) > 0
+	return len(cfg.Tmplt) > 0 && cfg.Method == "" && cfg.URLTemplate == ""
 }
 
 // isHTTPConfig checks if the given configuration is for an HTTP request.

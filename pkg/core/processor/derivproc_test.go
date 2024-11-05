@@ -17,30 +17,27 @@ func TestNewDeriv(t *testing.T) {
 		{
 			name: "Valid Deriv Config",
 			cfg: &Config{
-				Tmplt:        map[string]any{"params": "${params}", "req_id": "${req_id}"},
-				FieldMap:     map[string]string{"key1": "mappedKey1"},
-				ResponseBody: "data",
-				Allow:        []string{"key1", "key2"},
+				Tmplt:    map[string]any{"params": "${params}", "req_id": "${req_id}"},
+				FieldMap: map[string]string{"key1": "mappedKey1"},
+				Allow:    []string{"key1", "key2"},
 			},
 			wantErr: false,
 		},
 		{
 			name: "Fail to marshal request template",
 			cfg: &Config{
-				Tmplt:        map[string]any{"params": "${params}", "data": make(chan int)},
-				FieldMap:     map[string]string{"key1": "mappedKey1"},
-				ResponseBody: "data",
-				Allow:        []string{"key1", "key2"},
+				Tmplt:    map[string]any{"params": "${params}", "data": make(chan int)},
+				FieldMap: map[string]string{"key1": "mappedKey1"},
+				Allow:    []string{"key1", "key2"},
 			},
 			wantErr: true,
 		},
 		{
 			name: "Fail to parse request template",
 			cfg: &Config{
-				Tmplt:        map[string]any{"test": "${params}invalid"},
-				FieldMap:     map[string]string{"key1": "mappedKey1"},
-				ResponseBody: "data",
-				Allow:        []string{"key1", "key2"},
+				Tmplt:    map[string]any{"test": "${params}invalid"},
+				FieldMap: map[string]string{"key1": "mappedKey1"},
+				Allow:    []string{"key1", "key2"},
 			},
 			wantErr: true,
 		},
@@ -60,7 +57,6 @@ func TestNewDeriv(t *testing.T) {
 			assert.NotNil(t, processor)
 			assert.NotNil(t, processor.tmpl)
 			assert.Equal(t, tt.cfg.FieldMap, processor.fieldMap)
-			assert.Equal(t, tt.cfg.ResponseBody, processor.responseBody)
 			assert.Equal(t, tt.cfg.Allow, processor.allow)
 		})
 	}
@@ -156,36 +152,30 @@ func TestProcessor_Render(t *testing.T) {
 
 func TestProcessor_parse_Success(t *testing.T) {
 	tests := []struct {
-		expected     map[string]any
-		name         string
-		responseBody string
-		jsonData     string
+		expected map[string]any
+		name     string
+		jsonData string
 	}{
 		{
-			name:         "object",
-			responseBody: "data",
-			jsonData:     `{"data": {"key1": "value1", "key2": "value2"}}`,
-			expected:     map[string]any{"key1": "value1", "key2": "value2"},
+			name:     "object",
+			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": "data"}`,
+			expected: map[string]any{"key1": "value1", "key2": "value2"},
 		},
 		{
-			name:         "array",
-			responseBody: "data",
-			jsonData:     `{"data": [{"key1": "value1"}, {"key2": "value2"}]}`,
-			expected:     map[string]any{"list": []any{map[string]any{"key1": "value1"}, map[string]any{"key2": "value2"}}},
+			name:     "array",
+			jsonData: `{"data": [{"key1": "value1"}, {"key2": "value2"}], "msg_type": "data"}`,
+			expected: map[string]any{"list": []any{map[string]any{"key1": "value1"}, map[string]any{"key2": "value2"}}},
 		},
 		{
-			name:         "scalar",
-			responseBody: "data",
-			jsonData:     `{"data": "value"}`,
-			expected:     map[string]any{"value": "value"},
+			name:     "scalar",
+			jsonData: `{"data": "value", "msg_type": "data"}`,
+			expected: map[string]any{"value": "value"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rp := &DerivProc{
-				responseBody: tt.responseBody,
-			}
+			rp := &DerivProc{}
 
 			result, err := rp.parse([]byte(tt.jsonData))
 			assert.NoError(t, err)
@@ -195,9 +185,7 @@ func TestProcessor_parse_Success(t *testing.T) {
 }
 
 func TestProcessor_parse_Error(t *testing.T) {
-	rp := &DerivProc{
-		responseBody: "data",
-	}
+	rp := &DerivProc{}
 
 	jsonData := `{"error": "something went wrong"}`
 
@@ -206,9 +194,7 @@ func TestProcessor_parse_Error(t *testing.T) {
 }
 
 func TestProcessor_parse_ResponseBodyNotFound(t *testing.T) {
-	rp := &DerivProc{
-		responseBody: "data",
-	}
+	rp := &DerivProc{}
 
 	jsonData := `{"key": "value"}`
 
@@ -217,9 +203,7 @@ func TestProcessor_parse_ResponseBodyNotFound(t *testing.T) {
 }
 
 func TestProcessor_parse_UnexpectedFormat(t *testing.T) {
-	rp := &DerivProc{
-		responseBody: "data",
-	}
+	rp := &DerivProc{}
 
 	jsonData := `{invalid json}`
 
@@ -229,45 +213,40 @@ func TestProcessor_parse_UnexpectedFormat(t *testing.T) {
 }
 func TestProcessor_Parse_Success(t *testing.T) {
 	tests := []struct {
-		fieldMap     map[string]string
-		expected     map[string]any
-		name         string
-		responseBody string
-		jsonData     string
-		allow        []string
+		fieldMap map[string]string
+		expected map[string]any
+		name     string
+		jsonData string
+		allow    []string
 	}{
 		{
-			name:         "allowed fields with field mapping",
-			responseBody: "data",
-			fieldMap:     map[string]string{"key1": "mappedKey1"},
-			allow:        []string{"key1", "key2"},
-			jsonData:     `{"data": {"key1": "value1", "key2": "value2"}}`,
-			expected:     map[string]any{"mappedKey1": "value1", "key2": "value2"},
+			name:     "allowed fields with field mapping",
+			fieldMap: map[string]string{"key1": "mappedKey1"},
+			allow:    []string{"key1", "key2"},
+			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": "data"}`,
+			expected: map[string]any{"mappedKey1": "value1", "key2": "value2"},
 		},
 		{
-			name:         "allowed fields without field mapping",
-			responseBody: "data",
-			fieldMap:     nil,
-			allow:        []string{"key1", "key2"},
-			jsonData:     `{"data": {"key1": "value1", "key2": "value2"}}`,
-			expected:     map[string]any{"key1": "value1", "key2": "value2"},
+			name:     "allowed fields without field mapping",
+			fieldMap: nil,
+			allow:    []string{"key1", "key2"},
+			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": "data"}`,
+			expected: map[string]any{"key1": "value1", "key2": "value2"},
 		},
 		{
-			name:         "missing allowed fields",
-			responseBody: "data",
-			fieldMap:     nil,
-			allow:        []string{"key3"},
-			jsonData:     `{"data": {"key1": "value1", "key2": "value2"}}`,
-			expected:     map[string]any{},
+			name:     "missing allowed fields",
+			fieldMap: nil,
+			allow:    []string{"key3"},
+			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": "data"}`,
+			expected: map[string]any{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rp := &DerivProc{
-				responseBody: tt.responseBody,
-				fieldMap:     tt.fieldMap,
-				allow:        tt.allow,
+				fieldMap: tt.fieldMap,
+				allow:    tt.allow,
 			}
 
 			_, result, err := rp.Parse([]byte(tt.jsonData))
@@ -278,9 +257,7 @@ func TestProcessor_Parse_Success(t *testing.T) {
 }
 
 func TestProcessor_Parse_Error(t *testing.T) {
-	rp := &DerivProc{
-		responseBody: "data",
-	}
+	rp := &DerivProc{}
 
 	jsonData := `{"error": "something went wrong"}`
 
@@ -292,25 +269,16 @@ func TestProcessor_Name(t *testing.T) {
 	tests := []struct {
 		name          string
 		processorName string
-		responseBody  string
 		expected      string
 	}{
 		{
 			name:          "non-empty processor name",
 			processorName: "testProcessor",
-			responseBody:  "testResponse",
 			expected:      "testProcessor",
 		},
 		{
-			name:          "empty processor name, non-empty response body",
+			name:          "empty processor name",
 			processorName: "",
-			responseBody:  "testResponse",
-			expected:      "testResponse",
-		},
-		{
-			name:          "empty processor name and response body",
-			processorName: "",
-			responseBody:  "",
 			expected:      "",
 		},
 	}
@@ -318,8 +286,7 @@ func TestProcessor_Name(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rp := &DerivProc{
-				name:         tt.processorName,
-				responseBody: tt.responseBody,
+				name: tt.processorName,
 			}
 
 			result := rp.Name()

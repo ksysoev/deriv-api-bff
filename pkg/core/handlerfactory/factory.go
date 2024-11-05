@@ -12,7 +12,7 @@ import (
 
 type Config struct {
 	Method  string              `json:"method" yaml:"method"`
-	Params  validator.Config    `json:"params" yaml:"params"`
+	Params  *validator.Config   `json:"params,omitempty" yaml:"params,omitempty"`
 	Backend []*processor.Config `json:"backend" yaml:"backend"`
 }
 
@@ -26,13 +26,13 @@ func New(cfg Config) (string, core.Handler, error) {
 		return "", nil, fmt.Errorf("method must be provided")
 	}
 
-	for _, req := range cfg.Backend {
-		if req.Name == "" {
-			req.Name = req.ResponseBody
-		}
+	if len(cfg.Backend) == 0 {
+		return "", nil, fmt.Errorf("at least one backend must be provided")
+	}
 
+	for i, req := range cfg.Backend {
 		if req.Name == "" {
-			return "", nil, fmt.Errorf("name or response_body must be provided")
+			req.Name = fmt.Sprintf("backend-%d", i)
 		}
 	}
 

@@ -12,8 +12,7 @@ import (
 var callsConfig = `
 - method: "testMethod"
   backend:
-    - response_body: "ping"
-      allow: 
+    - allow: 
         - value
       request_template:
         ping: 1

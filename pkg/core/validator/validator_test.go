@@ -9,13 +9,13 @@ import (
 
 func TestNewFieldValidator(t *testing.T) {
 	tests := []struct {
-		config  Config
+		config  *Config
 		name    string
 		wantErr bool
 	}{
 		{
 			name: "Valid configuration",
-			config: Config{
+			config: &Config{
 				"name":  &FieldSchema{Type: "string"},
 				"age":   &FieldSchema{Type: "number"},
 				"admin": &FieldSchema{Type: "boolean"},
@@ -24,14 +24,14 @@ func TestNewFieldValidator(t *testing.T) {
 		},
 		{
 			name: "Invalid configuration with unknown type",
-			config: Config{
+			config: &Config{
 				"unknown": &FieldSchema{Type: "unknown"},
 			},
 			wantErr: true,
 		},
 		{
 			name: "Fail to marshal schema",
-			config: Config{
+			config: &Config{
 				"unknown": make(chan int),
 			},
 			wantErr: true,
@@ -54,7 +54,7 @@ func TestNewFieldValidator(t *testing.T) {
 }
 
 func TestFieldValidator_Validate(t *testing.T) {
-	config := Config{
+	config := &Config{
 		"name":  &FieldSchema{Type: "string"},
 		"age":   &FieldSchema{Type: "number"},
 		"admin": &FieldSchema{Type: "boolean"},
