@@ -191,6 +191,66 @@ func TestEtcdSource_Integration(t *testing.T) {
 		assert.NoError(t, err, "failed to load config")
 		assert.Equal(t, expected, configs)
 	})
+
+	t.Run("Watch configuration", func(t *testing.T) {
+		source, err := NewEtcdSource(EtcdConfig{
+			Servers: strings.Join(etcdHost, ","),
+			Prefix:  "test2::",
+		})
+		require.NoError(t, err)
+
+		source.reducerInterval = 50 * time.Millisecond
+
+		expected := []handlerfactory.Config{
+			{
+				Method: "Test2",
+				Backend: []*processor.Config{
+					{
+						Tmplt: map[string]any{"ping": "pong"},
+					},
+				},
+			},
+			{
+				Method: "Test3",
+				Backend: []*processor.Config{
+					{
+						Tmplt: map[string]any{"ping": "pong"},
+					},
+				},
+			},
+		}
+
+		counter := 0
+		done := make(chan struct{}, 1)
+		onUpdate := func() {
+			counter++
+			done <- struct{}{}
+		}
+
+		ready := make(chan struct{})
+
+		go func() {
+			close(ready)
+			source.Watch(ctx, onUpdate)
+		}()
+
+		select {
+		case <-ready:
+		case <-time.After(1 * time.Second):
+			t.Fatal("failed to start watching")
+		}
+
+		err = source.PutConfig(ctx, expected)
+		require.NoError(t, err)
+
+		select {
+		case <-done:
+			assert.Equal(t, 1, counter)
+		case <-time.After(1 * time.Second):
+			t.Fatal("onUpdate was not triggered within the expected time")
+		}
+	})
+
 }
 func TestMakeReducer_Succcess(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
