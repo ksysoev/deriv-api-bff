@@ -192,3 +192,89 @@ func TestEtcdSource_Integration(t *testing.T) {
 		assert.Equal(t, expected, configs)
 	})
 }
+func TestMakeReducer_Succcess(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	triggered := make(chan struct{}, 1)
+	onUpdate := func() {
+		triggered <- struct{}{}
+	}
+
+	reducer := makeReducer(ctx, onUpdate, 1*time.Microsecond)
+
+	reducer()
+
+	select {
+	case <-triggered:
+		// Success
+	case <-time.After(2 * time.Second):
+		t.Fatal("onUpdate was not triggered within the expected time")
+	}
+}
+
+func TestMakeReducer_NotTriggerBeforeInterval(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	triggered := make(chan struct{}, 1)
+	onUpdate := func() {
+		triggered <- struct{}{}
+	}
+
+	reducer := makeReducer(ctx, onUpdate, 10*time.Millisecond)
+
+	reducer()
+
+	select {
+	case <-triggered:
+		t.Fatal("onUpdate was triggered too early")
+	case <-time.After(1 * time.Millisecond): // Success
+	}
+}
+
+func TestMakeReducer_OnlyOneEventPerInterval(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	triggered := make(chan struct{}, 3)
+	counter := 0
+	onUpdate := func() {
+		counter++
+		triggered <- struct{}{}
+	}
+
+	reducer := makeReducer(ctx, onUpdate, 1*time.Millisecond)
+
+	reducer()
+	reducer()
+	reducer()
+
+	select {
+	case <-triggered:
+		assert.Equal(t, 1, counter)
+	case <-time.After(10 * time.Millisecond):
+		t.Fatal("onUpdate was not triggered within the expected time")
+	}
+}
+
+func TestMakeReducer_ContextCancelation(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	triggered := make(chan struct{}, 1)
+	onUpdate := func() {
+		triggered <- struct{}{}
+	}
+
+	reducer := makeReducer(ctx, onUpdate, 1*time.Millisecond)
+
+	reducer()
+	cancel()
+
+	select {
+	case <-triggered:
+		t.Fatal("onUpdate wasn't triggered after context cancel")
+	case <-time.After(10 * time.Millisecond): // Success
+	}
+}

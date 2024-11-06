@@ -167,7 +167,8 @@ func makeReducer(ctx context.Context, onUpdate func(), interval time.Duration) f
 		timer := time.NewTimer(interval)
 		defer timer.Stop()
 
-		var timerChan <-chan time.Time = nil
+		var timerChan <-chan time.Time
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -178,6 +179,7 @@ func makeReducer(ctx context.Context, onUpdate func(), interval time.Duration) f
 
 			case <-timerChan:
 				onUpdate()
+
 				timerChan = nil
 			}
 		}
