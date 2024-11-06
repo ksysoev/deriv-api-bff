@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	defaultTimeoutSeconds  = 5
-	defaultReducerInterval = 5 * time.Second
+	defaultTimeoutSeconds = 5
+	defaultReducerTimeout = 1 * time.Second
 )
 
 type EtcdConfig struct {
@@ -51,7 +51,7 @@ func NewEtcdSource(cfg EtcdConfig) (*EtcdSource, error) {
 	return &EtcdSource{
 		prefix:          cfg.Prefix,
 		cli:             cli,
-		reducerInterval: defaultReducerInterval,
+		reducerInterval: defaultReducerTimeout,
 	}, nil
 }
 
@@ -136,7 +136,8 @@ func (es *EtcdSource) PutConfig(ctx context.Context, cfg []handlerfactory.Config
 
 	return nil
 }
-func (es *EtcdSource) Watch(ctx context.Context, onUpdate func()) error {
+
+func (es *EtcdSource) Watch(ctx context.Context, onUpdate func()) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -144,20 +145,16 @@ func (es *EtcdSource) Watch(ctx context.Context, onUpdate func()) error {
 
 	rch := es.cli.Watch(ctx, es.prefix, clientv3.WithPrefix())
 
-	for wresp := range rch {
-		for _, ev := range wresp.Events {
-			var cfg handlerfactory.Config
-			err := json.Unmarshal(ev.Kv.Value, &cfg)
-
-			if err != nil {
-				return fmt.Errorf("failed to unmarshal config: %w", err)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case wresp := <-rch:
+			for range wresp.Events {
+				reducerOnUpdate()
 			}
-
-			reducerOnUpdate()
 		}
 	}
-
-	return nil
 }
 
 func makeReducer(ctx context.Context, onUpdate func(), interval time.Duration) func() {

@@ -30,13 +30,12 @@ func runServer(ctx context.Context, cfg *Config) error {
 	}
 
 	cfgSvc, err := config.New(requestHandler, sourceOpts...)
-
 	if err != nil {
 		return fmt.Errorf("failed to create config service: %w", err)
 	}
 
-	if err := cfgSvc.LoadHandlers(ctx); err != nil {
-		return fmt.Errorf("failed to load handlers: %w", err)
+	if err := cfgSvc.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start config service: %w", err)
 	}
 
 	server := api.NewSevice(&cfg.Server, requestHandler)

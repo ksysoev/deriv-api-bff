@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handlerfactory"
@@ -19,6 +20,7 @@ type LocalSource interface {
 type RemoteSource interface {
 	LoadConfig(ctx context.Context) ([]handlerfactory.Config, error)
 	PutConfig(ctx context.Context, cfg []handlerfactory.Config) error
+	Watch(ctx context.Context, onUpdate func())
 }
 
 type Service struct {
@@ -67,6 +69,49 @@ func New(bff BFFService, opts ...Option) (*Service, error) {
 	return svc, nil
 }
 
+func (c *Service) Start(ctx context.Context) error {
+	var (
+		cfg []handlerfactory.Config
+		err error
+	)
+
+	if c.remote != nil {
+		cfg, err = c.remote.LoadConfig(ctx)
+	} else if c.local != nil {
+		cfg, err = c.local.LoadConfig(ctx)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	if err := c.processConfig(cfg); err != nil {
+		return fmt.Errorf("failed to process config: %w", err)
+	}
+
+	if c.remote == nil {
+		return nil
+	}
+
+	go func() {
+		slog.Info("Starting config watcher")
+		c.remote.Watch(ctx, func() {
+			cfg, err := c.remote.LoadConfig(ctx)
+			if err != nil {
+				slog.Error("Failed to load handlers from remote source", slog.Any("error", err))
+			}
+
+			if err := c.processConfig(cfg); err != nil {
+				slog.Error("Failed to process config", slog.Any("error", err))
+			}
+
+			slog.Info("Call configuration updated")
+		})
+	}()
+
+	return nil
+}
+
 // LoadHandlers loads the configuration and updates the handlers for the service.
 // It takes a context.Context parameter to manage the request lifetime.
 // It returns an error if loading the configuration or creating handlers fails.
@@ -86,6 +131,10 @@ func (c *Service) LoadHandlers(ctx context.Context) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
+	return c.processConfig(cfg)
+}
+
+func (c *Service) processConfig(cfg []handlerfactory.Config) error {
 	handlers, err := createHandlers(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to create handlers: %w", err)
