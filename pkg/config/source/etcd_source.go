@@ -12,7 +12,10 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handlerfactory"
 )
 
-const defaultTimeoutSeconds = 5
+const (
+	defaultTimeoutSeconds = 5
+	defaultReducerTimeout = 1 * time.Second
+)
 
 type EtcdConfig struct {
 	Prefix  string `mapstructure:"prefix"`
@@ -20,8 +23,9 @@ type EtcdConfig struct {
 }
 
 type EtcdSource struct {
-	cli    *clientv3.Client
-	prefix string
+	cli             *clientv3.Client
+	prefix          string
+	reducerInterval time.Duration
 }
 
 // NewEtcdSource creates a new EtcdSource instance configured with the provided EtcdConfig.
@@ -45,8 +49,9 @@ func NewEtcdSource(cfg EtcdConfig) (*EtcdSource, error) {
 	}
 
 	return &EtcdSource{
-		prefix: cfg.Prefix,
-		cli:    cli,
+		prefix:          cfg.Prefix,
+		cli:             cli,
+		reducerInterval: defaultReducerTimeout,
 	}, nil
 }
 
@@ -130,4 +135,64 @@ func (es *EtcdSource) PutConfig(ctx context.Context, cfg []handlerfactory.Config
 	}
 
 	return nil
+}
+
+// Watch monitors changes to keys with a specified prefix in an etcd cluster and triggers an update callback.
+// It takes a context.Context and a callback function onUpdate which is called when changes are detected.
+// It does not return any values.
+// The function continues to watch for changes until the context is canceled.
+func (es *EtcdSource) Watch(ctx context.Context, onUpdate func()) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	reducerOnUpdate := makeReducer(ctx, onUpdate, es.reducerInterval)
+
+	rch := es.cli.Watch(ctx, es.prefix, clientv3.WithPrefix())
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case wresp := <-rch:
+			for range wresp.Events {
+				reducerOnUpdate()
+			}
+		}
+	}
+}
+
+// makeReducer creates a function that triggers an update at a specified interval.
+// It takes a context 'ctx' of type context.Context, an 'onUpdate' function to be called on update, and an 'interval' of type time.Duration.
+// It returns a function that can be called to signal an update.
+func makeReducer(ctx context.Context, onUpdate func(), interval time.Duration) func() {
+	updates := make(chan struct{}, 1)
+
+	go func() {
+		timer := time.NewTimer(interval)
+		defer timer.Stop()
+
+		var timerChan <-chan time.Time
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-updates:
+				timer.Reset(interval)
+				timerChan = timer.C
+
+			case <-timerChan:
+				onUpdate()
+
+				timerChan = nil
+			}
+		}
+	}()
+
+	return func() {
+		select {
+		case updates <- struct{}{}:
+		default:
+		}
+	}
 }

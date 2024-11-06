@@ -129,6 +129,40 @@ func (_c *MockRemoteSource_PutConfig_Call) RunAndReturn(run func(context.Context
 	return _c
 }
 
+// Watch provides a mock function with given fields: ctx, onUpdate
+func (_m *MockRemoteSource) Watch(ctx context.Context, onUpdate func()) {
+	_m.Called(ctx, onUpdate)
+}
+
+// MockRemoteSource_Watch_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Watch'
+type MockRemoteSource_Watch_Call struct {
+	*mock.Call
+}
+
+// Watch is a helper method to define mock.On call
+//   - ctx context.Context
+//   - onUpdate func()
+func (_e *MockRemoteSource_Expecter) Watch(ctx interface{}, onUpdate interface{}) *MockRemoteSource_Watch_Call {
+	return &MockRemoteSource_Watch_Call{Call: _e.mock.On("Watch", ctx, onUpdate)}
+}
+
+func (_c *MockRemoteSource_Watch_Call) Run(run func(ctx context.Context, onUpdate func())) *MockRemoteSource_Watch_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(func()))
+	})
+	return _c
+}
+
+func (_c *MockRemoteSource_Watch_Call) Return() *MockRemoteSource_Watch_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockRemoteSource_Watch_Call) RunAndReturn(run func(context.Context, func())) *MockRemoteSource_Watch_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockRemoteSource creates a new instance of MockRemoteSource. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockRemoteSource(t interface {
