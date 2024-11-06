@@ -250,8 +250,8 @@ func TestEtcdSource_Integration(t *testing.T) {
 			t.Fatal("onUpdate was not triggered within the expected time")
 		}
 	})
-
 }
+
 func TestMakeReducer_Succcess(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()

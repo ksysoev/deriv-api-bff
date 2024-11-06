@@ -13,6 +13,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var validConfig = []handlerfactory.Config{
+	{
+		Method: "handler1",
+		Backend: []*processor.Config{
+			{
+				Tmplt: map[string]any{"ping": 1},
+			},
+		},
+	},
+	{
+		Method: "handler2",
+		Backend: []*processor.Config{
+			{
+				Tmplt: map[string]any{"ping": 1},
+			},
+		},
+	},
+}
+
 func TestNewService(t *testing.T) {
 	mockBFFService := NewMockBFFService(t)
 	mockLocalSource := NewMockLocalSource(t)
@@ -293,25 +312,8 @@ func TestCreateHandlers(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Valid config",
-			cfg: []handlerfactory.Config{
-				{
-					Method: "handler1",
-					Backend: []*processor.Config{
-						{
-							Tmplt: map[string]any{"ping": 1},
-						},
-					},
-				},
-				{
-					Method: "handler2",
-					Backend: []*processor.Config{
-						{
-							Tmplt: map[string]any{"ping": 1},
-						},
-					},
-				},
-			},
+			name:    "Valid config",
+			cfg:     validConfig,
 			wantErr: false,
 		},
 		{
@@ -366,25 +368,8 @@ func TestService_ProcessConfig(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Valid config",
-			cfg: []handlerfactory.Config{
-				{
-					Method: "handler1",
-					Backend: []*processor.Config{
-						{
-							Tmplt: map[string]any{"ping": 1},
-						},
-					},
-				},
-				{
-					Method: "handler2",
-					Backend: []*processor.Config{
-						{
-							Tmplt: map[string]any{"ping": 1},
-						},
-					},
-				},
-			},
+			name:    "Valid config",
+			cfg:     validConfig,
 			wantErr: false,
 		},
 		{
@@ -444,11 +429,11 @@ func TestService_Start(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
+		loadErr    error
+		processErr error
 		name       string
 		local      bool
 		remote     bool
-		loadErr    error
-		processErr error
 		wantErr    bool
 	}{
 		{
@@ -506,12 +491,12 @@ func TestService_Start(t *testing.T) {
 
 			if tt.local {
 				opts = append(opts, WithLocalSource(mockLocalSource))
-				mockLocalSource.EXPECT().LoadConfig(ctx).Return(expectedCfg, tt.loadErr)
+				mockLocalSource.EXPECT().LoadConfig(mock.Anything).Return(expectedCfg, tt.loadErr)
 			}
 
 			if tt.remote {
 				opts = append(opts, WithRemoteSource(mockRemoteSource))
-				mockRemoteSource.EXPECT().LoadConfig(ctx).Return(expectedCfg, tt.loadErr)
+				mockRemoteSource.EXPECT().LoadConfig(mock.Anything).Return(expectedCfg, tt.loadErr)
 			}
 
 			svc, err := New(mockBFFService, opts...)
@@ -522,8 +507,9 @@ func TestService_Start(t *testing.T) {
 			}
 
 			watched := make(chan struct{})
+
 			if tt.loadErr == nil && tt.processErr == nil && tt.remote {
-				mockRemoteSource.EXPECT().Watch(ctx, mock.MatchedBy(func() bool {
+				mockRemoteSource.EXPECT().Watch(mock.Anything, mock.MatchedBy(func(_ any) bool {
 					close(watched)
 					return true
 				})).Return()
@@ -538,11 +524,71 @@ func TestService_Start(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
+			svc.Stop()
+
 			select {
 			case <-watched:
 			case <-time.After(1 * time.Second):
 				t.Error("Expected Watch to be called")
 			}
+		})
+	}
+}
+
+func TestService_onUpdate(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		loadErr    error
+		processErr error
+		name       string
+	}{
+		{
+			name:       "Successful update",
+			loadErr:    nil,
+			processErr: nil,
+		},
+		{
+			name:       "Load config error",
+			loadErr:    fmt.Errorf("error loading config"),
+			processErr: nil,
+		},
+		{
+			name:       "Process config error",
+			loadErr:    nil,
+			processErr: fmt.Errorf("error processing config"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockBFFService := NewMockBFFService(t)
+			mockRemoteSource := NewMockRemoteSource(t)
+
+			svc := &Service{
+				bff:    mockBFFService,
+				remote: mockRemoteSource,
+			}
+
+			var expectedCfg []handlerfactory.Config
+			if tt.processErr == nil {
+				expectedCfg = []handlerfactory.Config{}
+			} else {
+				expectedCfg = []handlerfactory.Config{{Method: "handler1"}}
+			}
+
+			mockRemoteSource.EXPECT().LoadConfig(ctx).Return(expectedCfg, tt.loadErr)
+
+			if tt.loadErr == nil {
+				mockBFFService.EXPECT().UpdateHandlers(mock.Anything).Return().Maybe()
+			}
+
+			if tt.loadErr == nil && tt.processErr == nil {
+				mockBFFService.EXPECT().UpdateHandlers(mock.Anything).Return()
+			}
+
+			onUpdateFunc := svc.onUpdate(ctx)
+			onUpdateFunc()
 		})
 	}
 }

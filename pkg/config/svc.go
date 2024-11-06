@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handlerfactory"
@@ -27,7 +28,10 @@ type Service struct {
 	bff    BFFService
 	local  LocalSource
 	remote RemoteSource
+	cancel context.CancelFunc
 	curCfg []handlerfactory.Config
+	wg     sync.WaitGroup
+	mu     sync.Mutex
 }
 
 type Option func(*Service)
@@ -75,6 +79,10 @@ func (c *Service) Start(ctx context.Context) error {
 		err error
 	)
 
+	c.mu.Lock()
+	ctx, c.cancel = context.WithCancel(ctx)
+	c.mu.Unlock()
+
 	if c.remote != nil {
 		cfg, err = c.remote.LoadConfig(ctx)
 	} else if c.local != nil {
@@ -93,23 +101,32 @@ func (c *Service) Start(ctx context.Context) error {
 		return nil
 	}
 
+	c.wg.Add(1)
+
 	go func() {
+		defer c.wg.Done()
 		slog.Info("Starting config watcher")
-		c.remote.Watch(ctx, func() {
-			cfg, err := c.remote.LoadConfig(ctx)
-			if err != nil {
-				slog.Error("Failed to load handlers from remote source", slog.Any("error", err))
-			}
-
-			if err := c.processConfig(cfg); err != nil {
-				slog.Error("Failed to process config", slog.Any("error", err))
-			}
-
-			slog.Info("Call configuration updated")
-		})
+		c.remote.Watch(ctx, c.onUpdate(ctx))
 	}()
 
 	return nil
+}
+
+func (c *Service) onUpdate(ctx context.Context) func() {
+	return func() {
+		cfg, err := c.remote.LoadConfig(ctx)
+		if err != nil {
+			slog.Error("Failed to load handlers from remote source", slog.Any("error", err))
+			return
+		}
+
+		if err := c.processConfig(cfg); err != nil {
+			slog.Error("Failed to process config", slog.Any("error", err))
+			return
+		}
+
+		slog.Info("Call configuration updated")
+	}
 }
 
 // LoadHandlers loads the configuration and updates the handlers for the service.
@@ -135,6 +152,9 @@ func (c *Service) LoadHandlers(ctx context.Context) error {
 }
 
 func (c *Service) processConfig(cfg []handlerfactory.Config) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	handlers, err := createHandlers(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to create handlers: %w", err)
@@ -182,4 +202,16 @@ func createHandlers(cfg []handlerfactory.Config) (map[string]core.Handler, error
 	}
 
 	return handlers, nil
+}
+
+func (c *Service) Stop() {
+	c.mu.Lock()
+
+	if c.cancel != nil {
+		c.cancel()
+	}
+
+	c.mu.Unlock()
+
+	c.wg.Wait()
 }
