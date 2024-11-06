@@ -4,6 +4,7 @@ import (
 	context "context"
 	"fmt"
 	"testing"
+	"time"
 
 	handlerfactory "github.com/ksysoev/deriv-api-bff/pkg/core/handlerfactory"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/processor"
@@ -354,6 +355,193 @@ func TestCreateHandlers(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, handlers)
 				assert.Equal(t, len(tt.cfg), len(handlers))
+			}
+		})
+	}
+}
+func TestService_ProcessConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     []handlerfactory.Config
+		wantErr bool
+	}{
+		{
+			name: "Valid config",
+			cfg: []handlerfactory.Config{
+				{
+					Method: "handler1",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": 1},
+						},
+					},
+				},
+				{
+					Method: "handler2",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": 1},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Duplicate handler names",
+			cfg: []handlerfactory.Config{
+				{
+					Method: "handler1",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": 1},
+						},
+					},
+				},
+				{
+					Method: "handler1",
+					Backend: []*processor.Config{
+						{
+							Tmplt: map[string]any{"ping": 1},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Handler creation error",
+			cfg: []handlerfactory.Config{
+				{Method: ""},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockBFFService := NewMockBFFService(t)
+			svc := &Service{
+				bff: mockBFFService,
+			}
+
+			if !tt.wantErr {
+				mockBFFService.EXPECT().UpdateHandlers(mock.Anything).Return()
+			}
+
+			err := svc.processConfig(tt.cfg)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.cfg, svc.curCfg)
+			}
+		})
+	}
+}
+
+func TestService_Start(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name       string
+		local      bool
+		remote     bool
+		loadErr    error
+		processErr error
+		wantErr    bool
+	}{
+		{
+			name:    "Load from local source",
+			local:   true,
+			remote:  false,
+			loadErr: nil,
+			wantErr: false,
+		},
+		{
+			name:    "Load from remote source",
+			local:   false,
+			remote:  true,
+			loadErr: nil,
+			wantErr: false,
+		},
+		{
+			name:    "Load from local source with error",
+			local:   true,
+			remote:  false,
+			loadErr: fmt.Errorf("error loading config"),
+			wantErr: true,
+		},
+		{
+			name:    "Load from remote source with error",
+			local:   false,
+			remote:  true,
+			loadErr: fmt.Errorf("error loading config"),
+			wantErr: true,
+		},
+		{
+			name:       "Process config error",
+			local:      true,
+			remote:     false,
+			loadErr:    nil,
+			processErr: fmt.Errorf("error processing config"),
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockBFFService := NewMockBFFService(t)
+			mockLocalSource := NewMockLocalSource(t)
+			mockRemoteSource := NewMockRemoteSource(t)
+
+			opts := make([]Option, 0)
+
+			var expectedCfg []handlerfactory.Config
+			if tt.processErr == nil {
+				expectedCfg = []handlerfactory.Config{}
+			} else {
+				expectedCfg = []handlerfactory.Config{{Method: "handler1"}}
+			}
+
+			if tt.local {
+				opts = append(opts, WithLocalSource(mockLocalSource))
+				mockLocalSource.EXPECT().LoadConfig(ctx).Return(expectedCfg, tt.loadErr)
+			}
+
+			if tt.remote {
+				opts = append(opts, WithRemoteSource(mockRemoteSource))
+				mockRemoteSource.EXPECT().LoadConfig(ctx).Return(expectedCfg, tt.loadErr)
+			}
+
+			svc, err := New(mockBFFService, opts...)
+			require.NoError(t, err)
+
+			if tt.loadErr == nil && tt.processErr == nil {
+				mockBFFService.EXPECT().UpdateHandlers(mock.Anything).Return()
+			}
+
+			watched := make(chan struct{})
+			if tt.loadErr == nil && tt.processErr == nil && tt.remote {
+				mockRemoteSource.EXPECT().Watch(ctx, mock.MatchedBy(func() bool {
+					close(watched)
+					return true
+				})).Return()
+			} else {
+				close(watched)
+			}
+
+			err = svc.Start(ctx)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			select {
+			case <-watched:
+			case <-time.After(1 * time.Second):
+				t.Error("Expected Watch to be called")
 			}
 		})
 	}
