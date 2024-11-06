@@ -243,3 +243,37 @@ func TestPopulateDefaults(t *testing.T) {
 		})
 	}
 }
+
+func TestSkipMetrics(t *testing.T) {
+	tests := []struct {
+		name       string
+		routingKey string
+		want       bool
+	}{
+		{
+			name:       "TextMessage routing key",
+			routingKey: request.TextMessage,
+			want:       true,
+		},
+		{
+			name:       "BinaryMessage routing key",
+			routingKey: request.BinaryMessage,
+			want:       true,
+		},
+		{
+			name:       "Other routing key",
+			routingKey: "other",
+			want:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRequest := mocks.NewMockRequest(t)
+			mockRequest.EXPECT().RoutingKey().Return(tt.routingKey)
+
+			got := skipMetrics(mockRequest)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

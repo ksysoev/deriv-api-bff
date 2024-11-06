@@ -49,14 +49,6 @@ func NewSevice(cfg *Config, handler BFFService) *Service {
 
 	populateDefaults(cfg)
 
-	skipMetrics := func(r wasabi.Request) bool {
-		if r.RoutingKey() == request.TextMessage || r.RoutingKey() == request.BinaryMessage {
-			return true
-		}
-
-		return false
-	}
-
 	dispatcher := dispatch.NewRouterDispatcher(s, parse)
 	dispatcher.Use(middleware.NewErrorHandlingMiddleware())
 	dispatcher.Use(middleware.NewMetricsMiddleware("bff-deriv", skipMetrics))
@@ -156,4 +148,15 @@ func populateDefaults(cfg *Config) {
 	if cfg.MaxRequestsPerConn == 0 {
 		cfg.MaxRequestsPerConn = maxRequestsPerConnDefault
 	}
+}
+
+// skipMetrics determines whether metrics should be skipped for a given request.
+// It takes a single parameter r of type wasabi.Request.
+// It returns a boolean value: true if the request's routing key is either TextMessage or BinaryMessage, otherwise false.
+func skipMetrics(r wasabi.Request) bool {
+	if r.RoutingKey() == request.TextMessage || r.RoutingKey() == request.BinaryMessage {
+		return true
+	}
+
+	return false
 }
