@@ -14,7 +14,7 @@ import (
 // It takes a scope of type string and returns a function that wraps a wasabi.RequestHandler.
 // It returns a wasabi.RequestHandler that records the duration of each request and logs whether an error occurred.
 // It panics if there is an error initializing the metric.
-func NewMetricsMiddleware(scope string) func(next wasabi.RequestHandler) wasabi.RequestHandler {
+func NewMetricsMiddleware(scope string, skip func(wasabi.Request) bool) func(next wasabi.RequestHandler) wasabi.RequestHandler {
 	meter := otel.GetMeterProvider().Meter(scope)
 	timing, err := meter.Float64Histogram(
 		"request_duration",
@@ -26,11 +26,19 @@ func NewMetricsMiddleware(scope string) func(next wasabi.RequestHandler) wasabi.
 		panic("failed to initialize metric" + err.Error())
 	}
 
+	if skip == nil {
+		skip = func(wasabi.Request) bool { return false }
+	}
+
 	return func(next wasabi.RequestHandler) wasabi.RequestHandler {
 		return dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
 			start := time.Now()
 
 			err := next.Handle(conn, req)
+
+			if skip(req) {
+				return err
+			}
 
 			elapsed := time.Since(start)
 

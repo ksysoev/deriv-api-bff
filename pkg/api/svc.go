@@ -49,9 +49,17 @@ func NewSevice(cfg *Config, handler BFFService) *Service {
 
 	populateDefaults(cfg)
 
+	skipMetrics := func(r wasabi.Request) bool {
+		if r.RoutingKey() == request.TextMessage || r.RoutingKey() == request.BinaryMessage {
+			return true
+		}
+
+		return false
+	}
+
 	dispatcher := dispatch.NewRouterDispatcher(s, parse)
 	dispatcher.Use(middleware.NewErrorHandlingMiddleware())
-	dispatcher.Use(middleware.NewMetricsMiddleware("bff-deriv"))
+	dispatcher.Use(middleware.NewMetricsMiddleware("bff-deriv", skipMetrics))
 	dispatcher.Use(reqmid.NewTrottlerMiddleware(cfg.MaxRequests))
 
 	registry := channel.NewConnectionRegistry(

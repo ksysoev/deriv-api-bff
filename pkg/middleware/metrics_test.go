@@ -16,7 +16,7 @@ import (
 func TestNewMetricsMiddleware(t *testing.T) {
 	otel.SetMeterProvider(noop.NewMeterProvider())
 
-	middleware := NewMetricsMiddleware("test_scope")
+	middleware := NewMetricsMiddleware("test_scope", nil)
 
 	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
 		time.Sleep(10 * time.Millisecond)
@@ -37,7 +37,7 @@ func TestNewMetricsMiddleware(t *testing.T) {
 func TestNewMetricsMiddleware_Error(t *testing.T) {
 	otel.SetMeterProvider(noop.NewMeterProvider())
 
-	middleware := NewMetricsMiddleware("test_scope")
+	middleware := NewMetricsMiddleware("test_scope", nil)
 
 	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
 		time.Sleep(10 * time.Millisecond)
@@ -53,4 +53,22 @@ func TestNewMetricsMiddleware_Error(t *testing.T) {
 
 	err := handler.Handle(conn, req)
 	assert.Error(t, err)
+}
+
+func TestNewMetricsMiddleware_Skip(t *testing.T) {
+	otel.SetMeterProvider(noop.NewMeterProvider())
+
+	middleware := NewMetricsMiddleware("test_scope", func(_ wasabi.Request) bool { return true })
+
+	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
+		return assert.AnError
+	})
+
+	handler := middleware(mockHandler)
+
+	conn := mocks.NewMockConnection(t)
+	req := mocks.NewMockRequest(t)
+
+	err := handler.Handle(conn, req)
+	assert.ErrorIs(t, err, assert.AnError)
 }
