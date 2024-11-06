@@ -131,3 +131,21 @@ func (es *EtcdSource) PutConfig(ctx context.Context, cfg []handlerfactory.Config
 
 	return nil
 }
+func (es *EtcdSource) Watch(ctx context.Context, onUpdate func()) error {
+	rch := es.cli.Watch(ctx, es.prefix, clientv3.WithPrefix())
+
+	for wresp := range rch {
+		for _, ev := range wresp.Events {
+			var cfg handlerfactory.Config
+			err := json.Unmarshal(ev.Kv.Value, &cfg)
+
+			if err != nil {
+				return fmt.Errorf("failed to unmarshal config: %w", err)
+			}
+
+			onUpdate()
+		}
+	}
+
+	return nil
+}
