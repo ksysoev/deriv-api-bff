@@ -137,6 +137,10 @@ func (es *EtcdSource) PutConfig(ctx context.Context, cfg []handlerfactory.Config
 	return nil
 }
 
+// Watch monitors changes to keys with a specified prefix in an etcd cluster and triggers an update callback.
+// It takes a context.Context and a callback function onUpdate which is called when changes are detected.
+// It does not return any values.
+// The function continues to watch for changes until the context is canceled.
 func (es *EtcdSource) Watch(ctx context.Context, onUpdate func()) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -157,6 +161,9 @@ func (es *EtcdSource) Watch(ctx context.Context, onUpdate func()) {
 	}
 }
 
+// makeReducer creates a function that triggers an update at a specified interval.
+// It takes a context 'ctx' of type context.Context, an 'onUpdate' function to be called on update, and an 'interval' of type time.Duration.
+// It returns a function that can be called to signal an update.
 func makeReducer(ctx context.Context, onUpdate func(), interval time.Duration) func() {
 	updates := make(chan struct{}, 1)
 
