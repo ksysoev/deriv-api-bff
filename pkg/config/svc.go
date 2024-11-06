@@ -73,6 +73,9 @@ func New(bff BFFService, opts ...Option) (*Service, error) {
 	return svc, nil
 }
 
+// Start initializes and starts the service, loading configuration and setting up a watcher if needed.
+// It takes a context.Context parameter which is used for managing the lifecycle of the service.
+// It returns an error if loading or processing the configuration fails, or if there is an issue starting the config watcher.
 func (c *Service) Start(ctx context.Context) error {
 	var (
 		cfg []handlerfactory.Config
@@ -112,6 +115,9 @@ func (c *Service) Start(ctx context.Context) error {
 	return nil
 }
 
+// onUpdate returns a function that updates the service configuration by loading it from a remote source.
+// It takes a context parameter ctx of type context.Context.
+// The returned function logs errors if loading or processing the configuration fails, and logs an info message upon successful update.
 func (c *Service) onUpdate(ctx context.Context) func() {
 	return func() {
 		cfg, err := c.remote.LoadConfig(ctx)
@@ -151,6 +157,10 @@ func (c *Service) LoadHandlers(ctx context.Context) error {
 	return c.processConfig(cfg)
 }
 
+// processConfig processes the given configuration and updates the service's handlers.
+// It takes cfg, a slice of handlerfactory.Config, as a parameter.
+// It returns an error if the handlers cannot be created.
+// The function locks the service's mutex to ensure thread safety while updating the configuration and handlers.
 func (c *Service) processConfig(cfg []handlerfactory.Config) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -167,6 +177,10 @@ func (c *Service) processConfig(cfg []handlerfactory.Config) error {
 	return nil
 }
 
+// PutConfig updates the current configuration using the remote source.
+// It takes a context parameter ctx of type context.Context.
+// It returns an error if the local or remote sources are not set, or if loading handlers fails.
+// If the current configuration is nil, it attempts to load handlers before updating the configuration.
 func (c *Service) PutConfig(ctx context.Context) error {
 	if c.remote == nil || c.local == nil {
 		return fmt.Errorf("local and remote sources are required")
@@ -204,6 +218,10 @@ func createHandlers(cfg []handlerfactory.Config) (map[string]core.Handler, error
 	return handlers, nil
 }
 
+// Stop gracefully shuts down the service by canceling any ongoing operations
+// and waiting for all goroutines to finish.
+// It locks the service to ensure thread safety, calls the cancel function if it is not nil,
+// and then waits for the wait group to complete.
 func (c *Service) Stop() {
 	c.mu.Lock()
 
