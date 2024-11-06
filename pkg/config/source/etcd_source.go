@@ -12,7 +12,10 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handlerfactory"
 )
 
-const defaultTimeoutSeconds = 5
+const (
+	defaultTimeoutSeconds  = 5
+	defaultReducerInterval = 5 * time.Second
+)
 
 type EtcdConfig struct {
 	Prefix  string `mapstructure:"prefix"`
@@ -20,8 +23,9 @@ type EtcdConfig struct {
 }
 
 type EtcdSource struct {
-	cli    *clientv3.Client
-	prefix string
+	cli             *clientv3.Client
+	prefix          string
+	reducerInterval time.Duration
 }
 
 // NewEtcdSource creates a new EtcdSource instance configured with the provided EtcdConfig.
@@ -45,8 +49,9 @@ func NewEtcdSource(cfg EtcdConfig) (*EtcdSource, error) {
 	}
 
 	return &EtcdSource{
-		prefix: cfg.Prefix,
-		cli:    cli,
+		prefix:          cfg.Prefix,
+		cli:             cli,
+		reducerInterval: defaultReducerInterval,
 	}, nil
 }
 
@@ -132,6 +137,11 @@ func (es *EtcdSource) PutConfig(ctx context.Context, cfg []handlerfactory.Config
 	return nil
 }
 func (es *EtcdSource) Watch(ctx context.Context, onUpdate func()) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	reducerOnUpdate := makeReducer(ctx, onUpdate, es.reducerInterval)
+
 	rch := es.cli.Watch(ctx, es.prefix, clientv3.WithPrefix())
 
 	for wresp := range rch {
@@ -143,9 +153,40 @@ func (es *EtcdSource) Watch(ctx context.Context, onUpdate func()) error {
 				return fmt.Errorf("failed to unmarshal config: %w", err)
 			}
 
-			onUpdate()
+			reducerOnUpdate()
 		}
 	}
 
 	return nil
+}
+
+func makeReducer(ctx context.Context, onUpdate func(), interval time.Duration) func() {
+	updates := make(chan struct{}, 1)
+
+	go func() {
+		timer := time.NewTimer(interval)
+		defer timer.Stop()
+
+		var timerChan <-chan time.Time = nil
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-updates:
+				timer.Reset(interval)
+				timerChan = timer.C
+
+			case <-timerChan:
+				onUpdate()
+				timerChan = nil
+			}
+		}
+	}()
+
+	return func() {
+		select {
+		case updates <- struct{}{}:
+		default:
+		}
+	}
 }
