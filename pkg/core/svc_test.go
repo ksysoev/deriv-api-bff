@@ -95,7 +95,7 @@ func TestService_ProcessRequest_UnsupportedMethod(t *testing.T) {
 
 	mockConnRegistry.EXPECT().GetConnection(mockConn).Return(conn)
 	mockCallsRepo.EXPECT().GetCall("unsupportedMethod").Return(nil)
-	mockConn.EXPECT().Send(wasabi.MsgTypeText, []byte(`{"echo":null,"error":{"code":"UnrecognisedRequest","message":"Unrecognised request method"},"msg_type":"unsupportedMethod"}`)).Return(nil)
+	mockConn.EXPECT().Send(wasabi.MsgTypeText, []byte(`{"echo":null,"error":{"code":"UnrecognisedRequest","message":"Unrecognised request method"},"msg_type":"error"}`)).Return(nil)
 
 	err := svc.ProcessRequest(mockConn, mockRequest)
 	assert.Nil(t, err)
@@ -142,7 +142,7 @@ func TestService_ProcessRequest_APIError(t *testing.T) {
 	mockConn := mocks.NewMockConnection(t)
 	mockRequest := request.NewRequest(context.Background(), request.TextMessage, []byte(`{"method":"testMethod","params":{"key":"value"}}`))
 
-	expectedResp := []byte(`{"echo":{"method":"testMethod","params":{"key":"value"}},"error":{"code":"BadRequest","message":"Bad Request"},"msg_type":"testMethod"}`)
+	expectedResp := []byte(`{"echo":{"method":"testMethod","params":{"key":"value"}},"error":{"code":"BadRequest","message":"Bad Request"},"msg_type":"error"}`)
 
 	conn := NewConnection(mockConn, func(_ string) {})
 
