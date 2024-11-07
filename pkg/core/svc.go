@@ -73,11 +73,11 @@ func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *request.Requ
 		apiErr := NewAPIError("UnrecognisedRequest", "Unrecognised request method", nil)
 
 		data, err := createResponse(req, nil, apiErr)
-		if err != nil {
-			return err
+		if err == nil {
+			return clientConn.Send(wasabi.MsgTypeText, data)
 		}
 
-		return clientConn.Send(wasabi.MsgTypeText, data)
+		return err
 	}
 
 	resp, err := handler.Handle(
