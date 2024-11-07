@@ -32,7 +32,7 @@ func TestCreateResponseWithAPIError(t *testing.T) {
 	data, err := createResponse(req, nil, apiErr)
 	assert.Nil(t, err)
 
-	expected := []byte(`{"echo":{"req_id":1,"method":"testMethod","params":{"key":"value"}},"error":{"code":"BadRequest","message":"Bad Request"},"msg_type":"testMethod","req_id":1}`)
+	expected := []byte(`{"echo":{"req_id":1,"method":"testMethod","params":{"key":"value"}},"error":{"code":"BadRequest","message":"Bad Request"},"msg_type":"error","req_id":1}`)
 	assert.Equal(t, expected, data)
 }
 

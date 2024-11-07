@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	"github.com/ksysoev/wasabi"
@@ -71,7 +70,14 @@ func (s *Service) ProcessRequest(clientConn wasabi.Connection, req *request.Requ
 	handler := s.ch.GetCall(req.Method)
 
 	if handler == nil {
-		return fmt.Errorf("unsupported method: %s", req.Method)
+		apiErr := NewAPIError("UnrecognisedRequest", "Unrecognised request method", nil)
+
+		data, err := createResponse(req, nil, apiErr)
+		if err == nil {
+			return clientConn.Send(wasabi.MsgTypeText, data)
+		}
+
+		return err
 	}
 
 	resp, err := handler.Handle(
