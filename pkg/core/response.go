@@ -11,11 +11,15 @@ import (
 func createResponse(req *request.Request, resp map[string]any, err error) ([]byte, error) {
 	var apiErr *APIError
 
-	if errors.As(err, &apiErr) {
+	switch {
+	case errors.As(err, &apiErr):
 		resp = make(map[string]any)
 		resp["error"] = apiErr.Encode()
-	} else if err != nil {
+		resp["msg_type"] = "error"
+	case err != nil:
 		return nil, fmt.Errorf("failed to handle request: %w", err)
+	default:
+		resp["msg_type"] = req.RoutingKey()
 	}
 
 	if req.ID != nil {
@@ -27,7 +31,6 @@ func createResponse(req *request.Request, resp map[string]any, err error) ([]byt
 	}
 
 	resp["echo"] = json.RawMessage(req.Data())
-	resp["msg_type"] = req.RoutingKey()
 
 	data, err := json.Marshal(resp)
 	if err != nil {
