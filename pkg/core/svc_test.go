@@ -95,10 +95,10 @@ func TestService_ProcessRequest_UnsupportedMethod(t *testing.T) {
 
 	mockConnRegistry.EXPECT().GetConnection(mockConn).Return(conn)
 	mockCallsRepo.EXPECT().GetCall("unsupportedMethod").Return(nil)
+	mockConn.EXPECT().Send(wasabi.MsgTypeText, []byte(`{"echo":null,"error":{"code":"UnrecognisedRequest","message":"Unrecognised request method"},"msg_type":"unsupportedMethod"}`)).Return(nil)
 
 	err := svc.ProcessRequest(mockConn, mockRequest)
-	assert.NotNil(t, err)
-	assert.Equal(t, "unsupported method: unsupportedMethod", err.Error())
+	assert.Nil(t, err)
 }
 
 func TestService_ProcessRequest_HandlerError(t *testing.T) {
