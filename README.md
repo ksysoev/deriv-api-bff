@@ -71,38 +71,46 @@ Example usage:
 bff server --config=./config.yaml --loglevel=debug --logtext
 ```
 
-### Sever configuration
+### Server Configuration
+
+The server configuration can be specified in a YAML file. Below is an example configuration:
 
 ```yaml
 server:
-  listen: ":8080"
-  max_requests: 100 
-  max_requests_per_conn: 10
+  listen: ":8080"  # The address and port on which the server listens
+  max_requests: 100  # Maximum number of concurrent requests the server can handle
+  max_requests_per_conn: 10  # Maximum number of concurrent requests per client connection
+
 deriv:
-  endpoint: "wss://ws.derivws.com/websockets/v3" 
+  endpoint: "wss://ws.derivws.com/websockets/v3"  # Deriv API endpoint
+
 otel:
   prometheus:
-    listen: ":8081"
-    path: "/metrics" 
+    listen: ":8081"  # The address and port for Prometheus metrics
+    path: "/metrics"  # The path for Prometheus metrics
+
 api_source:
   etcd:
-    servers: "etcd:2379" 
-    prefix: "api::"  
-  path: "./runtime/api_config"
+    servers: "etcd:2379"  # Etcd server address
+    prefix: "api::"  # Prefix for API configuration keys in Etcd
+  path: "./runtime/api_config"  # Path to the local API configuration directory
 ```
 
-### Enviroment Variables 
+### Environment Variables
+
+You can also configure the server using environment variables. Below are the available environment variables:
 
 ```sh
-SERVER_LISTEN=:8080
-SERVER_MAX_REQUESTS=100
-SERVER_MAX_REQUESTS_PER_CONN=10
-DERIV_ENDPOINT=wss://ws.derivws.com/websockets/v3
-OTEL_PROMETHEUS_LISTEN=:8081
-OTEL_PROMETHEUS_PATH=/metrics
-API_SOURCE_ETCD_SERVES=etcd:2379
-API_SOURCE_ETCD_PREFIX=api::
-API_SOURCE_PATH=./runtime/api_config
+SERVER_LISTEN=:8080  # The address and port on which the server listens
+SERVER_MAX_REQUESTS=100  # Maximum number of concurrent requests the server can handle
+SERVER_MAX_REQUESTS_PER_CONN=10  # Maximum number of concurrent requests per client connection
+DERIV_ENDPOINT=wss://ws.derivws.com/websockets/v3  # Deriv API endpoint
+OTEL_PROMETHEUS_LISTEN=:8081  # The address and port for Prometheus metrics
+OTEL_PROMETHEUS_PATH=/metrics  # The path for Prometheus metrics
+API_SOURCE_ETCD_SERVERS=etcd:2379  # Etcd server address
+API_SOURCE_ETCD_PREFIX=api::  # Prefix for API configuration keys in Etcd
+API_SOURCE_PATH=./runtime/api_config  # Path to the local API configuration directory
+```
 
 ## Contributing
 
