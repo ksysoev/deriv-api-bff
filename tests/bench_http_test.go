@@ -63,3 +63,109 @@ func Benchmark_HTTP_Params(b *testing.B) {
 
 	wg.Wait()
 }
+
+func Benchmark_HTTP_Aggregation(b *testing.B) {
+	t := new(testing.T)
+	suite := newTestSuite()
+
+	suite.SetT(t)
+	suite.SetS(suite)
+
+	suite.BeforeTest("", "")
+
+	defer suite.AfterTest("", "")
+
+	httpURL := suite.httpURL()
+	cfg := strings.ReplaceAll(testHTTPRequestAggregationConfig, "{{host}}", httpURL)
+
+	url, err := suite.startAppWithConfig(cfg)
+	if err != nil {
+		suite.T().Fatal("failed to start app with config", err)
+	}
+
+	sem := make(chan struct{}, 5)
+	wg := sync.WaitGroup{}
+
+	b.ResetTimer()
+
+	req := map[string]any{
+		"method": "testcall",
+	}
+	expectedResp := map[string]any{
+		"echo":     req,
+		"msg_type": "testcall",
+		"data1":    "value1",
+		"data2":    float64(2),
+	}
+
+	suite.addHTTPContent("/testcall1", `{"data1": "value1", "data2": 1}`)
+	suite.addHTTPContent("POST /testcall2", `{"data1": "value2", "data2": 2}`)
+
+	for i := 0; i < b.N; i++ {
+		sem <- struct{}{}
+
+		wg.Add(1)
+
+		go func() {
+			suite.testRequest(url, req, expectedResp)
+
+			<-sem
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+}
+
+func Benchmark_HTTP_Chain(b *testing.B) {
+	t := new(testing.T)
+	suite := newTestSuite()
+
+	suite.SetT(t)
+	suite.SetS(suite)
+
+	suite.BeforeTest("", "")
+
+	defer suite.AfterTest("", "")
+
+	httpURL := suite.httpURL()
+	cfg := strings.ReplaceAll(testHTTPRequestChainConfig, "{{host}}", httpURL)
+
+	url, err := suite.startAppWithConfig(cfg)
+	if err != nil {
+		suite.T().Fatal("failed to start app with config", err)
+	}
+
+	sem := make(chan struct{}, 5)
+	wg := sync.WaitGroup{}
+
+	b.ResetTimer()
+
+	suite.addHTTPContent("/testcall1", `{"data1": "value1", "data2": 1}`)
+	suite.addHTTPContent("POST /testcall2/value1", `{"data1": "value2", "data2": 2}`)
+
+	req := map[string]any{
+		"method": "testcall",
+	}
+	expectedResp := map[string]any{
+		"echo":     req,
+		"msg_type": "testcall",
+		"data1":    "value1",
+		"data2":    float64(2),
+	}
+
+	for i := 0; i < b.N; i++ {
+		sem <- struct{}{}
+
+		wg.Add(1)
+
+		go func() {
+			suite.testRequest(url, req, expectedResp)
+
+			<-sem
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+}
