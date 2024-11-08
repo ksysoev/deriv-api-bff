@@ -41,7 +41,7 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       - name: Run benchmark tests
-        run: go test -benchmem -run=^$$ -benchtime=5s  -bench ^Benchmark ./tests | tee bench.out.txt
+        run: go test -bench ^Benchmark ./tests | tee bench.out
       - name: Download previous benchmark data
         uses: actions/cache@v4
         with:
@@ -51,6 +51,6 @@ jobs:
         uses: benchmark-action/github-action-benchmark@v1
         with:
           tool: 'go'
-          output-file-path: bench.out.txt
+          output-file-path: bench.out
           external-data-json-path: ./cache/benchmark-data.json
           fail-on-alert: true

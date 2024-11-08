@@ -30,4 +30,4 @@ profile:
 	go test -benchmem -run=^$$ -benchtime=5s  -bench ^Benchmark -cpuprofile=cpu.out -memprofile=mem.out  -blockprofile=lock.out ./tests
 
 bench:
-	go test -benchmem -run=^$$ -benchtime=5s  -bench ^Benchmark ./tests
+	go test -bench ^Benchmark ./tests
