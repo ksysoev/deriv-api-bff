@@ -57,4 +57,4 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           comment-on-alert: true
           summary-always: true
-          alert-comment-cc-users: ${{ github.actor }}
+          alert-comment-cc-users: "@${{ github.actor }}"
