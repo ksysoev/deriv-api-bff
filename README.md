@@ -20,7 +20,7 @@ This project implements the Backend for Frontend (BFF) pattern on top of the Der
 To install from the source code, run the following command:
 
 ```sh 
-go install https://github.com/ksysoev/deriv-api-bff@latest
+go install https://github.com/ksysoev/deriv-api-bff/cmd/bff@latest
 ```
 
 ### With Docker Image
@@ -29,6 +29,46 @@ To pull the Docker image, run the following command:
 
 ```sh 
 docker pull ghcr.io/ksysoev/deriv-api-bff:latest
+```
+
+### Commands
+
+#### Server
+
+Start the BFF server with the specified configuration file:
+
+```sh
+bff server --config=./config.yaml
+```
+
+#### Config Verify
+
+Verify the correctness of the API call configuration:
+
+```sh
+bff config verify --config=./config.yaml
+```
+
+#### Config Upload
+
+Upload the API call configuration to the remote source (e.g., etcd):
+
+```sh
+bff config upload --config=./config.yaml
+```
+
+### Command Line Arguments
+
+Each command supports the following arguments:
+
+- `--config string`: Path to the configuration file (default: "./runtime/config.yaml").
+- `--loglevel string`: Log level (options: "debug", "info", "warn", "error") (default: "info").
+- `--logtext`: Log in text format; if not set, logs will be in JSON format.
+
+Example usage:
+
+```sh
+bff server --config=./config.yaml --loglevel=debug --logtext
 ```
 
 
