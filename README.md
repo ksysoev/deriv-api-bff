@@ -220,6 +220,48 @@ The following data is provided to each template:
         title: "title"
 ```
 
+## Request Format
+
+When making API requests to the BFF service, the request should be structured as follows:
+
+- `method` (string, required): The name of the API call.
+- `params` (object, optional): An object containing the parameters for the API call. Only fields defined in the `params` configuration for the API call are accepted.
+- `req_id` (string, optional): A unique identifier for the request. This can be used to match the response with the request on the client side.
+- `passthrough` (object, optional): An object for passing additional context. This object will be included in the response without modification.
+
+### Example API Request
+
+Here is an example of a properly formatted API request:
+
+```json
+{
+    "method": "config_country",
+    "params": {
+        "country": "id"
+    },
+    "req_id": "123",
+    "passthrough": {
+        "key": 1
+    }
+}
+```
+
+### Explanation
+
+- **method**: Specifies the API call to be executed. This field is mandatory.
+- **params**: Contains the parameters required for the API call. This field is optional and should match the schema defined in the API configuration.
+- **req_id**: A unique identifier for the request. This field is optional and helps in tracking the request and response.
+- **passthrough**: Allows additional context to be passed through the request. This field is optional and will be included in the response as-is.
+
+### Notes
+
+- Ensure that the `method` field matches one of the API calls defined in your configuration.
+- The `params` object should only include fields that are defined in the `params` section of the corresponding API call configuration.
+- The `req_id` can be any string that uniquely identifies the request. It is useful for debugging and tracking purposes.
+- The `passthrough` object can contain any additional data you want to include in the response without modification.
+
+By following this format, you can ensure that your API requests are correctly structured and processed by the BFF service.
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a pull request or open an issue if you encounter any problems or have suggestions for improvements.
