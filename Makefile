@@ -1,8 +1,8 @@
 test:
-	go test -v --race ./...
+	go test -v --race -short ./...
 
 test-norace:
-	go test -v ./...
+	go test -v -run -short ./...
 
 lint:
 	golangci-lint run
@@ -25,3 +25,9 @@ mod-tidy:
 
 coverage:
 	go test ./... -coverprofile=cover.out
+
+profile:
+	go test -benchmem -run=^$$ -benchtime=5s  -bench ^Benchmark -cpuprofile=cpu.out -memprofile=mem.out  -blockprofile=lock.out ./tests
+
+bench:
+	go test -benchmem -run=^$$ -benchtime=5s  -bench ^Benchmark ./tests
