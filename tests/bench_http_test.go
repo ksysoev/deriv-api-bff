@@ -1,5 +1,3 @@
-//go:build !compile
-
 package tests
 
 import (
@@ -9,7 +7,7 @@ import (
 	"testing"
 )
 
-func Benchmark_HTTP_Chain(b *testing.B) {
+func Benchmark_HTTP_Params(b *testing.B) {
 	t := new(testing.T)
 	suite := newTestSuite()
 
@@ -39,20 +37,21 @@ func Benchmark_HTTP_Chain(b *testing.B) {
 		wg.Add(1)
 
 		go func() {
-			path1 := fmt.Sprintf("/testcall%d", i)
-			path2 := fmt.Sprintf("POST /testcall%d/value%d", i+1, i)
-
-			suite.addHTTPContent(path1, `{"data1": "value1", "data2": 1}`)
-			suite.addHTTPContent(path2, `{"data1": "value2", "data2": 2}`)
+			suite.addHTTPContent(fmt.Sprintf("GET /testcall/value%d/%d/true", i, i+1), `{"data1": "value1", "data2": 2}`)
 
 			req := map[string]any{
 				"method": "testcall",
+				"params": map[string]any{
+					"param1": fmt.Sprintf("value%d", i),
+					"param2": float64(i + 1),
+					"param3": true,
+				},
 			}
 			expectedResp := map[string]any{
 				"echo":     req,
 				"msg_type": "testcall",
-				"data1":    "value1",
-				"data2":    float64(2),
+				"data1":    fmt.Sprintf("value%d", i),
+				"data2":    float64(i + 2),
 			}
 
 			suite.testRequest(url, req, expectedResp)
