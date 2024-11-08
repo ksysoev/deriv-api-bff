@@ -71,6 +71,38 @@ Example usage:
 bff server --config=./config.yaml --loglevel=debug --logtext
 ```
 
+### Sever configuration
+
+```yaml
+server:
+  listen: ":8080"
+  max_requests: 100 
+  max_requests_per_conn: 10
+deriv:
+  endpoint: "wss://ws.derivws.com/websockets/v3" 
+otel:
+  prometheus:
+    listen: ":8081"
+    path: "/metrics" 
+api_source:
+  etcd:
+    servers: "etcd:2379" 
+    prefix: "api::"  
+  path: "./runtime/api_config"
+```
+
+### Enviroment Variables 
+
+```sh
+SERVER_LISTEN=:8080
+SERVER_MAX_REQUESTS=100
+SERVER_MAX_REQUESTS_PER_CONN=10
+DERIV_ENDPOINT=wss://ws.derivws.com/websockets/v3
+OTEL_PROMETHEUS_LISTEN=:8081
+OTEL_PROMETHEUS_PATH=/metrics
+API_SOURCE_ETCD_SERVES=etcd:2379
+API_SOURCE_ETCD_PREFIX=api::
+API_SOURCE_PATH=./runtime/api_config
 
 ## Contributing
 
