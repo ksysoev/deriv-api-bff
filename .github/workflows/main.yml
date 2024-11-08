@@ -40,3 +40,10 @@ jobs:
         uses: codecov/codecov-action@v4
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: Run benchmark tests
+        run: go test -benchmem -run=^$$ -benchtime=5s  -bench ^Benchmark ./tests | tee bench.out
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'go'
+          output-file-path: bench.out
