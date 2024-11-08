@@ -2,19 +2,32 @@ package tests
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"testing"
+
+	"golang.org/x/exp/slog"
 )
 
-func Benchmark_HTTP_Params(b *testing.B) {
+func setup() *testSuite {
 	t := new(testing.T)
 	suite := newTestSuite()
+	programLevel := new(slog.LevelVar)
 
 	suite.SetT(t)
 	suite.SetS(suite)
-
 	suite.BeforeTest("", "")
+
+	programLevel.Set(slog.LevelError)
+	h := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: programLevel})
+	slog.SetDefault(slog.New(h))
+
+	return suite
+}
+
+func Benchmark_HTTP_Params(b *testing.B) {
+	suite := setup()
 
 	defer suite.AfterTest("", "")
 
@@ -65,13 +78,7 @@ func Benchmark_HTTP_Params(b *testing.B) {
 }
 
 func Benchmark_HTTP_Aggregation(b *testing.B) {
-	t := new(testing.T)
-	suite := newTestSuite()
-
-	suite.SetT(t)
-	suite.SetS(suite)
-
-	suite.BeforeTest("", "")
+	suite := setup()
 
 	defer suite.AfterTest("", "")
 
@@ -118,13 +125,7 @@ func Benchmark_HTTP_Aggregation(b *testing.B) {
 }
 
 func Benchmark_HTTP_Chain(b *testing.B) {
-	t := new(testing.T)
-	suite := newTestSuite()
-
-	suite.SetT(t)
-	suite.SetS(suite)
-
-	suite.BeforeTest("", "")
+	suite := setup()
 
 	defer suite.AfterTest("", "")
 
