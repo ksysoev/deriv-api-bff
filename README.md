@@ -12,6 +12,7 @@ This project implements the Backend for Frontend (BFF) pattern on top of the Der
 - **Multi-Step Sequences**: Build complex workflows with multiple API requests.
 - **Extend Deriv API**: Integrate your own HTTP APIs seamlessly.
 - **Declarative API Creation**: Create new API calls in a declarative way without writing code.
+- **Passthrough for Deriv API**: All request that are not following format of BFF will be forwared to Deriv API as is
 
 ## Installation
 
@@ -31,9 +32,9 @@ To pull the Docker image, run the following command:
 docker pull ghcr.io/ksysoev/deriv-api-bff:latest
 ```
 
-### Commands
+## Commands
 
-#### Server
+### Server
 
 Start the BFF server with the specified configuration file:
 
@@ -41,7 +42,7 @@ Start the BFF server with the specified configuration file:
 bff server --config=./config.yaml
 ```
 
-#### Config Verify
+### Config Verify
 
 Verify the correctness of the API call configuration:
 
@@ -49,7 +50,7 @@ Verify the correctness of the API call configuration:
 bff config verify --config=./config.yaml
 ```
 
-#### Config Upload
+### Config Upload
 
 Upload the API call configuration to the remote source (e.g., etcd):
 
@@ -57,7 +58,7 @@ Upload the API call configuration to the remote source (e.g., etcd):
 bff config upload --config=./config.yaml
 ```
 
-### Command Line Arguments
+## Command Line Arguments
 
 Each command supports the following arguments:
 
@@ -71,7 +72,7 @@ Example usage:
 bff server --config=./config.yaml --loglevel=debug --logtext
 ```
 
-### Server Configuration
+## Server Configuration
 
 The server configuration can be specified in a YAML file. Below is an example configuration:
 
@@ -96,7 +97,7 @@ api_source:
   path: "./runtime/api_config"  # Path to the local API configuration directory
 ```
 
-### Environment Variables
+## Environment Variables
 
 You can also configure the server using environment variables. Below are the available environment variables:
 
@@ -112,11 +113,11 @@ API_SOURCE_ETCD_PREFIX=api::  # Prefix for API configuration keys in Etcd
 API_SOURCE_PATH=./runtime/api_config  # Path to the local API configuration directory
 ```
 
-### API Configuration
+## API Configuration
 
 The API configuration can be specified in a YAML file or a directory containing multiple YAML files. If a directory is provided, the BFF service will scan all YAML files in that directory and merge them into a single configuration.
 
-#### Format of API Call Definitions
+### Format of API Call Definitions
 
 Each API call should be defined in the following format:
 
@@ -129,7 +130,7 @@ Backends can have two types of upstream requests:
 1. **Deriv API Request**
 2. **HTTP API Request**
 
-#### Deriv API Request
+### Deriv API Request
 
 To define a Deriv API request, use the following parameters:
 
@@ -139,7 +140,7 @@ To define a Deriv API request, use the following parameters:
 - `fields_map`: Allows renaming fields in the final response.
 - `depends_on`: Defines dependencies on other API calls. If dependencies are defined, their response data can be used in the request template.
 
-#### HTTP API Request
+### HTTP API Request
 
 To define an HTTP API request, use the following parameters:
 
@@ -151,7 +152,7 @@ To define an HTTP API request, use the following parameters:
 - `fields_map`: Allows renaming fields in the final response.
 - `depends_on`: Defines dependencies on other API calls. If dependencies are defined, their response data can be used in the request template.
 
-#### Template Placeholders
+### Template Placeholders
 
 Template placeholders are supported in the values of `request_template` and `url_template` for HTTP requests. Placeholders should follow the format `${path.to.the.key}`.
 
@@ -161,7 +162,7 @@ The following data is provided to each template:
 - `resp`: If the API call has defined dependencies, all responses will be provided as part of this object. You can use the name of the dependency to reference fields from it.
 - `req_id`: ID of the API request, which can be used for tracing.
 
-#### Example Configuration
+### Example Configuration
 
 ```yaml
 - method: "aggregate" 
