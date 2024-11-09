@@ -26,8 +26,11 @@ type Config struct {
 // It takes configPath of type string which is the path to the configuration file.
 // It returns a pointer to a config struct and an error.
 // It returns an error if the configuration file cannot be read or if the configuration cannot be unmarshaled.
-func initConfig(configPath string) (*Config, error) {
-	viper.SetConfigFile(configPath)
+func initConfig(arg *args) (*Config, error) {
+	if arg.ConfigPath == "" {
+		viper.SetConfigFile(arg.ConfigPath)
+	}
+
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
@@ -40,6 +43,8 @@ func initConfig(configPath string) (*Config, error) {
 	if err := viper.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
+
+	applyArgsToConfig(arg, &cfg)
 
 	slog.Debug("Config loaded", slog.Any("config", cfg))
 
@@ -95,4 +100,18 @@ func verifyConfig(ctx context.Context, cfg *Config) error {
 	slog.Info("Configuration is valid")
 
 	return nil
+}
+
+func applyArgsToConfig(arg *args, cfg *Config) {
+	if arg.apiSourcePath != "" {
+		cfg.APISource.Path = arg.apiSourcePath
+	}
+
+	if arg.apiSourceEtcdServers != "" {
+		cfg.APISource.Etcd.Servers = arg.apiSourceEtcdServers
+	}
+
+	if arg.apiSourceEtcdPrefix != "" {
+		cfg.APISource.Etcd.Prefix = arg.apiSourceEtcdPrefix
+	}
 }
