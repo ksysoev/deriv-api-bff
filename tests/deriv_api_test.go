@@ -39,9 +39,11 @@ func (s *testSuite) TestRequestParams() {
 	expectedResp := map[string]any{
 		"echo":     req,
 		"msg_type": "testcall",
-		"param1":   "value1",
-		"param2":   float64(2),
-		"param3":   true,
+		"testcall": map[string]any{
+			"param1": "value1",
+			"param2": float64(2),
+			"param3": true,
+		},
 	}
 
 	s.testRequest(url, req, expectedResp)
@@ -74,8 +76,10 @@ func (s *testSuite) TestAggregation() {
 	expectedResp := map[string]any{
 		"echo":     req,
 		"msg_type": "testcall",
-		"field1":   "value1",
-		"field2":   "value2",
+		"testcall": map[string]any{
+			"field1": "value1",
+			"field2": "value2",
+		},
 	}
 
 	s.testRequest(url, req, expectedResp)
@@ -111,8 +115,10 @@ func (s *testSuite) TestChain() {
 	expectedResp := map[string]any{
 		"echo":     req,
 		"msg_type": "testcall",
-		"field1":   "value1",
-		"field2":   "value1",
+		"testcall": map[string]any{
+			"field1": "value1",
+			"field2": "value1",
+		},
 	}
 
 	s.testRequest(url, req, expectedResp)
