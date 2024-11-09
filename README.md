@@ -62,15 +62,20 @@ bff config upload --config=./config.yaml
 
 Each command supports the following arguments:
 
-- `--config string`: Path to the configuration file (default: "./runtime/config.yaml").
-- `--loglevel string`: Log level (options: "debug", "info", "warn", "error") (default: "info").
-- `--logtext`: Log in text format; if not set, logs will be in JSON format.
+- `--config string`: Specifies the path to the configuration file that the BFF service will use.
+- `--loglevel string`: Sets the logging level for the application. Options include "debug", "info", "warn", and "error". The default level is "info".
+- `--logtext`: When set, logs will be output in plain text format. If not set, logs will be in JSON format.
+- `--api-source-path string`: Defines the path to the API configuration file or directory. The BFF service will read and merge all YAML files in the specified directory.
+- `--api-source-etcd-servers string`: Provides a comma-separated list of etcd servers to be used as the source for API configuration.
+- `--api-source-etcd-prefix string`: Specifies the prefix for API configuration keys in etcd.
 
-Example usage:
+**Example usage**:
 
 ```sh
 bff server --config=./config.yaml --loglevel=debug --logtext
 ```
+
+
 
 ## Server Configuration
 
