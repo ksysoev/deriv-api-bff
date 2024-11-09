@@ -257,15 +257,73 @@ Here is an example of a properly formatted API request:
 
 - Ensure that the `method` field matches one of the API calls defined in your configuration.
 - The `params` object should only include fields that are defined in the `params` section of the corresponding API call configuration.
-- The `req_id` can be any string that uniquely identifies the request. It is useful for debugging and tracking purposes.
+- The `req_id` can be any number that uniquely identifies the request. It is useful for debugging and tracking purposes.
 - The `passthrough` object can contain any additional data you want to include in the response without modification.
 
 By following this format, you can ensure that your API requests are correctly structured and processed by the BFF service.
 
+## Response Format
+
+The response format follows Deriv's API structure and includes the following fields:
+
+- **echo**: Contains the original request.
+- **msg_type**: Indicates the type of message. For a successful response, it will contain the method name. For an error response, it will contain `error`.
+- **response body**: The actual response data will be placed in a field named after the `msg_type`.
+- **req_id** (optional): This field will be included in the response if a request ID was provided in the request.
+- **passthrough** (optional): This field will be included in the response if a passthrough object was provided in the request.
+
+### Example Response
+
+Here is an example of a properly formatted response:
+
+```json
+{
+    "echo": {
+        "method": "config_country",
+        "params": {
+            "country": "id"
+        },
+        "req_id": "123",
+        "passthrough": {
+            "key": 1
+        }
+    },
+    "msg_type": "config_country",
+    "config_country": {
+        "region": "Asia",
+        "subregion": "Southeast Asia",
+        "name": "Indonesia",
+        "alpha2Code": "ID",
+        "alpha3Code": "IDN",
+        "callingCodes": ["62"],
+        "capital": "Jakarta"
+    },
+    "req_id": "123",
+    "passthrough": {
+        "key": 1
+    }
+}
+```
+
+### Explanation
+
+- **echo**: Reflects the original request, including the method, params, req_id, and passthrough fields.
+- **msg_type**: Indicates the type of message. In this example, it is `config_country`, which matches the method name in the request.
+- **response body**: Contains the actual response data. In this example, the response data is placed in a field named `config_country`.
+- **req_id**: Matches the request ID provided in the request, allowing for easy correlation between requests and responses.
+- **passthrough**: Includes any additional context provided in the request, passed through unchanged.
+
+### Notes
+
+- The **msg_type** field helps identify the type of response and matches the method name for successful responses.
+- The **response body** field is dynamically named based on the **msg_type**.
+- The **req_id** and **passthrough** fields are optional and will only be included if they were part of the original request.
+
+By following this format, you can ensure that your API responses are correctly structured and consistent with Deriv's API standards.
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a pull request or open an issue if you encounter any problems or have suggestions for improvements.
-
 
 ## License
 
