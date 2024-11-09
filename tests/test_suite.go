@@ -135,7 +135,7 @@ func (s *testSuite) startAppWithConfig(cfgYAML string) (url string, err error) {
 		RateLimits: api.RateLimits{
 			General: api.GeneralRateLimits{
 				Interval: "1s",
-				Limit:    1000, // high rate limit for testing and benchmarking
+				Limit:    10000, // high rate limit for testing and benchmarking
 			},
 		},
 	}, requestHandler)
