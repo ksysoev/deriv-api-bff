@@ -44,8 +44,10 @@ func (s *testSuite) TestHTTPRequestParams() {
 	expectedResp := map[string]any{
 		"echo":     req,
 		"msg_type": "testcall",
-		"data1":    "value1",
-		"data2":    float64(2),
+		"testcall": map[string]any{
+			"data1": "value1",
+			"data2": float64(2),
+		},
 	}
 
 	s.testRequest(url, req, expectedResp)
@@ -84,8 +86,10 @@ func (s *testSuite) TestHTTPRequestAggregation() {
 	expectedResp := map[string]any{
 		"echo":     req,
 		"msg_type": "testcall",
-		"data1":    "value1",
-		"data2":    float64(2),
+		"testcall": map[string]any{
+			"data1": "value1",
+			"data2": float64(2),
+		},
 	}
 
 	s.testRequest(url, req, expectedResp)
@@ -126,8 +130,10 @@ func (s *testSuite) TestHTTPRequestChain() {
 	expectedResp := map[string]any{
 		"echo":     req,
 		"msg_type": "testcall",
-		"data1":    "value1",
-		"data2":    float64(2),
+		"testcall": map[string]any{
+			"data1": "value1",
+			"data2": float64(2),
+		},
 	}
 
 	s.testRequest(url, req, expectedResp)
