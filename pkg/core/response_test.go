@@ -18,7 +18,7 @@ func TestCreateResponse(t *testing.T) {
 	data, err := createResponse(req, resp, nil)
 	assert.Nil(t, err)
 
-	expected := []byte(`{"echo":{"req_id":1,"method":"testMethod","params":{"key":"value"}},"key":"value","msg_type":"testMethod","req_id":1}`)
+	expected := []byte(`{"echo":{"req_id":1,"method":"testMethod","params":{"key":"value"}},"msg_type":"testMethod","req_id":1,"testMethod":{"key":"value"}}`)
 	assert.Equal(t, expected, data)
 }
 
@@ -57,6 +57,6 @@ func TestCreateResponseWithPassthrough(t *testing.T) {
 	data, err := createResponse(req, resp, nil)
 	assert.Nil(t, err)
 
-	expected := []byte(`{"echo":{"req_id":1,"method":"testMethod","params":{"key":"value"},"passthrough":"test"},"key":"value","msg_type":"testMethod","passthrough":"test","req_id":1}`)
+	expected := []byte(`{"echo":{"req_id":1,"method":"testMethod","params":{"key":"value"},"passthrough":"test"},"msg_type":"testMethod","passthrough":"test","req_id":1,"testMethod":{"key":"value"}}`)
 	assert.Equal(t, expected, data)
 }

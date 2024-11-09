@@ -55,7 +55,7 @@ func TestService_ProcessRequest(t *testing.T) {
 	mockConn := mocks.NewMockConnection(t)
 	mockRequest := request.NewRequest(ctx, request.TextMessage, []byte(`{"req_id":1,"method":"testMethod","params":{"key":"value"}}`))
 
-	expectedResp := []byte(`{"echo":{"req_id":1,"method":"testMethod","params":{"key":"value"}},"msg_type":"testMethod","req_id":1,"result":"success"}`)
+	expectedResp := []byte(`{"echo":{"req_id":1,"method":"testMethod","params":{"key":"value"}},"msg_type":"testMethod","req_id":1,"testMethod":{"result":"success"}}`)
 
 	conn := NewConnection(mockConn, func(_ string) {})
 

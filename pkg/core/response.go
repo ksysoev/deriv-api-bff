@@ -8,18 +8,20 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 )
 
-func createResponse(req *request.Request, resp map[string]any, err error) ([]byte, error) {
+func createResponse(req *request.Request, respData map[string]any, err error) ([]byte, error) {
 	var apiErr *APIError
+
+	resp := make(map[string]any)
 
 	switch {
 	case errors.As(err, &apiErr):
-		resp = make(map[string]any)
 		resp["error"] = apiErr.Encode()
 		resp["msg_type"] = "error"
 	case err != nil:
 		return nil, fmt.Errorf("failed to handle request: %w", err)
 	default:
 		resp["msg_type"] = req.RoutingKey()
+		resp[req.RoutingKey()] = respData
 	}
 
 	if req.ID != nil {
