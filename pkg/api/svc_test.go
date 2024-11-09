@@ -195,6 +195,12 @@ func TestPopulateDefaults(t *testing.T) {
 				Listen:             "localhost:8080",
 				MaxRequests:        maxRequestsDefault,
 				MaxRequestsPerConn: maxRequestsPerConnDefault,
+				RateLimits: RateLimits{
+					General: GeneralRateLimits{
+						Interval: generalRateLimitIntervalDefault,
+						Limit:    generalRateLimitDefault,
+					},
+				},
 			},
 		},
 		{
@@ -207,6 +213,12 @@ func TestPopulateDefaults(t *testing.T) {
 				Listen:             "localhost:8080",
 				MaxRequests:        200,
 				MaxRequestsPerConn: maxRequestsPerConnDefault,
+				RateLimits: RateLimits{
+					General: GeneralRateLimits{
+						Interval: generalRateLimitIntervalDefault,
+						Limit:    generalRateLimitDefault,
+					},
+				},
 			},
 		},
 		{
@@ -219,6 +231,36 @@ func TestPopulateDefaults(t *testing.T) {
 				Listen:             "localhost:8080",
 				MaxRequests:        maxRequestsDefault,
 				MaxRequestsPerConn: 20,
+				RateLimits: RateLimits{
+					General: GeneralRateLimits{
+						Interval: generalRateLimitIntervalDefault,
+						Limit:    generalRateLimitDefault,
+					},
+				},
+			},
+		},
+		{
+			name: "General Rate Limit Set",
+			input: &Config{
+				Listen:             "localhost:8080",
+				MaxRequestsPerConn: 20,
+				RateLimits: RateLimits{
+					General: GeneralRateLimits{
+						Interval: "1h",
+						Limit:    1000,
+					},
+				},
+			},
+			expected: &Config{
+				Listen:             "localhost:8080",
+				MaxRequests:        maxRequestsDefault,
+				MaxRequestsPerConn: 20,
+				RateLimits: RateLimits{
+					General: GeneralRateLimits{
+						Interval: "1h",
+						Limit:    1000,
+					},
+				},
 			},
 		},
 		{
@@ -232,6 +274,12 @@ func TestPopulateDefaults(t *testing.T) {
 				Listen:             "localhost:8080",
 				MaxRequests:        200,
 				MaxRequestsPerConn: 20,
+				RateLimits: RateLimits{
+					General: GeneralRateLimits{
+						Interval: generalRateLimitIntervalDefault,
+						Limit:    generalRateLimitDefault,
+					},
+				},
 			},
 		},
 	}
@@ -239,7 +287,7 @@ func TestPopulateDefaults(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			populateDefaults(tt.input)
-			assert.Equal(t, tt.expected, tt.input)
+			assert.Equalf(t, tt.expected, tt.input, tt.name)
 		})
 	}
 }
@@ -276,4 +324,37 @@ func TestSkipMetrics(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestGetRequestLimits_Success(t *testing.T) {
+	validRateLimits := RateLimits{
+		General: GeneralRateLimits{
+			Interval: "10s",
+			Limit:    200,
+		},
+	}
+	requestLimitFunc := getRequestLimits(validRateLimits)
+	mockRequest := mocks.NewMockRequest(t)
+
+	mockRequest.EXPECT().RoutingKey().Return("key")
+
+	key, duration, limit := requestLimitFunc(mockRequest)
+
+	assert.Equal(t, "key", key)
+	assert.Equal(t, 10*time.Second, duration)
+	assert.Equal(t, uint64(200), limit)
+}
+
+func TestGetRequestLimits_Failure(t *testing.T) {
+	validRateLimits := RateLimits{
+		General: GeneralRateLimits{
+			Interval: "invalid",
+		},
+	}
+	requestLimitFunc := getRequestLimits(validRateLimits)
+	mockRequest := mocks.NewMockRequest(t)
+
+	assert.PanicsWithError(t, "incorrect interval format", func() {
+		requestLimitFunc(mockRequest)
+	})
 }

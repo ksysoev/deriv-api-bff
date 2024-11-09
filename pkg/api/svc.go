@@ -2,9 +2,11 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
+	"time"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	"github.com/ksysoev/deriv-api-bff/pkg/middleware"
@@ -16,9 +18,11 @@ import (
 )
 
 const (
-	maxMessageSize            = 600 * 1024
-	maxRequestsDefault        = 100
-	maxRequestsPerConnDefault = 10
+	maxMessageSize                  = 600 * 1024
+	maxRequestsDefault              = 100
+	maxRequestsPerConnDefault       = 10
+	generalRateLimitIntervalDefault = "1m"
+	generalRateLimitDefault         = 100
 )
 
 type BFFService interface {
@@ -27,9 +31,23 @@ type BFFService interface {
 }
 
 type Config struct {
-	Listen             string `mapstructure:"listen"`
-	MaxRequests        uint   `mapstructure:"max_requests"`
-	MaxRequestsPerConn uint   `mapstructure:"max_requests_per_conn"`
+	Listen             string     `mapstructure:"listen"`
+	RateLimits         RateLimits `mapstructure:"rate_limits"`
+	MaxRequests        uint       `mapstructure:"max_requests"`
+	MaxRequestsPerConn uint       `mapstructure:"max_requests_per_conn"`
+}
+
+type RateLimits struct {
+	Groups  GroupRateLimits   `mapstructure:"groups"`
+	General GeneralRateLimits `mapstructure:"general"`
+}
+
+type GeneralRateLimits struct {
+	Interval string `mapstructure:"interval"`
+	Limit    uint   `mapstructure:"limit"`
+}
+
+type GroupRateLimits struct {
 }
 
 type Service struct {
@@ -53,6 +71,7 @@ func NewSevice(cfg *Config, handler BFFService) *Service {
 	dispatcher.Use(middleware.NewErrorHandlingMiddleware())
 	dispatcher.Use(middleware.NewMetricsMiddleware("bff-deriv", skipMetrics))
 	dispatcher.Use(reqmid.NewTrottlerMiddleware(cfg.MaxRequests))
+	dispatcher.Use(reqmid.NewRateLimiterMiddleware(getRequestLimits(cfg.RateLimits)))
 
 	registry := channel.NewConnectionRegistry(
 		channel.WithMaxFrameLimit(maxMessageSize),
@@ -117,6 +136,20 @@ func (s *Service) Handle(conn wasabi.Connection, r wasabi.Request) error {
 	}
 }
 
+// getRequestLimits is a helper function transform request limits mentioned in server configuration
+// into wasabi request limits, so that we can use the RateLimiter middleware.
+func getRequestLimits(rateLimitCfg RateLimits) func(wasabi.Request) (string, time.Duration, uint64) {
+	return func(r wasabi.Request) (string, time.Duration, uint64) {
+		duration, err := time.ParseDuration(rateLimitCfg.General.Interval)
+		if err != nil {
+			//TODO: should we panic or fallback to defaults with warning?
+			panic(errors.New("incorrect interval format"))
+		}
+
+		return r.RoutingKey(), duration, uint64(rateLimitCfg.General.Limit)
+	}
+}
+
 // parse processes a message received over a Wasabi connection and converts it into a core request.
 // It takes conn of type wasabi.Connection, ctx of type context.Context, msgType of type wasabi.MessageType, and data of type []byte.
 // It returns a wasabi.Request which represents the parsed message.
@@ -147,6 +180,14 @@ func populateDefaults(cfg *Config) {
 
 	if cfg.MaxRequestsPerConn == 0 {
 		cfg.MaxRequestsPerConn = maxRequestsPerConnDefault
+	}
+
+	if cfg.RateLimits.General.Interval == "" {
+		cfg.RateLimits.General.Interval = generalRateLimitIntervalDefault
+	}
+
+	if cfg.RateLimits.General.Limit == 0 {
+		cfg.RateLimits.General.Limit = generalRateLimitDefault
 	}
 }
 
