@@ -51,7 +51,7 @@ func createTempConfigFile(t *testing.T, content string) string {
 func TestInitConfig_Valid(t *testing.T) {
 	configPath := createTempConfigFile(t, validConfig)
 
-	cfg, err := initConfig(configPath)
+	cfg, err := initConfig(&args{ConfigPath: configPath})
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 	assert.Equal(t, ":0", cfg.Server.Listen)
@@ -62,7 +62,7 @@ func TestInitConfig_Valid(t *testing.T) {
 func TestInitConfig_InvalidContent(t *testing.T) {
 	configPath := createTempConfigFile(t, "invalid content")
 
-	cfg, err := initConfig(configPath)
+	cfg, err := initConfig(&args{ConfigPath: configPath})
 	assert.Error(t, err)
 	assert.Nil(t, cfg)
 }
@@ -71,7 +71,7 @@ func TestInitConfig_Missing(t *testing.T) {
 	dir := os.TempDir()
 	configPath := dir + "/missing_config.yaml"
 
-	cfg, err := initConfig(configPath)
+	cfg, err := initConfig(&args{ConfigPath: configPath})
 	assert.Error(t, err)
 	assert.Nil(t, cfg)
 }
@@ -218,4 +218,85 @@ func TestVerifyConfig_FailLoadHandlers(t *testing.T) {
 	err := verifyConfig(ctx, cfg)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load handlers")
+}
+
+func TestApplyArgsToConfig(t *testing.T) {
+	tests := []struct {
+		args   *args
+		config *Config
+		want   *Config
+		name   string
+	}{
+		{
+			name: "All fields set",
+			args: &args{
+				apiSourcePath:        "test_path",
+				apiSourceEtcdServers: "test_servers",
+				apiSourceEtcdPrefix:  "test_prefix",
+			},
+			config: &Config{},
+			want: &Config{
+				APISource: source.Config{
+					Path: "test_path",
+					Etcd: source.EtcdConfig{
+						Servers: "test_servers",
+						Prefix:  "test_prefix",
+					},
+				},
+			},
+		},
+		{
+			name: "Only Path set",
+			args: &args{
+				apiSourcePath: "test_path",
+			},
+			config: &Config{},
+			want: &Config{
+				APISource: source.Config{
+					Path: "test_path",
+				},
+			},
+		},
+		{
+			name: "Only Etcd Servers set",
+			args: &args{
+				apiSourceEtcdServers: "test_servers",
+			},
+			config: &Config{},
+			want: &Config{
+				APISource: source.Config{
+					Etcd: source.EtcdConfig{
+						Servers: "test_servers",
+					},
+				},
+			},
+		},
+		{
+			name: "Only Etcd Prefix set",
+			args: &args{
+				apiSourceEtcdPrefix: "test_prefix",
+			},
+			config: &Config{},
+			want: &Config{
+				APISource: source.Config{
+					Etcd: source.EtcdConfig{
+						Prefix: "test_prefix",
+					},
+				},
+			},
+		},
+		{
+			name:   "No fields set",
+			args:   &args{},
+			config: &Config{},
+			want:   &Config{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			applyArgsToConfig(tt.args, tt.config)
+			assert.Equal(t, tt.want, tt.config)
+		})
+	}
 }

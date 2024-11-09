@@ -26,20 +26,27 @@ type Config struct {
 // It takes configPath of type string which is the path to the configuration file.
 // It returns a pointer to a config struct and an error.
 // It returns an error if the configuration file cannot be read or if the configuration cannot be unmarshaled.
-func initConfig(configPath string) (*Config, error) {
-	viper.SetConfigFile(configPath)
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.AutomaticEnv()
+func initConfig(arg *args) (*Config, error) {
+	v := viper.NewWithOptions(viper.ExperimentalBindStruct())
 
-	if err := viper.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("failed to read config: %w", err)
+	if arg.ConfigPath != "" {
+		v.SetConfigFile(arg.ConfigPath)
+
+		if err := v.ReadInConfig(); err != nil {
+			return nil, fmt.Errorf("failed to read config: %w", err)
+		}
 	}
 
 	var cfg Config
 
-	if err := viper.Unmarshal(&cfg); err != nil {
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
+
+	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
+
+	applyArgsToConfig(arg, &cfg)
 
 	slog.Debug("Config loaded", slog.Any("config", cfg))
 
@@ -95,4 +102,22 @@ func verifyConfig(ctx context.Context, cfg *Config) error {
 	slog.Info("Configuration is valid")
 
 	return nil
+}
+
+// applyArgsToConfig applies command-line arguments to the configuration.
+// It takes arg of type *args and cfg of type *Config.
+// It does not return any values.
+// If any of the fields in arg are non-empty, it updates the corresponding fields in cfg.
+func applyArgsToConfig(arg *args, cfg *Config) {
+	if arg.apiSourcePath != "" {
+		cfg.APISource.Path = arg.apiSourcePath
+	}
+
+	if arg.apiSourceEtcdServers != "" {
+		cfg.APISource.Etcd.Servers = arg.apiSourceEtcdServers
+	}
+
+	if arg.apiSourceEtcdPrefix != "" {
+		cfg.APISource.Etcd.Prefix = arg.apiSourceEtcdPrefix
+	}
 }

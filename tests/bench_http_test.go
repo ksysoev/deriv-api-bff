@@ -63,8 +63,10 @@ func Benchmark_HTTP_Params(b *testing.B) {
 			expectedResp := map[string]any{
 				"echo":     req,
 				"msg_type": "testcall",
-				"data1":    fmt.Sprintf("value%d", i),
-				"data2":    float64(i + 2),
+				"testcall": map[string]any{
+					"data1": fmt.Sprintf("value%d", i),
+					"data2": float64(i + 2),
+				},
 			}
 
 			suite.testRequest(url, req, expectedResp)
@@ -101,8 +103,10 @@ func Benchmark_HTTP_Aggregation(b *testing.B) {
 	expectedResp := map[string]any{
 		"echo":     req,
 		"msg_type": "testcall",
-		"data1":    "value1",
-		"data2":    float64(2),
+		"testcall": map[string]any{
+			"data1": "value1",
+			"data2": float64(2),
+		},
 	}
 
 	suite.addHTTPContent("/testcall1", `{"data1": "value1", "data2": 1}`)
@@ -151,8 +155,10 @@ func Benchmark_HTTP_Chain(b *testing.B) {
 	expectedResp := map[string]any{
 		"echo":     req,
 		"msg_type": "testcall",
-		"data1":    "value1",
-		"data2":    float64(2),
+		"testcall": map[string]any{
+			"data1": "value1",
+			"data2": float64(2),
+		},
 	}
 
 	for i := 0; i < b.N; i++ {
