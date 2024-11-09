@@ -13,10 +13,10 @@ type args struct {
 	version              string
 	LogLevel             string `mapstructure:"loglevel"`
 	ConfigPath           string `mapstructure:"config"`
-	TextFormat           bool   `mapstructure:"logtext"`
 	apiSourcePath        string
 	apiSourceEtcdServers string
 	apiSourceEtcdPrefix  string
+	TextFormat           bool `mapstructure:"logtext"`
 }
 
 // InitCommands initializes and returns the root command for the Backend for Frontend (BFF) service.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"reflect"
 	"strings"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/api"
@@ -27,20 +28,22 @@ type Config struct {
 // It returns a pointer to a config struct and an error.
 // It returns an error if the configuration file cannot be read or if the configuration cannot be unmarshaled.
 func initConfig(arg *args) (*Config, error) {
-	if arg.ConfigPath == "" {
-		viper.SetConfigFile(arg.ConfigPath)
-	}
+	v := viper.NewWithOptions(viper.ExperimentalBindStruct())
 
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.AutomaticEnv()
+	if arg.ConfigPath != "" {
+		v.SetConfigFile(arg.ConfigPath)
 
-	if err := viper.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("failed to read config: %w", err)
+		if err := v.ReadInConfig(); err != nil {
+			return nil, fmt.Errorf("failed to read config: %w", err)
+		}
 	}
 
 	var cfg Config
 
-	if err := viper.Unmarshal(&cfg); err != nil {
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
+
+	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
@@ -102,6 +105,10 @@ func verifyConfig(ctx context.Context, cfg *Config) error {
 	return nil
 }
 
+// applyArgsToConfig applies command-line arguments to the configuration.
+// It takes arg of type *args and cfg of type *Config.
+// It does not return any values.
+// If any of the fields in arg are non-empty, it updates the corresponding fields in cfg.
 func applyArgsToConfig(arg *args, cfg *Config) {
 	if arg.apiSourcePath != "" {
 		cfg.APISource.Path = arg.apiSourcePath
@@ -114,4 +121,36 @@ func applyArgsToConfig(arg *args, cfg *Config) {
 	if arg.apiSourceEtcdPrefix != "" {
 		cfg.APISource.Etcd.Prefix = arg.apiSourceEtcdPrefix
 	}
+}
+
+func bindEnv(v *viper.Viper, i any, parent, delim string) error {
+	r := reflect.TypeOf(i)
+
+	if r.Kind() == reflect.Ptr {
+		r = r.Elem()
+	}
+
+	for i := 0; i < r.NumField(); i++ {
+		f := r.Field(i)
+		env := strings.ToUpper(f.Tag.Get("mapstructure"))
+
+		if parent != "" {
+			env = parent + delim + env
+		}
+
+		if f.Type.Kind() == reflect.Struct {
+			t := reflect.New(f.Type).Elem().Interface()
+			bindEnv(v, t, env, delim)
+			continue
+		}
+
+		fmt.Println(env)
+
+		if e := v.BindEnv(env); e != nil {
+			return e
+		}
+		// v.SetDefault(env, "")
+	}
+
+	return nil
 }
