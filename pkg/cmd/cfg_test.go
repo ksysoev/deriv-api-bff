@@ -222,10 +222,10 @@ func TestVerifyConfig_FailLoadHandlers(t *testing.T) {
 
 func TestApplyArgsToConfig(t *testing.T) {
 	tests := []struct {
-		name   string
 		args   *args
 		config *Config
 		want   *Config
+		name   string
 	}{
 		{
 			name: "All fields set",
