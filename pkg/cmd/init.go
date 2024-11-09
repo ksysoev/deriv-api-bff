@@ -9,11 +9,14 @@ import (
 )
 
 type args struct {
-	build      string
-	version    string
-	LogLevel   string `mapstructure:"loglevel"`
-	ConfigPath string `mapstructure:"config"`
-	TextFormat bool   `mapstructure:"logtext"`
+	build                string
+	version              string
+	LogLevel             string `mapstructure:"loglevel"`
+	ConfigPath           string `mapstructure:"config"`
+	TextFormat           bool   `mapstructure:"logtext"`
+	apiSourcePath        string
+	apiSourceEtcdServers string
+	apiSourceEtcdPrefix  string
 }
 
 // InitCommands initializes and returns the root command for the Backend for Frontend (BFF) service.
@@ -41,6 +44,9 @@ func InitCommands(build, version string) (*cobra.Command, error) {
 	cmd.PersistentFlags().StringVar(&args.ConfigPath, "config", "./runtime/config.yaml", "config file path")
 	cmd.PersistentFlags().StringVar(&args.LogLevel, "loglevel", "info", "log level (debug, info, warn, error)")
 	cmd.PersistentFlags().BoolVar(&args.TextFormat, "logtext", false, "log in text format, otherwise JSON")
+	cmd.PersistentFlags().StringVar(&args.apiSourcePath, "api-source-path", "", "path to the API source file")
+	cmd.PersistentFlags().StringVar(&args.apiSourceEtcdServers, "api-source-etcd-servers", "", "etcd servers for API source")
+	cmd.PersistentFlags().StringVar(&args.apiSourceEtcdPrefix, "api-source-etcd-prefix", "", "etcd prefix for API source")
 
 	if err := viper.BindPFlags(cmd.PersistentFlags()); err != nil {
 		return nil, fmt.Errorf("failed to parse env args: %w", err)
