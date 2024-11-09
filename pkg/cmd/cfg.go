@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"reflect"
 	"strings"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/api"
@@ -121,36 +120,4 @@ func applyArgsToConfig(arg *args, cfg *Config) {
 	if arg.apiSourceEtcdPrefix != "" {
 		cfg.APISource.Etcd.Prefix = arg.apiSourceEtcdPrefix
 	}
-}
-
-func bindEnv(v *viper.Viper, i any, parent, delim string) error {
-	r := reflect.TypeOf(i)
-
-	if r.Kind() == reflect.Ptr {
-		r = r.Elem()
-	}
-
-	for i := 0; i < r.NumField(); i++ {
-		f := r.Field(i)
-		env := strings.ToUpper(f.Tag.Get("mapstructure"))
-
-		if parent != "" {
-			env = parent + delim + env
-		}
-
-		if f.Type.Kind() == reflect.Struct {
-			t := reflect.New(f.Type).Elem().Interface()
-			bindEnv(v, t, env, delim)
-			continue
-		}
-
-		fmt.Println(env)
-
-		if e := v.BindEnv(env); e != nil {
-			return e
-		}
-		// v.SetDefault(env, "")
-	}
-
-	return nil
 }
