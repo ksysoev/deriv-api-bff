@@ -219,3 +219,84 @@ func TestVerifyConfig_FailLoadHandlers(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load handlers")
 }
+
+func TestApplyArgsToConfig(t *testing.T) {
+	tests := []struct {
+		name   string
+		args   *args
+		config *Config
+		want   *Config
+	}{
+		{
+			name: "All fields set",
+			args: &args{
+				apiSourcePath:        "test_path",
+				apiSourceEtcdServers: "test_servers",
+				apiSourceEtcdPrefix:  "test_prefix",
+			},
+			config: &Config{},
+			want: &Config{
+				APISource: source.Config{
+					Path: "test_path",
+					Etcd: source.EtcdConfig{
+						Servers: "test_servers",
+						Prefix:  "test_prefix",
+					},
+				},
+			},
+		},
+		{
+			name: "Only Path set",
+			args: &args{
+				apiSourcePath: "test_path",
+			},
+			config: &Config{},
+			want: &Config{
+				APISource: source.Config{
+					Path: "test_path",
+				},
+			},
+		},
+		{
+			name: "Only Etcd Servers set",
+			args: &args{
+				apiSourceEtcdServers: "test_servers",
+			},
+			config: &Config{},
+			want: &Config{
+				APISource: source.Config{
+					Etcd: source.EtcdConfig{
+						Servers: "test_servers",
+					},
+				},
+			},
+		},
+		{
+			name: "Only Etcd Prefix set",
+			args: &args{
+				apiSourceEtcdPrefix: "test_prefix",
+			},
+			config: &Config{},
+			want: &Config{
+				APISource: source.Config{
+					Etcd: source.EtcdConfig{
+						Prefix: "test_prefix",
+					},
+				},
+			},
+		},
+		{
+			name:   "No fields set",
+			args:   &args{},
+			config: &Config{},
+			want:   &Config{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			applyArgsToConfig(tt.args, tt.config)
+			assert.Equal(t, tt.want, tt.config)
+		})
+	}
+}

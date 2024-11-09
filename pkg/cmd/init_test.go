@@ -24,7 +24,7 @@ func TestInitCommands(t *testing.T) {
 
 	configFlag := cmd.PersistentFlags().Lookup("config")
 	assert.NotNil(t, configFlag)
-	assert.Equal(t, "./runtime/config.yaml", configFlag.DefValue)
+	assert.Equal(t, "", configFlag.DefValue)
 
 	logLevelFlag := cmd.PersistentFlags().Lookup("loglevel")
 	assert.NotNil(t, logLevelFlag)
@@ -170,7 +170,7 @@ func TestInitCommands_BindPFlags(t *testing.T) {
 	// Check if flags are bound correctly
 	assert.Equal(t, "info", viper.GetString("LOGLEVEL"))
 	assert.Equal(t, false, viper.GetBool("LOGTEXT"))
-	assert.Equal(t, "./runtime/config.yaml", viper.GetString("CONFIG"))
+	assert.Equal(t, "", viper.GetString("CONFIG"))
 }
 
 func TestInitCommands_UnmarshalArgs(t *testing.T) {
@@ -188,7 +188,7 @@ func TestInitCommands_UnmarshalArgs(t *testing.T) {
 
 	assert.Equal(t, "info", args.LogLevel)
 	assert.Equal(t, false, args.TextFormat)
-	assert.Equal(t, "./runtime/config.yaml", args.ConfigPath)
+	assert.Equal(t, "", args.ConfigPath)
 }
 
 func TestInitCommands_InvalidLogText(t *testing.T) {
