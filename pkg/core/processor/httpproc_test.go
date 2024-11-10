@@ -4,8 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/tmpl"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHTTPProc_Parse(t *testing.T) {
@@ -165,6 +167,32 @@ func TestNewHTTP(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "With headers success",
+			cfg: &Config{
+				Name:        "TestProcessor",
+				Method:      "GET",
+				URLTemplate: "/test/url",
+				Tmplt:       map[string]any{"key": "value"},
+				FieldMap:    map[string]string{"key1": "mappedKey1"},
+				Allow:       []string{"key1", "key2"},
+				Headers:     map[string]string{"Authorization": "Bearer ${params.token}"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "With headers parse error",
+			cfg: &Config{
+				Name:        "TestProcessor",
+				Method:      "GET",
+				URLTemplate: "/test/url",
+				Tmplt:       map[string]any{"key": "value"},
+				FieldMap:    map[string]string{"key1": "mappedKey1"},
+				Allow:       []string{"key1", "key2"},
+				Headers:     map[string]string{"Authorization": "Bearer ${params.invalid_field"},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -189,14 +217,15 @@ func TestNewHTTP(t *testing.T) {
 
 func TestHTTPProc_Render(t *testing.T) {
 	tests := []struct {
-		proc          *HTTPProc
-		param         map[string]any
-		deps          map[string]any
-		name          string
-		wantRoutinKey string
-		reqID         string
-		wantBody      []byte
-		wantErr       bool
+		proc        *HTTPProc
+		param       map[string]any
+		deps        map[string]any
+		wantHeaders map[string]string
+		name        string
+		reqID       string
+		wantURL     string
+		wantBody    []byte
+		wantErr     bool
 	}{
 		{
 			name: "Valid URL and body template",
@@ -205,13 +234,15 @@ func TestHTTPProc_Render(t *testing.T) {
 				method:      "POST",
 				urlTemplate: tmpl.MustNewURLTmpl("http://example.com/${req_id}"),
 				tmpl:        tmpl.MustNewTmpl(`{"param": "${params.param}"}`),
+				headers:     map[string]*tmpl.StrTmpl{"Authorization": tmpl.MustNewStrTmpl("application/json")},
 			},
-			reqID:         "123",
-			param:         map[string]any{"param": "value"},
-			deps:          map[string]any{},
-			wantRoutinKey: "POST http://example.com/123",
-			wantBody:      []byte(`{"param": "value"}`),
-			wantErr:       false,
+			reqID:       "123",
+			param:       map[string]any{"param": "value"},
+			deps:        map[string]any{},
+			wantURL:     "POST http://example.com/123",
+			wantBody:    []byte(`{"param": "value"}`),
+			wantHeaders: map[string]string{"Authorization": "application/json"},
+			wantErr:     false,
 		},
 		{
 			name: "Valid URL template, no body template",
@@ -220,13 +251,15 @@ func TestHTTPProc_Render(t *testing.T) {
 				method:      "GET",
 				urlTemplate: tmpl.MustNewURLTmpl("http://example.com/${req_id}"),
 				tmpl:        nil,
+				headers:     map[string]*tmpl.StrTmpl{"Authorization": tmpl.MustNewStrTmpl("application/json")},
 			},
-			reqID:         "123",
-			param:         map[string]any{"param": "value"},
-			deps:          map[string]any{},
-			wantRoutinKey: "GET http://example.com/123",
-			wantBody:      nil,
-			wantErr:       false,
+			reqID:       "123",
+			param:       map[string]any{"param": "value"},
+			deps:        map[string]any{},
+			wantURL:     "GET http://example.com/123",
+			wantBody:    nil,
+			wantHeaders: map[string]string{"Authorization": "application/json"},
+			wantErr:     false,
 		},
 		{
 			name: "Invalid URL template",
@@ -236,12 +269,13 @@ func TestHTTPProc_Render(t *testing.T) {
 				urlTemplate: tmpl.MustNewURLTmpl("http://example.com/${params.invalid_field}"),
 				tmpl:        nil,
 			},
-			reqID:         "123",
-			param:         map[string]any{"param": "value"},
-			deps:          map[string]any{},
-			wantRoutinKey: "",
-			wantBody:      nil,
-			wantErr:       true,
+			reqID:       "123",
+			param:       map[string]any{"param": "value"},
+			deps:        map[string]any{},
+			wantURL:     "",
+			wantBody:    nil,
+			wantHeaders: nil,
+			wantErr:     true,
 		},
 		{
 			name: "Invalid body template",
@@ -251,12 +285,30 @@ func TestHTTPProc_Render(t *testing.T) {
 				urlTemplate: tmpl.MustNewURLTmpl("http://example.com/${req_id}"),
 				tmpl:        tmpl.MustNewTmpl(`{"param": "${invalid_field}"}`),
 			},
-			reqID:         "123",
-			param:         map[string]any{"param": "value"},
-			deps:          map[string]any{},
-			wantRoutinKey: "POST http://example.com/123",
-			wantBody:      nil,
-			wantErr:       true,
+			reqID:       "123",
+			param:       map[string]any{"param": "value"},
+			deps:        map[string]any{},
+			wantURL:     "POST http://example.com/123",
+			wantBody:    nil,
+			wantHeaders: nil,
+			wantErr:     true,
+		},
+		{
+			name: "Valid URL and body template with headers",
+			proc: &HTTPProc{
+				name:        "TestProcessor",
+				method:      "POST",
+				urlTemplate: tmpl.MustNewURLTmpl("http://example.com/${req_id}"),
+				tmpl:        tmpl.MustNewTmpl(`{"param": "${params.param}"}`),
+				headers:     map[string]*tmpl.StrTmpl{"Authorization": tmpl.MustNewStrTmpl("Bearer ${params.token}")},
+			},
+			reqID:       "123",
+			param:       map[string]any{"param": "value", "token": "abc123"},
+			deps:        map[string]any{},
+			wantURL:     "POST http://example.com/123",
+			wantBody:    []byte(`{"param": "value"}`),
+			wantHeaders: map[string]string{"Authorization": "Bearer abc123"},
+			wantErr:     false,
 		},
 	}
 
@@ -268,12 +320,20 @@ func TestHTTPProc_Render(t *testing.T) {
 				assert.Error(t, err)
 				assert.Nil(t, gotReq)
 			} else {
-				assert.Equal(t, tt.wantRoutinKey, gotReq.RoutingKey())
+				assert.NoError(t, err)
 
-				if tt.wantBody == nil {
-					assert.Nil(t, gotReq.Data())
-				} else {
-					assert.Equal(t, tt.wantBody, gotReq.Data())
+				req, ok := gotReq.(*request.HTTPReq)
+
+				require.True(t, ok)
+
+				http, err := req.ToHTTPRequest()
+				assert.NoError(t, err)
+
+				assert.Equal(t, tt.wantURL, req.RoutingKey())
+				assert.Equal(t, tt.wantBody, req.Data())
+
+				for key, value := range tt.wantHeaders {
+					assert.Equal(t, value, http.Header.Get(key))
 				}
 			}
 		})
