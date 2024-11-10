@@ -152,10 +152,12 @@ To define an HTTP API request, use the following parameters:
 - `name`: (Optional) Name for the API call. If you want to depend on this API call and use its data in other API calls, you need to provide a name.
 - `method`: HTTP method for the request.
 - `url_template`: Template for the URL.
+- `headers`: Templates for HTTP headers.
 - `request_template`: Template for the body of the HTTP request.
 - `allow`: Fields that will be copied to the final response. If the response is an object, the fields will be copied directly. If the response is an array, the BFF will create an object with `list` as the key and the response as the value. If the response is a scalar value, the key `value` will be used.
 - `fields_map`: Allows renaming fields in the final response.
 - `depends_on`: Defines dependencies on other API calls. If dependencies are defined, their response data can be used in the request template.
+
 
 ### Template Placeholders
 
@@ -210,8 +212,12 @@ The following data is provided to each template:
   params:
     country: 
       type: "string"
+    token:
+      type: "string"
   backend:
     - method: "GET"
+      headers:
+        Authorization: "Bearer ${params.token}"
       url_template: 'http://nginx/country/${params.country}.json'
       allow: 
         - region
