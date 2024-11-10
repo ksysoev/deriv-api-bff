@@ -15,7 +15,7 @@ type HTTPProc struct {
 	urlTemplate *tmpl.URLTmpl
 	tmpl        *tmpl.Tmpl
 	fieldMap    map[string]string
-	headers     map[string]string
+	headers     map[string]*tmpl.StrTmpl
 	name        string
 	method      string
 	allow       []string
@@ -40,6 +40,17 @@ func NewHTTP(cfg *Config) (*HTTPProc, error) {
 		return nil, fmt.Errorf("failed to parse URL template: %w", err)
 	}
 
+	headers := make(map[string]*tmpl.StrTmpl, len(cfg.Headers))
+
+	for key, value := range cfg.Headers {
+		t, err := tmpl.NewStrTmpl(value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse header template %s: %w", key, err)
+		}
+
+		headers[key] = t
+	}
+
 	return &HTTPProc{
 		name:        cfg.Name,
 		method:      cfg.Method,
@@ -47,7 +58,7 @@ func NewHTTP(cfg *Config) (*HTTPProc, error) {
 		tmpl:        reqTmpl,
 		fieldMap:    cfg.FieldMap,
 		allow:       cfg.Allow,
-		headers:     cfg.Headers,
+		headers:     headers,
 	}, nil
 }
 
@@ -86,7 +97,12 @@ func (p *HTTPProc) Render(ctx context.Context, reqID string, param, deps map[str
 
 	if p.headers == nil {
 		for key, value := range p.headers {
-			req.AddHeader(key, value)
+			headerValue, err := value.Execute(data)
+			if err != nil {
+				return nil, fmt.Errorf("fail to execute header template %s: %w", key, err)
+			}
+
+			req.AddHeader(key, headerValue)
 		}
 	}
 
