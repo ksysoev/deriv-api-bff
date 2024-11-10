@@ -167,6 +167,32 @@ func TestNewHTTP(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "With headers success",
+			cfg: &Config{
+				Name:        "TestProcessor",
+				Method:      "GET",
+				URLTemplate: "/test/url",
+				Tmplt:       map[string]any{"key": "value"},
+				FieldMap:    map[string]string{"key1": "mappedKey1"},
+				Allow:       []string{"key1", "key2"},
+				Headers:     map[string]string{"Authorization": "Bearer ${params.token}"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "With headers parse error",
+			cfg: &Config{
+				Name:        "TestProcessor",
+				Method:      "GET",
+				URLTemplate: "/test/url",
+				Tmplt:       map[string]any{"key": "value"},
+				FieldMap:    map[string]string{"key1": "mappedKey1"},
+				Allow:       []string{"key1", "key2"},
+				Headers:     map[string]string{"Authorization": "Bearer ${params.invalid_field"},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
