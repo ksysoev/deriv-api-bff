@@ -95,12 +95,14 @@ func (p *HTTPProc) Render(ctx context.Context, reqID string, param, deps map[str
 
 	req := request.NewHTTPReq(ctx, p.method, url, body, reqID)
 
-	if p.headers == nil {
+	if p.headers != nil {
 		for key, value := range p.headers {
 			headerValue, err := value.Execute(data)
 			if err != nil {
 				return nil, fmt.Errorf("fail to execute header template %s: %w", key, err)
 			}
+
+			fmt.Println("headerValue", headerValue)
 
 			req.AddHeader(key, headerValue)
 		}

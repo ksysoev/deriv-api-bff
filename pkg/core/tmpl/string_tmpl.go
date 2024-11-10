@@ -26,11 +26,11 @@ func NewStrTmpl(tmpl string) (*StrTmpl, error) {
 	return &StrTmpl{tmpl: t}, nil
 }
 
-// MustNewStringTmpl creates a new StrTmpl from the provided raw template string.
+// MustNewStrTmpl creates a new StrTmpl from the provided raw template string.
 // It takes tmplRaw of type string.
 // It returns a pointer to StrTmpl.
 // It panics if there is an error during the creation of the StrTmpl.
-func MustNewStringTmpl(tmplRaw string) *StrTmpl {
+func MustNewStrTmpl(tmplRaw string) *StrTmpl {
 	tmpl, err := NewStrTmpl(tmplRaw)
 	if err != nil {
 		panic(err)
