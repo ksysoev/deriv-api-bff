@@ -12,11 +12,12 @@ import (
 )
 
 type HTTPProc struct {
-	name        string
-	method      string
 	urlTemplate *tmpl.URLTmpl
 	tmpl        *tmpl.Tmpl
 	fieldMap    map[string]string
+	headers     map[string]string
+	name        string
+	method      string
 	allow       []string
 }
 
@@ -46,6 +47,7 @@ func NewHTTP(cfg *Config) (*HTTPProc, error) {
 		tmpl:        reqTmpl,
 		fieldMap:    cfg.FieldMap,
 		allow:       cfg.Allow,
+		headers:     cfg.Headers,
 	}, nil
 }
 
@@ -71,16 +73,24 @@ func (p *HTTPProc) Render(ctx context.Context, reqID string, param, deps map[str
 		return nil, fmt.Errorf("fail to execute URL template %s: %w", p.name, err)
 	}
 
-	if p.tmpl == nil {
-		return request.NewHTTPReq(ctx, p.method, url, nil, reqID), nil
+	var body []byte
+
+	if p.tmpl != nil {
+		body, err = p.tmpl.Execute(data)
+		if err != nil {
+			return nil, fmt.Errorf("fail to execute request template %s: %w", p.name, err)
+		}
 	}
 
-	body, err := p.tmpl.Execute(data)
-	if err != nil {
-		return nil, fmt.Errorf("fail to execute request template %s: %w", p.name, err)
+	req := request.NewHTTPReq(ctx, p.method, url, body, reqID)
+
+	if p.headers == nil {
+		for key, value := range p.headers {
+			req.AddHeader(key, value)
+		}
 	}
 
-	return request.NewHTTPReq(ctx, p.method, url, body, reqID), nil
+	return req, nil
 }
 
 // Parse processes the input data and filters the response based on allowed keys.
