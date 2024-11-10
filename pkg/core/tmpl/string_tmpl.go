@@ -13,6 +13,10 @@ type StrTmpl struct {
 	tmpl *fasttemplate.Template
 }
 
+// NewStrTmpl creates a new StrTmpl instance by parsing the provided template string.
+// It takes tmpl of type string, which is the template to be parsed.
+// It returns a pointer to StrTmpl and an error.
+// It returns an error if the template parsing fails.
 func NewStrTmpl(tmpl string) (*StrTmpl, error) {
 	t, err := fasttemplate.NewTemplate(tmpl, "${", "}")
 	if err != nil {
@@ -22,6 +26,10 @@ func NewStrTmpl(tmpl string) (*StrTmpl, error) {
 	return &StrTmpl{tmpl: t}, nil
 }
 
+// MustNewStringTmpl creates a new StrTmpl from the provided raw template string.
+// It takes tmplRaw of type string.
+// It returns a pointer to StrTmpl.
+// It panics if there is an error during the creation of the StrTmpl.
 func MustNewStringTmpl(tmplRaw string) *StrTmpl {
 	tmpl, err := NewStrTmpl(tmplRaw)
 	if err != nil {
@@ -31,6 +39,11 @@ func MustNewStringTmpl(tmplRaw string) *StrTmpl {
 	return tmpl
 }
 
+// Execute processes the given parameters using a JSON template and returns the resulting string.
+// It takes params of type any, which represents the data to be used in the template.
+// It returns a string containing the processed template and an error if the operation fails.
+// It returns an error if the parameters cannot be marshaled into JSON, if the template execution fails,
+// or if the template path does not resolve to a string.
 func (t *StrTmpl) Execute(params any) (string, error) {
 	jData, err := json.Marshal(params)
 	if err != nil {
