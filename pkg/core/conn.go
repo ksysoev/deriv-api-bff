@@ -2,12 +2,12 @@ package core
 
 import (
 	"context"
-	"encoding/json"
 	"sync"
 
 	"github.com/coder/websocket"
 	"github.com/google/uuid"
 	"github.com/ksysoev/wasabi"
+	"github.com/valyala/fastjson"
 )
 
 type Conn struct {
@@ -15,12 +15,6 @@ type Conn struct {
 	requests   map[string]chan []byte
 	onClose    func(string)
 	mu         sync.Mutex
-}
-
-type respID struct {
-	Passthrough struct {
-		ReqID string `json:"req_id"`
-	} `json:"passthrough"`
 }
 
 // NewConnection initializes a new Conn instance with the provided wasabi.Connection and onClose callback.
@@ -75,17 +69,20 @@ func (c *Conn) Send(msgType wasabi.MessageType, msg []byte) error {
 		return c.clientConn.Send(msgType, msg)
 	}
 
-	var resp respID
+	var parser fastjson.Parser
 
-	if err := json.Unmarshal(msg, &resp); err != nil {
+	v, err := parser.ParseBytes(msg)
+	if err != nil {
 		return c.clientConn.Send(msgType, msg)
 	}
 
-	if resp.Passthrough.ReqID == "" {
+	reqID := v.GetStringBytes("passthrough", "req_id")
+
+	if reqID == nil {
 		return c.clientConn.Send(msgType, msg)
 	}
 
-	if c.DoneRequest(resp.Passthrough.ReqID, msg) {
+	if c.DoneRequest(string(reqID), msg) {
 		return nil
 	}
 
