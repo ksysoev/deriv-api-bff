@@ -94,7 +94,7 @@ func TestEtcdSource_Integration(t *testing.T) {
 				Method: "Test",
 				Backend: []*processor.Config{
 					{
-						Tmplt: map[string]any{"ping": "pong"},
+						Request: map[string]any{"ping": "pong"},
 					},
 				},
 			},
@@ -102,7 +102,7 @@ func TestEtcdSource_Integration(t *testing.T) {
 				Method: "Test2",
 				Backend: []*processor.Config{
 					{
-						Tmplt: map[string]any{"ping": "pong"},
+						Request: map[string]any{"ping": "pong"},
 					},
 				},
 			},
@@ -129,7 +129,7 @@ func TestEtcdSource_Integration(t *testing.T) {
 				Params: &validator.Config{"test": make(chan int)},
 				Backend: []*processor.Config{
 					{
-						Tmplt: map[string]any{"ping": "pong"},
+						Request: map[string]any{"ping": "pong"},
 					},
 				},
 			},
@@ -170,7 +170,7 @@ func TestEtcdSource_Integration(t *testing.T) {
 				Method: "Test2",
 				Backend: []*processor.Config{
 					{
-						Tmplt: map[string]any{"ping": "pong"},
+						Request: map[string]any{"ping": "pong"},
 					},
 				},
 			},
@@ -178,7 +178,7 @@ func TestEtcdSource_Integration(t *testing.T) {
 				Method: "Test3",
 				Backend: []*processor.Config{
 					{
-						Tmplt: map[string]any{"ping": "pong"},
+						Request: map[string]any{"ping": "pong"},
 					},
 				},
 			},
@@ -206,7 +206,7 @@ func TestEtcdSource_Integration(t *testing.T) {
 				Method: "Test2",
 				Backend: []*processor.Config{
 					{
-						Tmplt: map[string]any{"ping": "pong"},
+						Request: map[string]any{"ping": "pong"},
 					},
 				},
 			},
@@ -214,7 +214,7 @@ func TestEtcdSource_Integration(t *testing.T) {
 				Method: "Test3",
 				Backend: []*processor.Config{
 					{
-						Tmplt: map[string]any{"ping": "pong"},
+						Request: map[string]any{"ping": "pong"},
 					},
 				},
 			},

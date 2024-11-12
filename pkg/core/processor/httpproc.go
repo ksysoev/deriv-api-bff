@@ -25,7 +25,7 @@ type HTTPProc struct {
 // It takes a single parameter cfg of type *Config which contains the necessary configuration details.
 // It returns a pointer to an HTTPProc initialized with the values from the configuration.
 func NewHTTP(cfg *Config) (*HTTPProc, error) {
-	rawTmpl, err := json.Marshal(cfg.Tmplt)
+	rawTmpl, err := json.Marshal(cfg.Request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request template: %w", err)
 	}
@@ -35,7 +35,7 @@ func NewHTTP(cfg *Config) (*HTTPProc, error) {
 		return nil, fmt.Errorf("failed to parse request template: %w", err)
 	}
 
-	urlTmpl, err := tmpl.NewURLTmpl(cfg.URLTemplate)
+	urlTmpl, err := tmpl.NewURLTmpl(cfg.URL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse URL template: %w", err)
 	}

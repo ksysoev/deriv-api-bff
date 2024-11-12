@@ -13,15 +13,15 @@ func TestNew(t *testing.T) {
 		{
 			name: "Valid Deriv Config",
 			cfg: &Config{
-				Tmplt: map[string]any{"key": "value"},
+				Request: map[string]any{"key": "value"},
 			},
 			wantErr: false,
 		},
 		{
 			name: "Valid HTTP Config",
 			cfg: &Config{
-				Method:      "GET",
-				URLTemplate: "/test/url",
+				Method: "GET",
+				URL:    "/test/url",
 			},
 			wantErr: false,
 		},
@@ -51,7 +51,7 @@ func TestIsDerivConfig(t *testing.T) {
 		{
 			name: "Deriv Config",
 			cfg: &Config{
-				Tmplt: map[string]any{"key": "value"},
+				Request: map[string]any{"key": "value"},
 			},
 			want: true,
 		},
@@ -85,8 +85,8 @@ func TestIsHTTPConfig(t *testing.T) {
 		{
 			name: "HTTP Config",
 			cfg: &Config{
-				Method:      "GET",
-				URLTemplate: "/test/url",
+				Method: "GET",
+				URL:    "/test/url",
 			},
 			want: true,
 		},
