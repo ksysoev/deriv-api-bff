@@ -18,7 +18,7 @@ var validConfig = []handlerfactory.Config{
 		Method: "handler1",
 		Backend: []*processor.Config{
 			{
-				Tmplt: map[string]any{"ping": 1},
+				Request: map[string]any{"ping": 1},
 			},
 		},
 	},
@@ -26,7 +26,7 @@ var validConfig = []handlerfactory.Config{
 		Method: "handler2",
 		Backend: []*processor.Config{
 			{
-				Tmplt: map[string]any{"ping": 1},
+				Request: map[string]any{"ping": 1},
 			},
 		},
 	},
@@ -102,7 +102,7 @@ func TestService_LoadHandlers(t *testing.T) {
 					Method: "handler1",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": 1},
+							Request: map[string]any{"ping": 1},
 						},
 					},
 				},
@@ -118,7 +118,7 @@ func TestService_LoadHandlers(t *testing.T) {
 					Method: "handler1",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": 1},
+							Request: map[string]any{"ping": 1},
 						},
 					},
 				},
@@ -148,7 +148,7 @@ func TestService_LoadHandlers(t *testing.T) {
 					Method: "handler1",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": 1},
+							Request: map[string]any{"ping": 1},
 						},
 					},
 				},
@@ -156,7 +156,7 @@ func TestService_LoadHandlers(t *testing.T) {
 					Method: "handler1",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": 1},
+							Request: map[string]any{"ping": 1},
 						},
 					},
 				},
@@ -240,7 +240,7 @@ func TestService_PutConfig(t *testing.T) {
 					Method: "handler1",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": 1},
+							Request: map[string]any{"ping": 1},
 						},
 					},
 				},
@@ -257,7 +257,7 @@ func TestService_PutConfig(t *testing.T) {
 					Method: "handler1",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": 1},
+							Request: map[string]any{"ping": 1},
 						},
 					},
 				},
@@ -323,7 +323,7 @@ func TestCreateHandlers(t *testing.T) {
 					Method: "handler1",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": 1},
+							Request: map[string]any{"ping": 1},
 						},
 					},
 				},
@@ -331,7 +331,7 @@ func TestCreateHandlers(t *testing.T) {
 					Method: "handler1",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": 1},
+							Request: map[string]any{"ping": 1},
 						},
 					},
 				},
@@ -379,7 +379,7 @@ func TestService_ProcessConfig(t *testing.T) {
 					Method: "handler1",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": 1},
+							Request: map[string]any{"ping": 1},
 						},
 					},
 				},
@@ -387,7 +387,7 @@ func TestService_ProcessConfig(t *testing.T) {
 					Method: "handler1",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": 1},
+							Request: map[string]any{"ping": 1},
 						},
 					},
 				},

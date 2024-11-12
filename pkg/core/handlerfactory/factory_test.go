@@ -24,7 +24,7 @@ func TestCreateHandler(t *testing.T) {
 					{
 						Name:     "backend1",
 						FieldMap: map[string]string{"field1": "value1"},
-						Tmplt:    map[string]any{"key1": "value1"},
+						Request:  map[string]any{"key1": "value1"},
 						Allow:    []string{"allow1"},
 					},
 				},
@@ -38,12 +38,12 @@ func TestCreateHandler(t *testing.T) {
 				Params: &validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*processor.Config{
 					{
-						Name:        "backend1",
-						FieldMap:    map[string]string{"field1": "value1"},
-						URLTemplate: "http://localhost/",
-						Method:      "GET",
-						Tmplt:       map[string]any{"key1": "value1"},
-						Allow:       []string{"allow1"},
+						Name:     "backend1",
+						FieldMap: map[string]string{"field1": "value1"},
+						URL:      "http://localhost/",
+						Method:   "GET",
+						Request:  map[string]any{"key1": "value1"},
+						Allow:    []string{"allow1"},
 					},
 				},
 			},
@@ -73,7 +73,7 @@ func TestCreateHandler(t *testing.T) {
 					{
 						Name:     "backend1",
 						FieldMap: map[string]string{"field1": "value1"},
-						Tmplt:    map[string]any{"key1": "value1"},
+						Request:  map[string]any{"key1": "value1"},
 						Allow:    []string{"allow1"},
 					},
 				},
@@ -89,7 +89,7 @@ func TestCreateHandler(t *testing.T) {
 					{
 						Name:     "backend1",
 						FieldMap: map[string]string{"field1": "value1"},
-						Tmplt:    nil,
+						Request:  nil,
 						Allow:    []string{"allow1"},
 					},
 				},
@@ -103,10 +103,10 @@ func TestCreateHandler(t *testing.T) {
 				Params: &validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*processor.Config{
 					{
-						Name:        "backend1",
-						FieldMap:    map[string]string{"field1": "value1"},
-						URLTemplate: "http://localhost/${invalid",
-						Allow:       []string{"allow1"},
+						Name:     "backend1",
+						FieldMap: map[string]string{"field1": "value1"},
+						URL:      "http://localhost/${invalid",
+						Allow:    []string{"allow1"},
 					},
 				},
 			},
@@ -121,14 +121,14 @@ func TestCreateHandler(t *testing.T) {
 					{
 						Name:      "backend1",
 						FieldMap:  map[string]string{"field1": "value1"},
-						Tmplt:     map[string]any{"key1": "value1"},
+						Request:   map[string]any{"key1": "value1"},
 						DependsOn: []string{"backend2"},
 						Allow:     []string{"allow1"},
 					},
 					{
 						Name:      "backend2",
 						FieldMap:  map[string]string{"field2": "value2"},
-						Tmplt:     map[string]any{"key1": "value1"},
+						Request:   map[string]any{"key1": "value1"},
 						DependsOn: []string{"backend1"},
 						Allow:     []string{"allow2"},
 					},
@@ -143,9 +143,9 @@ func TestCreateHandler(t *testing.T) {
 				Params: &validator.Config{"param1": validator.FieldSchema{Type: "string"}},
 				Backend: []*processor.Config{
 					{
-						FieldMap:    map[string]string{"field1": "value1"},
-						URLTemplate: "http://localhost/${params.param1}",
-						Allow:       []string{"allow1"},
+						FieldMap: map[string]string{"field1": "value1"},
+						URL:      "http://localhost/${params.param1}",
+						Allow:    []string{"allow1"},
 					},
 				},
 			},
@@ -157,7 +157,7 @@ func TestCreateHandler(t *testing.T) {
 				Method: "",
 				Backend: []*processor.Config{
 					{
-						Tmplt: map[string]any{"ping": "pong"},
+						Request: map[string]any{"ping": "pong"},
 					},
 				},
 			},

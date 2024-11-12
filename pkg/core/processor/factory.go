@@ -14,14 +14,14 @@ type Processor interface {
 }
 
 type Config struct {
-	Tmplt       map[string]any    `json:"request_template,omitempty" yaml:"request_template,omitempty"`
-	FieldMap    map[string]string `json:"fields_map,omitempty" yaml:"fields_map,omitempty"`
-	Headers     map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
-	Name        string            `json:"name,omitempty" yaml:"name,omitempty"`
-	Method      string            `json:"method,omitempty" yaml:"method,omitempty"`
-	URLTemplate string            `json:"url_template,omitempty" yaml:"url_template,omitempty"`
-	DependsOn   []string          `json:"depends_on,omitempty" yaml:"depends_on,omitempty"`
-	Allow       []string          `json:"allow,omitempty" yaml:"allow,omitempty"`
+	Request   map[string]any    `json:"request,omitempty" yaml:"request,omitempty"`
+	FieldMap  map[string]string `json:"fields_map,omitempty" yaml:"fields_map,omitempty"`
+	Headers   map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
+	Name      string            `json:"name,omitempty" yaml:"name,omitempty"`
+	Method    string            `json:"method,omitempty" yaml:"method,omitempty"`
+	URL       string            `json:"url,omitempty" yaml:"url,omitempty"`
+	DependsOn []string          `json:"depends_on,omitempty" yaml:"depends_on,omitempty"`
+	Allow     []string          `json:"allow,omitempty" yaml:"allow,omitempty"`
 }
 
 // New creates a new Processor based on the provided configuration.
@@ -43,12 +43,12 @@ func New(cfg *Config) (Processor, error) {
 // It takes a single parameter cfg of type *Config.
 // It returns a boolean value indicating whether the ResponseBody field of the configuration is not empty.
 func isDerivConfig(cfg *Config) bool {
-	return len(cfg.Tmplt) > 0 && cfg.Method == "" && cfg.URLTemplate == ""
+	return len(cfg.Request) > 0 && cfg.Method == "" && cfg.URL == ""
 }
 
 // isHTTPConfig checks if the given configuration is for an HTTP request.
 // It takes a single parameter cfg of type *Config.
 // It returns a boolean value: true if both Method and URLTemplate fields of cfg are non-empty, otherwise false.
 func isHTTPConfig(cfg *Config) bool {
-	return cfg.Method != "" && cfg.URLTemplate != ""
+	return cfg.Method != "" && cfg.URL != ""
 }

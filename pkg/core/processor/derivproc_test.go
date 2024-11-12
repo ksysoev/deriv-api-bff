@@ -17,7 +17,7 @@ func TestNewDeriv(t *testing.T) {
 		{
 			name: "Valid Deriv Config",
 			cfg: &Config{
-				Tmplt:    map[string]any{"params": "${params}", "req_id": "${req_id}"},
+				Request:  map[string]any{"params": "${params}", "req_id": "${req_id}"},
 				FieldMap: map[string]string{"key1": "mappedKey1"},
 				Allow:    []string{"key1", "key2"},
 			},
@@ -26,7 +26,7 @@ func TestNewDeriv(t *testing.T) {
 		{
 			name: "Fail to marshal request template",
 			cfg: &Config{
-				Tmplt:    map[string]any{"params": "${params}", "data": make(chan int)},
+				Request:  map[string]any{"params": "${params}", "data": make(chan int)},
 				FieldMap: map[string]string{"key1": "mappedKey1"},
 				Allow:    []string{"key1", "key2"},
 			},
@@ -35,7 +35,7 @@ func TestNewDeriv(t *testing.T) {
 		{
 			name: "Fail to parse request template",
 			cfg: &Config{
-				Tmplt:    map[string]any{"test": "${params}invalid"},
+				Request:  map[string]any{"test": "${params}invalid"},
 				FieldMap: map[string]string{"key1": "mappedKey1"},
 				Allow:    []string{"key1", "key2"},
 			},
