@@ -52,11 +52,11 @@ func TestReadFile(t *testing.T) {
 			fileContent: `
 - method: config1
   backend:
-    - request_template:
+    - request:
         ping: pong
 - method: config2
   backend:
-    - request_template:
+    - request:
         ping: pong
 `,
 			expected: []handlerfactory.Config{
@@ -64,7 +64,7 @@ func TestReadFile(t *testing.T) {
 					Method: "config1",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": "pong"},
+							Request: map[string]any{"ping": "pong"},
 						},
 					},
 				},
@@ -72,7 +72,7 @@ func TestReadFile(t *testing.T) {
 					Method: "config2",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": "pong"},
+							Request: map[string]any{"ping": "pong"},
 						},
 					},
 				},
@@ -144,13 +144,13 @@ func TestReadDir(t *testing.T) {
 				"config1.yaml": `
 - method: config1
   backend:
-    - request_template:
+    - request:
         ping: pong
 `,
 				"config2.yaml": `
 - method: config2
   backend:
-    - request_template:
+    - request:
         ping: pong
 `,
 			},
@@ -159,7 +159,7 @@ func TestReadDir(t *testing.T) {
 					Method: "config1",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": "pong"},
+							Request: map[string]any{"ping": "pong"},
 						},
 					},
 				},
@@ -167,7 +167,7 @@ func TestReadDir(t *testing.T) {
 					Method: "config2",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": "pong"},
+							Request: map[string]any{"ping": "pong"},
 						},
 					},
 				},
@@ -255,11 +255,11 @@ func TestLoadConfig(t *testing.T) {
 				content := `
 - method: config1
   backend:
-    - request_template:
+    - request:
         ping: pong
 - method: config2
   backend:
-    - request_template:
+    - request:
         ping: pong
 `
 				_, err = tmpFile.WriteString(content)
@@ -272,7 +272,7 @@ func TestLoadConfig(t *testing.T) {
 					Method: "config1",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": "pong"},
+							Request: map[string]any{"ping": "pong"},
 						},
 					},
 				},
@@ -280,7 +280,7 @@ func TestLoadConfig(t *testing.T) {
 					Method: "config2",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": "pong"},
+							Request: map[string]any{"ping": "pong"},
 						},
 					},
 				},
@@ -298,13 +298,13 @@ func TestLoadConfig(t *testing.T) {
 					"config1.yaml": `
 - method: config1
   backend:
-    - request_template:
+    - request:
         ping: pong
 `,
 					"config2.yaml": `
 - method: config2
   backend:
-    - request_template:
+    - request:
         ping: pong
 `,
 				}
@@ -321,7 +321,7 @@ func TestLoadConfig(t *testing.T) {
 					Method: "config1",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": "pong"},
+							Request: map[string]any{"ping": "pong"},
 						},
 					},
 				},
@@ -329,7 +329,7 @@ func TestLoadConfig(t *testing.T) {
 					Method: "config2",
 					Backend: []*processor.Config{
 						{
-							Tmplt: map[string]any{"ping": "pong"},
+							Request: map[string]any{"ping": "pong"},
 						},
 					},
 				},

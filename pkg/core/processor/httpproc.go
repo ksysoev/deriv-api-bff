@@ -12,11 +12,12 @@ import (
 )
 
 type HTTPProc struct {
-	name        string
-	method      string
 	urlTemplate *tmpl.URLTmpl
 	tmpl        *tmpl.Tmpl
 	fieldMap    map[string]string
+	headers     map[string]*tmpl.StrTmpl
+	name        string
+	method      string
 	allow       []string
 }
 
@@ -24,7 +25,7 @@ type HTTPProc struct {
 // It takes a single parameter cfg of type *Config which contains the necessary configuration details.
 // It returns a pointer to an HTTPProc initialized with the values from the configuration.
 func NewHTTP(cfg *Config) (*HTTPProc, error) {
-	rawTmpl, err := json.Marshal(cfg.Tmplt)
+	rawTmpl, err := json.Marshal(cfg.Request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request template: %w", err)
 	}
@@ -34,9 +35,20 @@ func NewHTTP(cfg *Config) (*HTTPProc, error) {
 		return nil, fmt.Errorf("failed to parse request template: %w", err)
 	}
 
-	urlTmpl, err := tmpl.NewURLTmpl(cfg.URLTemplate)
+	urlTmpl, err := tmpl.NewURLTmpl(cfg.URL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse URL template: %w", err)
+	}
+
+	headers := make(map[string]*tmpl.StrTmpl, len(cfg.Headers))
+
+	for key, value := range cfg.Headers {
+		t, err := tmpl.NewStrTmpl(value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse header template %s: %w", key, err)
+		}
+
+		headers[key] = t
 	}
 
 	return &HTTPProc{
@@ -46,6 +58,7 @@ func NewHTTP(cfg *Config) (*HTTPProc, error) {
 		tmpl:        reqTmpl,
 		fieldMap:    cfg.FieldMap,
 		allow:       cfg.Allow,
+		headers:     headers,
 	}, nil
 }
 
@@ -71,16 +84,31 @@ func (p *HTTPProc) Render(ctx context.Context, reqID string, param, deps map[str
 		return nil, fmt.Errorf("fail to execute URL template %s: %w", p.name, err)
 	}
 
-	if p.tmpl == nil {
-		return request.NewHTTPReq(ctx, p.method, url, nil, reqID), nil
+	var body []byte
+
+	if p.tmpl != nil {
+		body, err = p.tmpl.Execute(data)
+		if err != nil {
+			return nil, fmt.Errorf("fail to execute request template %s: %w", p.name, err)
+		}
 	}
 
-	body, err := p.tmpl.Execute(data)
-	if err != nil {
-		return nil, fmt.Errorf("fail to execute request template %s: %w", p.name, err)
+	req := request.NewHTTPReq(ctx, p.method, url, body, reqID)
+
+	if p.headers != nil {
+		for key, value := range p.headers {
+			headerValue, err := value.Execute(data)
+			if err != nil {
+				return nil, fmt.Errorf("fail to execute header template %s: %w", key, err)
+			}
+
+			fmt.Println("headerValue", headerValue)
+
+			req.AddHeader(key, headerValue)
+		}
 	}
 
-	return request.NewHTTPReq(ctx, p.method, url, body, reqID), nil
+	return req, nil
 }
 
 // Parse processes the input data and filters the response based on allowed keys.
