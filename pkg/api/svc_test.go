@@ -7,6 +7,7 @@ import (
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	wasabi "github.com/ksysoev/wasabi"
+	httpmid "github.com/ksysoev/wasabi/middleware/http"
 	"github.com/ksysoev/wasabi/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -333,14 +334,16 @@ func TestGetRequestLimits_Success(t *testing.T) {
 			Limit:    200,
 		},
 	}
-	requestLimitFunc := getRequestLimits(validRateLimits)
+	requestLimitFunc, err := getRequestLimits(validRateLimits)
 	mockRequest := mocks.NewMockRequest(t)
+	ctx := context.Background()
 
-	mockRequest.EXPECT().RoutingKey().Return("key")
+	mockRequest.EXPECT().Context().Return(ctx)
 
 	key, duration, limit := requestLimitFunc(mockRequest)
 
-	assert.Equal(t, "key", key)
+	assert.NoError(t, err)
+	assert.Equal(t, "nil", key)
 	assert.Equal(t, 10*time.Second, duration)
 	assert.Equal(t, uint64(200), limit)
 }
@@ -351,10 +354,31 @@ func TestGetRequestLimits_Failure(t *testing.T) {
 			Interval: "invalid",
 		},
 	}
-	requestLimitFunc := getRequestLimits(validRateLimits)
-	mockRequest := mocks.NewMockRequest(t)
+	requestLimitFunc, err := getRequestLimits(validRateLimits)
 
-	assert.PanicsWithError(t, "incorrect interval format", func() {
-		requestLimitFunc(mockRequest)
-	})
+	assert.Error(t, err)
+	assert.Nil(t, requestLimitFunc)
+}
+
+func TestGetIPFromRequest_OK(t *testing.T) {
+	tests := []struct {
+		inputCtx   context.Context
+		expectedIP string
+	}{
+		{
+			inputCtx:   context.WithValue(context.Background(), httpmid.ClientIP, "8.8.8.8"),
+			expectedIP: "8.8.8.8",
+		},
+		{
+			inputCtx:   context.Background(),
+			expectedIP: "nil",
+		},
+	}
+
+	for _, test := range tests {
+		mockRequest := mocks.NewMockRequest(t)
+		mockRequest.EXPECT().Context().Return(test.inputCtx)
+		ip := getIPFromRequest(mockRequest)
+		assert.Equal(t, test.expectedIP, ip)
+	}
 }

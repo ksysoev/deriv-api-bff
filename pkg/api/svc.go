@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -13,6 +12,7 @@ import (
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/channel"
 	"github.com/ksysoev/wasabi/dispatch"
+	httpmid "github.com/ksysoev/wasabi/middleware/http"
 	reqmid "github.com/ksysoev/wasabi/middleware/request"
 	"github.com/ksysoev/wasabi/server"
 )
@@ -68,10 +68,17 @@ func NewSevice(cfg *Config, handler BFFService) *Service {
 	populateDefaults(cfg)
 
 	dispatcher := dispatch.NewRouterDispatcher(s, parse)
+
 	dispatcher.Use(middleware.NewErrorHandlingMiddleware())
 	dispatcher.Use(middleware.NewMetricsMiddleware("bff-deriv", skipMetrics))
 	dispatcher.Use(reqmid.NewTrottlerMiddleware(cfg.MaxRequests))
-	dispatcher.Use(reqmid.NewRateLimiterMiddleware(getRequestLimits(cfg.RateLimits)))
+
+	requestLimitsFunc, err := getRequestLimits(cfg.RateLimits)
+	if err != nil {
+		slog.Warn(err.Error())
+	} else {
+		dispatcher.Use(reqmid.NewRateLimiterMiddleware(requestLimitsFunc))
+	}
 
 	registry := channel.NewConnectionRegistry(
 		channel.WithMaxFrameLimit(maxMessageSize),
@@ -80,6 +87,7 @@ func NewSevice(cfg *Config, handler BFFService) *Service {
 	endpoint := channel.NewChannel("/", dispatcher, registry, channel.WithOriginPatterns("*"))
 	endpoint.Use(middleware.NewQueryParamsMiddleware())
 	endpoint.Use(middleware.NewHeadersMiddleware())
+	endpoint.Use(httpmid.NewClientIPMiddleware(httpmid.CloudFront))
 
 	s.server = server.NewServer(cfg.Listen)
 	s.server.AddChannel(endpoint)
@@ -138,16 +146,26 @@ func (s *Service) Handle(conn wasabi.Connection, r wasabi.Request) error {
 
 // getRequestLimits is a helper function transform request limits mentioned in server configuration
 // into wasabi request limits, so that we can use the RateLimiter middleware.
-func getRequestLimits(rateLimitCfg RateLimits) func(wasabi.Request) (string, time.Duration, uint64) {
-	return func(r wasabi.Request) (string, time.Duration, uint64) {
-		duration, err := time.ParseDuration(rateLimitCfg.General.Interval)
-		if err != nil {
-			//TODO: should we panic or fallback to defaults with warning?
-			panic(errors.New("incorrect interval format"))
-		}
-
-		return r.RoutingKey(), duration, uint64(rateLimitCfg.General.Limit)
+func getRequestLimits(rateLimitCfg RateLimits) (func(wasabi.Request) (string, time.Duration, uint64), error) {
+	duration, err := time.ParseDuration(rateLimitCfg.General.Interval)
+	if err != nil {
+		return nil, err
 	}
+
+	limit := uint64(rateLimitCfg.General.Limit)
+
+	return func(r wasabi.Request) (string, time.Duration, uint64) {
+		ip := getIPFromRequest(r)
+		return ip, duration, limit
+	}, nil
+}
+
+func getIPFromRequest(r wasabi.Request) string {
+	if ip, ok := r.Context().Value(httpmid.ClientIP).(string); ok {
+		return ip
+	}
+
+	return "nil"
 }
 
 // parse processes a message received over a Wasabi connection and converts it into a core request.
