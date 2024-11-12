@@ -52,11 +52,11 @@ func TestReadFile(t *testing.T) {
 			fileContent: `
 - method: config1
   backend:
-    - request_template:
+    - request:
         ping: pong
 - method: config2
   backend:
-    - request_template:
+    - request:
         ping: pong
 `,
 			expected: []handlerfactory.Config{
@@ -144,13 +144,13 @@ func TestReadDir(t *testing.T) {
 				"config1.yaml": `
 - method: config1
   backend:
-    - request_template:
+    - request:
         ping: pong
 `,
 				"config2.yaml": `
 - method: config2
   backend:
-    - request_template:
+    - request:
         ping: pong
 `,
 			},
@@ -255,11 +255,11 @@ func TestLoadConfig(t *testing.T) {
 				content := `
 - method: config1
   backend:
-    - request_template:
+    - request:
         ping: pong
 - method: config2
   backend:
-    - request_template:
+    - request:
         ping: pong
 `
 				_, err = tmpFile.WriteString(content)
@@ -298,13 +298,13 @@ func TestLoadConfig(t *testing.T) {
 					"config1.yaml": `
 - method: config1
   backend:
-    - request_template:
+    - request:
         ping: pong
 `,
 					"config2.yaml": `
 - method: config2
   backend:
-    - request_template:
+    - request:
         ping: pong
 `,
 				}

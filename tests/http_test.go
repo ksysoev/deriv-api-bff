@@ -15,7 +15,7 @@ const testHTTRequestParamsConfig = `
         type: boolean
   backend:
     - name: testcall
-      url_template: "{{host}}/testcall/${params.param1}/${params.param2}/${params.param3}"
+      url: "{{host}}/testcall/${params.param1}/${params.param2}/${params.param3}"
       method: "GET"
       allow: 
         - data1
@@ -57,12 +57,12 @@ const testHTTPRequestAggregationConfig = `
 - method: testcall
   backend:
     - name: testcall1
-      url_template: "{{host}}/testcall1"
+      url: "{{host}}/testcall1"
       method: GET
       allow: 
         - data1
     - name: testcall2
-      url_template: "{{host}}/testcall2"
+      url: "{{host}}/testcall2"
       method: POST
       allow: 
         - data2
@@ -99,14 +99,14 @@ const testHTTPRequestChainConfig = `
 - method: testcall
   backend:
     - name: testcall1
-      url_template: "{{host}}/testcall1"
+      url: "{{host}}/testcall1"
       method: GET
       allow: 
         - data1
     - name: testcall2
       depends_on:
         - testcall1
-      url_template: "{{host}}/testcall2/${resp.testcall1.data1}"
+      url: "{{host}}/testcall2/${resp.testcall1.data1}"
       method: POST
       allow: 
         - data2

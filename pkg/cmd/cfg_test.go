@@ -14,7 +14,7 @@ var callsConfig = `
   backend:
     - allow: 
         - value
-      request_template:
+      request:
         ping: 1
 `
 
