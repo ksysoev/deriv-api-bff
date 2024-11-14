@@ -90,6 +90,16 @@ func TestFieldValidator_Validate(t *testing.T) {
 			data:    []byte(`{"name": "John", "age": "thirty", "admin": true}`),
 			wantErr: true,
 		},
+		{
+			name:    "no params",
+			data:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "invalid json",
+			data:    []byte(`{`),
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
