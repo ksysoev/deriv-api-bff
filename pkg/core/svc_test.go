@@ -111,7 +111,7 @@ func TestService_ProcessRequest_HandlerError(t *testing.T) {
 	mockConn := mocks.NewMockConnection(t)
 	mockRequest := &request.Request{
 		Method: "testMethod",
-		Params: map[string]any{"key": "value"},
+		Params: []byte(`{"key": "value"}`),
 	}
 
 	conn := NewConnection(mockConn, func(_ string) {})

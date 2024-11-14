@@ -22,7 +22,7 @@ type CallsRepo interface {
 }
 
 type Handler interface {
-	Handle(ctx context.Context, params map[string]any, watcher Waiter, send Sender) (map[string]any, error)
+	Handle(ctx context.Context, params []byte, watcher Waiter, send Sender) (map[string]any, error)
 }
 
 type ConnRegistry interface {

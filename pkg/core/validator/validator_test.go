@@ -66,43 +66,28 @@ func TestFieldValidator_Validate(t *testing.T) {
 	}
 
 	tests := []struct {
-		data    map[string]any
 		name    string
+		data    []byte
 		wantErr bool
 	}{
 		{
-			name: "Valid data",
-			data: map[string]any{
-				"name":  "John",
-				"age":   30.0,
-				"admin": true,
-			},
+			name:    "Valid data",
+			data:    []byte(`{"name": "John", "age": 30, "admin": true}`),
 			wantErr: false,
 		},
 		{
-			name: "Missing field",
-			data: map[string]any{
-				"name": "John",
-			},
+			name:    "Missing field",
+			data:    []byte(`{"name": "John"}`),
 			wantErr: true,
 		},
 		{
-			name: "Extra field",
-			data: map[string]any{
-				"name":  "John",
-				"age":   30.0,
-				"admin": true,
-				"extra": "field",
-			},
+			name:    "Extra field",
+			data:    []byte(`{"name": "John", "age": 30, "admin": true, "extra": "field"}`),
 			wantErr: true,
 		},
 		{
-			name: "Invalid type",
-			data: map[string]any{
-				"name":  "John",
-				"age":   "thirty",
-				"admin": true,
-			},
+			name:    "Invalid type",
+			data:    []byte(`{"name": "John", "age": "thirty", "admin": true}`),
 			wantErr: true,
 		},
 	}
@@ -150,7 +135,7 @@ func TestFieldValidator_Validate_ErrorHandling(t *testing.T) {
 			}
 
 			mockSchema.EXPECT().Validate(map[string]any{}).Return(tt.err)
-			err := val.Validate(map[string]any{})
+			err := val.Validate([]byte(`{}`))
 
 			if tt.wantErr != nil {
 				assert.ErrorIs(t, err, tt.wantErr)

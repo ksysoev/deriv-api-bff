@@ -63,7 +63,14 @@ func New(cfg *Config) (*FieldValidator, error) {
 // It takes a single parameter data of type map[string]any which represents the data to be validated.
 // It returns an error if there are validation errors, including missing required fields or fields that are not allowed.
 // If the data contains fields not defined in the validator or if required fields are missing, it adds these errors to the validation error.
-func (v *FieldValidator) Validate(data map[string]any) error {
+func (v *FieldValidator) Validate(data []byte) error {
+	// TODO: Is it possible to find library to validate JSON schema against byte slice?
+	var p map[string]any
+
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("failed to unmarshal params: %w", err)
+	}
+
 	err := v.jsonSchema.Validate(data)
 
 	var errValidation *jsonschema.ValidationError
