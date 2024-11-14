@@ -67,17 +67,17 @@ func TestProcessor_Render(t *testing.T) {
 	tmpl2 := tmpl.MustNewTmpl(`{"params": "${params.key1.key2}}"}`)
 
 	tests := []struct {
-		params   map[string]any
 		deps     map[string]any
 		tmpl     *tmpl.Tmpl
 		name     string
 		expected string
 		reqID    string
+		params   []byte
 		wantErr  bool
 	}{
 		{
 			name:     "with params and deps",
-			params:   map[string]any{"key1": "value1"},
+			params:   []byte(`{"key1": "value1"}`),
 			deps:     map[string]any{"dep1": "value1"},
 			reqID:    "12345",
 			expected: `{"params":{"key1":"value1"},"req_id":"12345","resp": {"dep1":"value1"}}`,
@@ -93,7 +93,7 @@ func TestProcessor_Render(t *testing.T) {
 		},
 		{
 			name:     "with empty params and deps",
-			params:   map[string]any{},
+			params:   []byte(`{}`),
 			deps:     map[string]any{},
 			reqID:    "12345",
 			expected: `{"params":{},"req_id":"12345","resp": {}}`,
@@ -101,7 +101,7 @@ func TestProcessor_Render(t *testing.T) {
 		},
 		{
 			name:     "with only params",
-			params:   map[string]any{"key1": "value1"},
+			params:   []byte(`{"key1": "value1"}`),
 			deps:     nil,
 			reqID:    "12345",
 			expected: `{"params":{"key1":"value1"},"req_id":"12345","resp": {}}`,

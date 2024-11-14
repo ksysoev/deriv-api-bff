@@ -137,7 +137,7 @@ func (_c *MockRenderParser_Parse_Call) RunAndReturn(run func([]byte) (map[string
 }
 
 // Render provides a mock function with given fields: ctx, reqID, params, deps
-func (_m *MockRenderParser) Render(ctx context.Context, reqID string, params map[string]any, deps map[string]any) (core.Request, error) {
+func (_m *MockRenderParser) Render(ctx context.Context, reqID string, params []byte, deps map[string]any) (core.Request, error) {
 	ret := _m.Called(ctx, reqID, params, deps)
 
 	if len(ret) == 0 {
@@ -146,10 +146,10 @@ func (_m *MockRenderParser) Render(ctx context.Context, reqID string, params map
 
 	var r0 core.Request
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, map[string]any, map[string]any) (core.Request, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, []byte, map[string]any) (core.Request, error)); ok {
 		return rf(ctx, reqID, params, deps)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, map[string]any, map[string]any) core.Request); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, []byte, map[string]any) core.Request); ok {
 		r0 = rf(ctx, reqID, params, deps)
 	} else {
 		if ret.Get(0) != nil {
@@ -157,7 +157,7 @@ func (_m *MockRenderParser) Render(ctx context.Context, reqID string, params map
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, map[string]any, map[string]any) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string, []byte, map[string]any) error); ok {
 		r1 = rf(ctx, reqID, params, deps)
 	} else {
 		r1 = ret.Error(1)
@@ -174,15 +174,15 @@ type MockRenderParser_Render_Call struct {
 // Render is a helper method to define mock.On call
 //   - ctx context.Context
 //   - reqID string
-//   - params map[string]any
+//   - params []byte
 //   - deps map[string]any
 func (_e *MockRenderParser_Expecter) Render(ctx interface{}, reqID interface{}, params interface{}, deps interface{}) *MockRenderParser_Render_Call {
 	return &MockRenderParser_Render_Call{Call: _e.mock.On("Render", ctx, reqID, params, deps)}
 }
 
-func (_c *MockRenderParser_Render_Call) Run(run func(ctx context.Context, reqID string, params map[string]any, deps map[string]any)) *MockRenderParser_Render_Call {
+func (_c *MockRenderParser_Render_Call) Run(run func(ctx context.Context, reqID string, params []byte, deps map[string]any)) *MockRenderParser_Render_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(map[string]any), args[3].(map[string]any))
+		run(args[0].(context.Context), args[1].(string), args[2].([]byte), args[3].(map[string]any))
 	})
 	return _c
 }
@@ -192,7 +192,7 @@ func (_c *MockRenderParser_Render_Call) Return(_a0 core.Request, _a1 error) *Moc
 	return _c
 }
 
-func (_c *MockRenderParser_Render_Call) RunAndReturn(run func(context.Context, string, map[string]any, map[string]any) (core.Request, error)) *MockRenderParser_Render_Call {
+func (_c *MockRenderParser_Render_Call) RunAndReturn(run func(context.Context, string, []byte, map[string]any) (core.Request, error)) *MockRenderParser_Render_Call {
 	_c.Call.Return(run)
 	return _c
 }

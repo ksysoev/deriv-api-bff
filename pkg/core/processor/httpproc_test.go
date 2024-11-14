@@ -218,7 +218,7 @@ func TestNewHTTP(t *testing.T) {
 func TestHTTPProc_Render(t *testing.T) {
 	tests := []struct {
 		proc        *HTTPProc
-		param       map[string]any
+		param       []byte
 		deps        map[string]any
 		wantHeaders map[string]string
 		name        string
@@ -237,7 +237,7 @@ func TestHTTPProc_Render(t *testing.T) {
 				headers:     map[string]*tmpl.StrTmpl{"Authorization": tmpl.MustNewStrTmpl("application/json")},
 			},
 			reqID:       "123",
-			param:       map[string]any{"param": "value"},
+			param:       []byte(`{"param":"value"}`),
 			deps:        map[string]any{},
 			wantURL:     "POST http://example.com/123",
 			wantBody:    []byte(`{"param": "value"}`),
@@ -254,7 +254,7 @@ func TestHTTPProc_Render(t *testing.T) {
 				headers:     map[string]*tmpl.StrTmpl{"Authorization": tmpl.MustNewStrTmpl("application/json")},
 			},
 			reqID:       "123",
-			param:       map[string]any{"param": "value"},
+			param:       []byte(`{"param": "value"}`),
 			deps:        map[string]any{},
 			wantURL:     "GET http://example.com/123",
 			wantBody:    nil,
@@ -270,7 +270,7 @@ func TestHTTPProc_Render(t *testing.T) {
 				tmpl:        nil,
 			},
 			reqID:       "123",
-			param:       map[string]any{"param": "value"},
+			param:       []byte(`{"param": "value"}`),
 			deps:        map[string]any{},
 			wantURL:     "",
 			wantBody:    nil,
@@ -286,7 +286,7 @@ func TestHTTPProc_Render(t *testing.T) {
 				tmpl:        tmpl.MustNewTmpl(`{"param": "${invalid_field}"}`),
 			},
 			reqID:       "123",
-			param:       map[string]any{"param": "value"},
+			param:       []byte(`{"param": "value"}`),
 			deps:        map[string]any{},
 			wantURL:     "POST http://example.com/123",
 			wantBody:    nil,
@@ -303,7 +303,7 @@ func TestHTTPProc_Render(t *testing.T) {
 				headers:     map[string]*tmpl.StrTmpl{"Authorization": tmpl.MustNewStrTmpl("Bearer ${params.token}")},
 			},
 			reqID:       "123",
-			param:       map[string]any{"param": "value", "token": "abc123"},
+			param:       []byte(`{"param": "value", "token": "abc123"}`),
 			deps:        map[string]any{},
 			wantURL:     "POST http://example.com/123",
 			wantBody:    []byte(`{"param": "value"}`),
