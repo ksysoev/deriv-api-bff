@@ -63,7 +63,6 @@ func TestService_ProcessRequest(t *testing.T) {
 
 	mockHandler := NewMockHandler(t)
 	mockCallsRepo.EXPECT().GetCall("testMethod").Return(mockHandler)
-
 	mockHandler.EXPECT().Handle(
 		mock.Anything,
 		mockRequest.Params,

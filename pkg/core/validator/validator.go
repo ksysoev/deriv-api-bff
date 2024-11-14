@@ -71,7 +71,7 @@ func (v *FieldValidator) Validate(data []byte) error {
 		return fmt.Errorf("failed to unmarshal params: %w", err)
 	}
 
-	err := v.jsonSchema.Validate(data)
+	err := v.jsonSchema.Validate(p)
 
 	var errValidation *jsonschema.ValidationError
 

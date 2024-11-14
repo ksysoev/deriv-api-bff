@@ -6,6 +6,7 @@ package core
 
 import (
 	context "context"
+	json "encoding/json"
 
 	mock "github.com/stretchr/testify/mock"
 )
@@ -24,7 +25,7 @@ func (_m *MockHandler) EXPECT() *MockHandler_Expecter {
 }
 
 // Handle provides a mock function with given fields: ctx, params, watcher, send
-func (_m *MockHandler) Handle(ctx context.Context, params []byte, watcher Waiter, send Sender) (map[string]any, error) {
+func (_m *MockHandler) Handle(ctx context.Context, params json.RawMessage, watcher Waiter, send Sender) (map[string]any, error) {
 	ret := _m.Called(ctx, params, watcher, send)
 
 	if len(ret) == 0 {
@@ -33,10 +34,10 @@ func (_m *MockHandler) Handle(ctx context.Context, params []byte, watcher Waiter
 
 	var r0 map[string]any
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, []byte, Waiter, Sender) (map[string]any, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, json.RawMessage, Waiter, Sender) (map[string]any, error)); ok {
 		return rf(ctx, params, watcher, send)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, []byte, Waiter, Sender) map[string]any); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, json.RawMessage, Waiter, Sender) map[string]any); ok {
 		r0 = rf(ctx, params, watcher, send)
 	} else {
 		if ret.Get(0) != nil {
@@ -44,7 +45,7 @@ func (_m *MockHandler) Handle(ctx context.Context, params []byte, watcher Waiter
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, []byte, Waiter, Sender) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, json.RawMessage, Waiter, Sender) error); ok {
 		r1 = rf(ctx, params, watcher, send)
 	} else {
 		r1 = ret.Error(1)
@@ -60,16 +61,16 @@ type MockHandler_Handle_Call struct {
 
 // Handle is a helper method to define mock.On call
 //   - ctx context.Context
-//   - params []byte
+//   - params json.RawMessage
 //   - watcher Waiter
 //   - send Sender
 func (_e *MockHandler_Expecter) Handle(ctx interface{}, params interface{}, watcher interface{}, send interface{}) *MockHandler_Handle_Call {
 	return &MockHandler_Handle_Call{Call: _e.mock.On("Handle", ctx, params, watcher, send)}
 }
 
-func (_c *MockHandler_Handle_Call) Run(run func(ctx context.Context, params []byte, watcher Waiter, send Sender)) *MockHandler_Handle_Call {
+func (_c *MockHandler_Handle_Call) Run(run func(ctx context.Context, params json.RawMessage, watcher Waiter, send Sender)) *MockHandler_Handle_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].([]byte), args[2].(Waiter), args[3].(Sender))
+		run(args[0].(context.Context), args[1].(json.RawMessage), args[2].(Waiter), args[3].(Sender))
 	})
 	return _c
 }
@@ -79,7 +80,7 @@ func (_c *MockHandler_Handle_Call) Return(_a0 map[string]any, _a1 error) *MockHa
 	return _c
 }
 
-func (_c *MockHandler_Handle_Call) RunAndReturn(run func(context.Context, []byte, Waiter, Sender) (map[string]any, error)) *MockHandler_Handle_Call {
+func (_c *MockHandler_Handle_Call) RunAndReturn(run func(context.Context, json.RawMessage, Waiter, Sender) (map[string]any, error)) *MockHandler_Handle_Call {
 	_c.Call.Return(run)
 	return _c
 }

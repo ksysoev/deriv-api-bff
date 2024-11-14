@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	"github.com/ksysoev/wasabi"
@@ -22,7 +23,7 @@ type CallsRepo interface {
 }
 
 type Handler interface {
-	Handle(ctx context.Context, params []byte, watcher Waiter, send Sender) (map[string]any, error)
+	Handle(ctx context.Context, params json.RawMessage, watcher Waiter, send Sender) (map[string]any, error)
 }
 
 type ConnRegistry interface {
