@@ -65,134 +65,134 @@ func TestHandle_Success(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{"key": "value"}, resp)
 }
 
-// func TestHandle_ValidationError(t *testing.T) {
-// 	expectedParams := map[string]any{"key": "value"}
+func TestHandle_ValidationError(t *testing.T) {
+	expectedParams := []byte(`{"key": "value"}`)
 
-// 	validator := NewMockValidator(t)
-// 	validator.EXPECT().Validate(expectedParams).Return(assert.AnError)
+	validator := NewMockValidator(t)
+	validator.EXPECT().Validate(expectedParams).Return(assert.AnError)
 
-// 	renderParser := NewMockRenderParser(t)
-// 	waitComposer := NewMockWaitComposer(t)
+	renderParser := NewMockRenderParser(t)
+	waitComposer := NewMockWaitComposer(t)
 
-// 	handler := New(validator, []RenderParser{renderParser}, func(core.Waiter) WaitComposer {
-// 		return waitComposer
-// 	})
+	handler := New(validator, []RenderParser{renderParser}, func(core.Waiter) WaitComposer {
+		return waitComposer
+	})
 
-// 	ctx := context.Background()
+	ctx := context.Background()
 
-// 	echoChan := make(chan []byte, 1)
-// 	waiter := func() (string, <-chan []byte) {
-// 		return "1", echoChan
-// 	}
+	echoChan := make(chan []byte, 1)
+	waiter := func() (string, <-chan []byte) {
+		return "1", echoChan
+	}
 
-// 	sender := func(req core.Request) error {
-// 		echoChan <- req.Data()
-// 		return nil
-// 	}
+	sender := func(req core.Request) error {
+		echoChan <- req.Data()
+		return nil
+	}
 
-// 	resp, err := handler.Handle(ctx, expectedParams, waiter, sender)
-// 	assert.ErrorIs(t, err, assert.AnError)
-// 	assert.Nil(t, resp)
-// }
+	resp, err := handler.Handle(ctx, expectedParams, waiter, sender)
+	assert.ErrorIs(t, err, assert.AnError)
+	assert.Nil(t, resp)
+}
 
-// func TestHandle_SendError(t *testing.T) {
-// 	expectedParams := map[string]any{"key": "value"}
-// 	expectedCallName := "test"
+func TestHandle_SendError(t *testing.T) {
+	expectedParams := []byte(`{"key": "value"}`)
+	expectedCallName := "test"
 
-// 	validator := NewMockValidator(t)
-// 	validator.EXPECT().Validate(expectedParams).Return(nil)
+	validator := NewMockValidator(t)
+	validator.EXPECT().Validate(expectedParams).Return(nil)
 
-// 	mockReq := core.NewMockRequest(t)
+	mockReq := core.NewMockRequest(t)
 
-// 	renderParser := NewMockRenderParser(t)
-// 	renderParser.EXPECT().Render(mock.Anything, mock.Anything, expectedParams, make(map[string]any)).Return(mockReq, nil)
-// 	renderParser.EXPECT().Name().Return(expectedCallName)
+	renderParser := NewMockRenderParser(t)
+	renderParser.EXPECT().Render(mock.Anything, mock.Anything, expectedParams, make(map[string]any)).Return(mockReq, nil)
+	renderParser.EXPECT().Name().Return(expectedCallName)
 
-// 	waitComposer := NewMockWaitComposer(t)
-// 	waitComposer.EXPECT().Prepare(mock.Anything, expectedCallName, mock.Anything).Return("1", make(map[string]any), nil)
+	waitComposer := NewMockWaitComposer(t)
+	waitComposer.EXPECT().Prepare(mock.Anything, expectedCallName, mock.Anything).Return("1", make(map[string]any), nil)
 
-// 	handler := New(validator, []RenderParser{renderParser, renderParser}, func(core.Waiter) WaitComposer {
-// 		return waitComposer
-// 	})
+	handler := New(validator, []RenderParser{renderParser, renderParser}, func(core.Waiter) WaitComposer {
+		return waitComposer
+	})
 
-// 	ctx := context.Background()
+	ctx := context.Background()
 
-// 	echoChan := make(chan []byte, 1)
-// 	waiter := func() (string, <-chan []byte) {
-// 		return "1", echoChan
-// 	}
+	echoChan := make(chan []byte, 1)
+	waiter := func() (string, <-chan []byte) {
+		return "1", echoChan
+	}
 
-// 	sender := func(_ core.Request) error {
-// 		return assert.AnError
-// 	}
+	sender := func(_ core.Request) error {
+		return assert.AnError
+	}
 
-// 	resp, err := handler.Handle(ctx, expectedParams, waiter, sender)
-// 	assert.ErrorIs(t, err, assert.AnError)
-// 	assert.Nil(t, resp)
-// }
+	resp, err := handler.Handle(ctx, expectedParams, waiter, sender)
+	assert.ErrorIs(t, err, assert.AnError)
+	assert.Nil(t, resp)
+}
 
-// func TestHandle_CancelledContext(t *testing.T) {
-// 	expectedParams := map[string]any{"key": "value"}
+func TestHandle_CancelledContext(t *testing.T) {
+	expectedParams := []byte(`{"key": "value"}`)
 
-// 	validator := NewMockValidator(t)
-// 	validator.EXPECT().Validate(expectedParams).Return(nil)
+	validator := NewMockValidator(t)
+	validator.EXPECT().Validate(expectedParams).Return(nil)
 
-// 	renderParser := NewMockRenderParser(t)
+	renderParser := NewMockRenderParser(t)
 
-// 	ctx, cancel := context.WithCancel(context.Background())
-// 	cancel()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
 
-// 	waitComposer := NewMockWaitComposer(t)
-// 	waitComposer.EXPECT().Compose().Return(nil, ctx.Err())
+	waitComposer := NewMockWaitComposer(t)
+	waitComposer.EXPECT().Compose().Return(nil, ctx.Err())
 
-// 	handler := New(validator, []RenderParser{renderParser}, func(core.Waiter) WaitComposer {
-// 		return waitComposer
-// 	})
+	handler := New(validator, []RenderParser{renderParser}, func(core.Waiter) WaitComposer {
+		return waitComposer
+	})
 
-// 	echoChan := make(chan []byte, 1)
-// 	waiter := func() (string, <-chan []byte) {
-// 		return "1", echoChan
-// 	}
+	echoChan := make(chan []byte, 1)
+	waiter := func() (string, <-chan []byte) {
+		return "1", echoChan
+	}
 
-// 	sender := func(_ core.Request) error {
-// 		return nil
-// 	}
+	sender := func(_ core.Request) error {
+		return nil
+	}
 
-// 	resp, err := handler.Handle(ctx, expectedParams, waiter, sender)
-// 	assert.ErrorIs(t, err, ctx.Err())
-// 	assert.Nil(t, resp)
-// }
+	resp, err := handler.Handle(ctx, expectedParams, waiter, sender)
+	assert.ErrorIs(t, err, ctx.Err())
+	assert.Nil(t, resp)
+}
 
-// func TestHandle_PrepareError(t *testing.T) {
-// 	expectedParams := map[string]any{"key": "value"}
-// 	expectedCallName := "test"
+func TestHandle_PrepareError(t *testing.T) {
+	expectedParams := []byte(`{"key": "value"}`)
+	expectedCallName := "test"
 
-// 	validator := NewMockValidator(t)
-// 	validator.EXPECT().Validate(expectedParams).Return(nil)
+	validator := NewMockValidator(t)
+	validator.EXPECT().Validate(expectedParams).Return(nil)
 
-// 	renderParser := NewMockRenderParser(t)
-// 	renderParser.EXPECT().Name().Return(expectedCallName)
+	renderParser := NewMockRenderParser(t)
+	renderParser.EXPECT().Name().Return(expectedCallName)
 
-// 	waitComposer := NewMockWaitComposer(t)
-// 	waitComposer.EXPECT().Prepare(mock.Anything, expectedCallName, mock.Anything).Return("", nil, assert.AnError)
-// 	waitComposer.EXPECT().Compose().Return(nil, assert.AnError)
+	waitComposer := NewMockWaitComposer(t)
+	waitComposer.EXPECT().Prepare(mock.Anything, expectedCallName, mock.Anything).Return("", nil, assert.AnError)
+	waitComposer.EXPECT().Compose().Return(nil, assert.AnError)
 
-// 	handler := New(validator, []RenderParser{renderParser}, func(core.Waiter) WaitComposer {
-// 		return waitComposer
-// 	})
+	handler := New(validator, []RenderParser{renderParser}, func(core.Waiter) WaitComposer {
+		return waitComposer
+	})
 
-// 	ctx := context.Background()
+	ctx := context.Background()
 
-// 	echoChan := make(chan []byte, 1)
-// 	waiter := func() (string, <-chan []byte) {
-// 		return "1", echoChan
-// 	}
+	echoChan := make(chan []byte, 1)
+	waiter := func() (string, <-chan []byte) {
+		return "1", echoChan
+	}
 
-// 	sender := func(_ core.Request) error {
-// 		return nil
-// 	}
+	sender := func(_ core.Request) error {
+		return nil
+	}
 
-// 	resp, err := handler.Handle(ctx, expectedParams, waiter, sender)
-// 	assert.ErrorIs(t, err, assert.AnError)
-// 	assert.Nil(t, resp)
-// }
+	resp, err := handler.Handle(ctx, expectedParams, waiter, sender)
+	assert.ErrorIs(t, err, assert.AnError)
+	assert.Nil(t, resp)
+}
