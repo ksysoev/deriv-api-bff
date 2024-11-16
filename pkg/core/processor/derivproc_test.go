@@ -249,9 +249,9 @@ func TestProcessor_Parse_Success(t *testing.T) {
 				allow:    tt.allow,
 			}
 
-			_, result, err := rp.Parse([]byte(tt.jsonData))
+			resp, err := rp.Parse([]byte(tt.jsonData))
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, result)
+			assert.Equal(t, tt.expected, resp.Filtered())
 		})
 	}
 }
@@ -261,7 +261,7 @@ func TestProcessor_Parse_Error(t *testing.T) {
 
 	jsonData := `{"error": "something went wrong"}`
 
-	_, _, err := rp.Parse([]byte(jsonData))
+	_, err := rp.Parse([]byte(jsonData))
 	assert.Error(t, err)
 }
 

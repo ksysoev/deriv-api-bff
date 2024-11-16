@@ -8,6 +8,7 @@ import (
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/response"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/tmpl"
 )
 
@@ -115,13 +116,13 @@ func (p *HTTPProc) Render(ctx context.Context, reqID string, param []byte, deps 
 // It takes data of type []byte and returns two maps: resp and filetered, both of type map[string]any, and an error if parsing fails.
 // It returns an error if the input data cannot be parsed.
 // Edge cases include missing expected keys in the response, which are logged as warnings.
-func (p *HTTPProc) Parse(data []byte) (resp, filetered map[string]any, err error) {
-	resp, err = p.parse(data)
+func (p *HTTPProc) Parse(data []byte) (*response.Response, error) {
+	resp, err := p.parse(data)
 	if err != nil {
-		return nil, nil, fmt.Errorf("fail to parse response %s: %w", p.name, err)
+		return nil, fmt.Errorf("fail to parse response %s: %w", p.name, err)
 	}
 
-	filetered = make(map[string]any, len(p.allow))
+	filetered := make(map[string]any, len(p.allow))
 
 	for _, key := range p.allow {
 		if _, ok := resp[key]; !ok {
@@ -140,7 +141,7 @@ func (p *HTTPProc) Parse(data []byte) (resp, filetered map[string]any, err error
 		filetered[destKey] = resp[key]
 	}
 
-	return resp, filetered, nil
+	return response.New(resp, filetered), nil
 }
 
 // parse parses the given JSON data and returns it as a map[string]any.

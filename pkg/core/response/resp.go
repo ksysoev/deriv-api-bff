@@ -7,7 +7,8 @@ type Response struct {
 
 func New(data map[string]any, filtered map[string]any) *Response {
 	return &Response{
-		data: data,
+		data:     data,
+		filtered: filtered,
 	}
 }
 

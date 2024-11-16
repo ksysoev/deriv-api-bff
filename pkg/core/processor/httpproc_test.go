@@ -73,16 +73,15 @@ func TestHTTPProc_Parse(t *testing.T) {
 				allow:    tt.allow,
 				fieldMap: tt.fieldMap,
 			}
-			gotResp, gotFilt, err := p.Parse(tt.data)
+			resp, err := p.Parse(tt.data)
 
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Nil(t, gotResp)
-				assert.Nil(t, gotFilt)
+				assert.Nil(t, resp)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantResp, gotResp)
-				assert.Equal(t, tt.wantFilt, gotFilt)
+				assert.Equal(t, tt.wantResp, resp.Body())
+				assert.Equal(t, tt.wantFilt, resp.Filtered())
 			}
 		})
 	}
