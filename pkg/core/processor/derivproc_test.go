@@ -151,26 +151,63 @@ func TestProcessor_Render(t *testing.T) {
 	}
 }
 
-func TestProcessor_parse_Success(t *testing.T) {
+func TestProcessor_parse(t *testing.T) {
 	tests := []struct {
 		name     string
 		jsonData string
 		expected json.RawMessage
+		wantErr  bool
 	}{
 		{
 			name:     "object",
 			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": "data"}`,
 			expected: json.RawMessage(`{"key1": "value1", "key2": "value2"}`),
+			wantErr:  false,
 		},
 		{
 			name:     "array",
 			jsonData: `{"data": [{"key1": "value1"}, {"key2": "value2"}], "msg_type": "data"}`,
 			expected: json.RawMessage(`[{"key1": "value1"}, {"key2": "value2"}]`),
+			wantErr:  false,
 		},
 		{
 			name:     "scalar",
 			jsonData: `{"data": "value", "msg_type": "data"}`,
 			expected: json.RawMessage(`"value"`),
+			wantErr:  false,
+		},
+		{
+			name:     "Api Error",
+			jsonData: `{"error": "something went wrong"}`,
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "No Message Type",
+			jsonData: `{"data": {"key1": "value1", "key2": "value2"}}`,
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "Empty Message Type",
+			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": ""}`,
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "unexpected format of message type",
+			wantErr:  true,
+			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": 123}`,
+		},
+		{
+			name:     "invalid json",
+			wantErr:  true,
+			jsonData: `{invalid json}`,
+		},
+		{
+			name:     "response body not found",
+			wantErr:  true,
+			jsonData: `{"msg_type": "data"}`,
 		},
 	}
 
@@ -179,39 +216,18 @@ func TestProcessor_parse_Success(t *testing.T) {
 			rp := &DerivProc{}
 
 			result, err := rp.parse([]byte(tt.jsonData))
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, result)
+
+			if !tt.wantErr {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			} else {
+				assert.Error(t, err)
+				assert.Nil(t, result)
+			}
 		})
 	}
 }
 
-func TestProcessor_parse_Error(t *testing.T) {
-	rp := &DerivProc{}
-
-	jsonData := `{"error": "something went wrong"}`
-
-	_, err := rp.parse([]byte(jsonData))
-	assert.Error(t, err)
-}
-
-func TestProcessor_parse_ResponseBodyNotFound(t *testing.T) {
-	rp := &DerivProc{}
-
-	jsonData := `{"key": "value"}`
-
-	_, err := rp.parse([]byte(jsonData))
-	assert.Error(t, err)
-}
-
-func TestProcessor_parse_UnexpectedFormat(t *testing.T) {
-	rp := &DerivProc{}
-
-	jsonData := `{invalid json}`
-
-	result, err := rp.parse([]byte(jsonData))
-	assert.Error(t, err)
-	assert.Nil(t, result)
-}
 func TestProcessor_Parse_Success(t *testing.T) {
 	tests := []struct {
 		fieldMap map[string]string
