@@ -10,8 +10,8 @@ import (
 func TestNewAPIError(t *testing.T) {
 	tests := []struct {
 		name   string
-		data   json.RawMessage
 		errMsg string
+		data   json.RawMessage
 	}{
 		{
 			name:   "Valid data",

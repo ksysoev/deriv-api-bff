@@ -153,9 +153,9 @@ func TestProcessor_Render(t *testing.T) {
 
 func TestProcessor_parse_Success(t *testing.T) {
 	tests := []struct {
-		expected json.RawMessage
 		name     string
 		jsonData string
+		expected json.RawMessage
 	}{
 		{
 			name:     "object",

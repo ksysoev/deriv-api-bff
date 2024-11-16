@@ -148,7 +148,7 @@ func (p *HTTPProc) parse(data []byte) (json.RawMessage, error) {
 		var errRaw errData
 
 		if err := json.Unmarshal(data, &errRaw); err != nil {
-			return nil, fmt.Errorf("Fail to parse response: %s", err)
+			return nil, fmt.Errorf("fail to parse response: %s", err)
 		}
 
 		if errRaw.Err != nil {
