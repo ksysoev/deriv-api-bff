@@ -7,9 +7,10 @@ import (
 	"iter"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/response"
 )
 
-type Parser func([]byte) (map[string]any, map[string]any, error)
+type Parser func([]byte) (*response.Response, error)
 
 type Validator interface {
 	Validate(data []byte) error
@@ -18,7 +19,7 @@ type Validator interface {
 type RenderParser interface {
 	Name() string
 	Render(ctx context.Context, reqID string, params []byte, deps map[string]any) (core.Request, error)
-	Parse(data []byte) (map[string]any, map[string]any, error)
+	Parse(data []byte) (*response.Response, error)
 }
 
 type WaitComposer interface {
