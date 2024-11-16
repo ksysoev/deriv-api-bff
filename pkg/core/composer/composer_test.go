@@ -8,20 +8,21 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ksysoev/deriv-api-bff/pkg/core/response"
 	"github.com/stretchr/testify/assert"
 )
 
-func makeParser(t *testing.T) func([]byte) (map[string]any, map[string]any, error) {
+func makeParser(t *testing.T) func([]byte) (*response.Response, error) {
 	t.Helper()
 
-	return func(data []byte) (map[string]any, map[string]any, error) {
+	return func(data []byte) (*response.Response, error) {
 		var res map[string]any
 
 		if err := json.Unmarshal(data, &res); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
-		return res, res, nil
+		return response.New(res, res), nil
 	}
 }
 

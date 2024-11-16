@@ -8,6 +8,7 @@ import (
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/response"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/tmpl"
 )
 
@@ -95,13 +96,13 @@ func (p *DerivProc) Render(ctx context.Context, reqID string, params []byte, dep
 // and an error if the parsing fails.
 // It returns an error if the input data cannot be parsed.
 // Edge case: If the response does not contain an expected key, a warning is logged and the key is skipped.
-func (p *DerivProc) Parse(data []byte) (resp, filetered map[string]any, err error) {
-	resp, err = p.parse(data)
+func (p *DerivProc) Parse(data []byte) (*response.Response, error) {
+	resp, err := p.parse(data)
 	if err != nil {
-		return nil, nil, fmt.Errorf("fail to parse response %s: %w", p.name, err)
+		return nil, fmt.Errorf("fail to parse response %s: %w", p.name, err)
 	}
 
-	filetered = make(map[string]any, len(p.allow))
+	filetered := make(map[string]any, len(p.allow))
 
 	for _, key := range p.allow {
 		if _, ok := resp[key]; !ok {
@@ -120,7 +121,7 @@ func (p *DerivProc) Parse(data []byte) (resp, filetered map[string]any, err erro
 		filetered[destKey] = resp[key]
 	}
 
-	return resp, filetered, nil
+	return response.New(resp, filetered), nil
 }
 
 // parse unmarshals JSON data into a map and processes the response body.
