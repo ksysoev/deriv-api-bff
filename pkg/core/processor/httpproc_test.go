@@ -353,6 +353,25 @@ func TestHTTPProc_parse(t *testing.T) {
 			want:    []byte(`{"key1": "value1", "key2": 2}`),
 			wantErr: false,
 		},
+
+		{
+			name:    "Valid JSON object with spaces",
+			data:    []byte(` {"key1": "value1", "key2": 2}`),
+			want:    []byte(`{"key1": "value1", "key2": 2}`),
+			wantErr: false,
+		},
+		{
+			name:    "Invalid JSON object",
+			data:    []byte(`{"key1": "value1", "key2": 2`),
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "Empty body",
+			data:    []byte(``),
+			want:    nil,
+			wantErr: true,
+		},
 		{
 			name:    "Valid JSON array",
 			data:    []byte(`[{"key1": "value1"}, {"key2": 2}]`),

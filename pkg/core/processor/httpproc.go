@@ -143,10 +143,15 @@ func (p *HTTPProc) parse(data []byte) (json.RawMessage, error) {
 		return nil, fmt.Errorf("response body not found")
 	}
 
-	if data[0] == '{' {
+	var jsonData json.RawMessage
+	if err := json.Unmarshal(data, &jsonData); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
+	}
+
+	if jsonData[0] == '{' {
 		var errRaw errData
 
-		if err := json.Unmarshal(data, &errRaw); err != nil {
+		if err := json.Unmarshal(jsonData, &errRaw); err != nil {
 			return nil, fmt.Errorf("fail to parse response: %s", err)
 		}
 
@@ -155,5 +160,5 @@ func (p *HTTPProc) parse(data []byte) (json.RawMessage, error) {
 		}
 	}
 
-	return data, nil
+	return jsonData, nil
 }
