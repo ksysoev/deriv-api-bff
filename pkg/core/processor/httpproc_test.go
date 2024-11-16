@@ -2,6 +2,7 @@ package processor
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
@@ -13,8 +14,8 @@ import (
 func TestHTTPProc_Parse(t *testing.T) {
 	tests := []struct {
 		fieldMap map[string]string
-		wantResp map[string]any
-		wantFilt map[string]any
+		wantResp json.RawMessage
+		wantFilt map[string]json.RawMessage
 		name     string
 		data     []byte
 		allow    []string
@@ -25,8 +26,8 @@ func TestHTTPProc_Parse(t *testing.T) {
 			data:     []byte(`{"key1": "value1", "key2": 2}`),
 			allow:    []string{"key1", "key2"},
 			fieldMap: nil,
-			wantResp: map[string]any{"key1": "value1", "key2": 2.0},
-			wantFilt: map[string]any{"key1": "value1", "key2": 2.0},
+			wantResp: json.RawMessage(`{"key1": "value1", "key2": 2}`),
+			wantFilt: map[string]json.RawMessage{"key1": []byte(`"value1"`), "key2": []byte("2")},
 			wantErr:  false,
 		},
 		{
@@ -34,8 +35,8 @@ func TestHTTPProc_Parse(t *testing.T) {
 			data:     []byte(`{"key1": "value1", "key2": 2}`),
 			allow:    []string{"key1", "key2"},
 			fieldMap: map[string]string{"key1": "mappedKey1"},
-			wantResp: map[string]any{"key1": "value1", "key2": 2.0},
-			wantFilt: map[string]any{"mappedKey1": "value1", "key2": 2.0},
+			wantResp: json.RawMessage(`{"key1": "value1", "key2": 2}`),
+			wantFilt: map[string]json.RawMessage{"mappedKey1": []byte(`"value1"`), "key2": []byte("2")},
 			wantErr:  false,
 		},
 		{
@@ -43,8 +44,8 @@ func TestHTTPProc_Parse(t *testing.T) {
 			data:     []byte(`{"key1": "value1"}`),
 			allow:    []string{"key1", "key2"},
 			fieldMap: nil,
-			wantResp: map[string]any{"key1": "value1"},
-			wantFilt: map[string]any{"key1": "value1"},
+			wantResp: json.RawMessage(`{"key1": "value1"}`),
+			wantFilt: map[string]json.RawMessage{"key1": []byte(`"value1"`)},
 			wantErr:  false,
 		},
 		{
@@ -61,8 +62,8 @@ func TestHTTPProc_Parse(t *testing.T) {
 			data:     []byte(`123`),
 			allow:    []string{"value"},
 			fieldMap: nil,
-			wantResp: map[string]any{"value": 123.0},
-			wantFilt: map[string]any{"value": 123.0},
+			wantResp: []byte(`123`),
+			wantFilt: map[string]json.RawMessage{"value": []byte("123")},
 			wantErr:  false,
 		},
 	}
@@ -341,7 +342,7 @@ func TestHTTPProc_Render(t *testing.T) {
 
 func TestHTTPProc_parse(t *testing.T) {
 	tests := []struct {
-		want    map[string]any
+		want    json.RawMessage
 		name    string
 		data    []byte
 		wantErr bool
@@ -349,19 +350,38 @@ func TestHTTPProc_parse(t *testing.T) {
 		{
 			name:    "Valid JSON object",
 			data:    []byte(`{"key1": "value1", "key2": 2}`),
-			want:    map[string]any{"key1": "value1", "key2": 2.0},
+			want:    []byte(`{"key1": "value1", "key2": 2}`),
 			wantErr: false,
+		},
+
+		{
+			name:    "Valid JSON object with spaces",
+			data:    []byte(` {"key1": "value1", "key2": 2}`),
+			want:    []byte(`{"key1": "value1", "key2": 2}`),
+			wantErr: false,
+		},
+		{
+			name:    "Invalid JSON object",
+			data:    []byte(`{"key1": "value1", "key2": 2`),
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "Empty body",
+			data:    []byte(``),
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name:    "Valid JSON array",
 			data:    []byte(`[{"key1": "value1"}, {"key2": 2}]`),
-			want:    map[string]any{"list": []any{map[string]any{"key1": "value1"}, map[string]any{"key2": 2.0}}},
+			want:    []byte(`[{"key1": "value1"}, {"key2": 2}]`),
 			wantErr: false,
 		},
 		{
 			name:    "Valid single JSON value",
 			data:    []byte(`"singleValue"`),
-			want:    map[string]any{"value": "singleValue"},
+			want:    []byte(`"singleValue"`),
 			wantErr: false,
 		},
 		{
@@ -371,9 +391,9 @@ func TestHTTPProc_parse(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "Unexpected format",
+			name:    "Value ",
 			data:    []byte(`123`),
-			want:    map[string]any{"value": 123.0},
+			want:    []byte(`123`),
 			wantErr: false,
 		},
 		{

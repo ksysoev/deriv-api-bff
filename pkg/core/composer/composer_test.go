@@ -16,13 +16,13 @@ func makeParser(t *testing.T) func([]byte) (*response.Response, error) {
 	t.Helper()
 
 	return func(data []byte) (*response.Response, error) {
-		var res map[string]any
+		var res map[string]json.RawMessage
 
 		if err := json.Unmarshal(data, &res); err != nil {
 			return nil, err
 		}
 
-		return response.New(res, res), nil
+		return response.New(data, res), nil
 	}
 }
 
@@ -51,7 +51,7 @@ func TestComposer_Success(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
-	assert.Equal(t, "param1,param2", resp["Params"])
+	assert.Equal(t, json.RawMessage(`"param1,param2"`), resp["Params"])
 }
 
 func TestComposer_Compose_ParseError(t *testing.T) {
