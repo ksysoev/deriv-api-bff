@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
@@ -102,24 +101,12 @@ func (p *DerivProc) Parse(data []byte) (*response.Response, error) {
 		return nil, fmt.Errorf("fail to parse response %s: %w", p.name, err)
 	}
 
-	filetered := make(map[string]json.RawMessage, len(p.allow))
-
-	for _, key := range p.allow {
-		if _, ok := resp[key]; !ok {
-			slog.Warn("Response body does not contain expeted key", slog.String("key", key), slog.String("name", p.name))
-			continue
-		}
-
-		destKey := key
-
-		if p.fieldMap != nil {
-			if mappedKey, ok := p.fieldMap[key]; ok {
-				destKey = mappedKey
-			}
-		}
-
-		filetered[destKey] = resp[key]
+	prepared, err := prepareResp(resp)
+	if err != nil {
+		return nil, fmt.Errorf("fail to prepare response %s: %w", p.name, err)
 	}
+
+	filetered := filterResp(prepared, p.allow, p.fieldMap)
 
 	return response.New(resp, filetered), nil
 }
@@ -130,7 +117,7 @@ func (p *DerivProc) Parse(data []byte) (*response.Response, error) {
 // or if the response body is not found or is in an unexpected format.
 // If the response body is a map, it returns it directly. If it is a list, it wraps it in a map with the key "list".
 // If it is any other type, it wraps it in a map with the key "value".
-func (p *DerivProc) parse(data []byte) (map[string]json.RawMessage, error) {
+func (p *DerivProc) parse(data []byte) (json.RawMessage, error) {
 	var rdata map[string]json.RawMessage
 
 	err := json.Unmarshal(data, &rdata)
@@ -158,18 +145,5 @@ func (p *DerivProc) parse(data []byte) (map[string]json.RawMessage, error) {
 		return nil, fmt.Errorf("response body not found")
 	}
 
-	switch rb[0] {
-	case '{':
-		var respBody map[string]json.RawMessage
-
-		if err := json.Unmarshal(rb, &respBody); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
-		}
-
-		return respBody, nil
-	case '[':
-		return map[string]json.RawMessage{"list": rb}, nil
-	default:
-		return map[string]json.RawMessage{"value": rb}, nil
-	}
+	return rb, nil
 }

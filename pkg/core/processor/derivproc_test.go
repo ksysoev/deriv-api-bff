@@ -153,24 +153,24 @@ func TestProcessor_Render(t *testing.T) {
 
 func TestProcessor_parse_Success(t *testing.T) {
 	tests := []struct {
-		expected map[string]json.RawMessage
+		expected json.RawMessage
 		name     string
 		jsonData string
 	}{
 		{
 			name:     "object",
 			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": "data"}`,
-			expected: map[string]json.RawMessage{"key1": []byte(`"value1"`), "key2": []byte(`"value2"`)},
+			expected: json.RawMessage(`{"key1": "value1", "key2": "value2"}`),
 		},
 		{
 			name:     "array",
 			jsonData: `{"data": [{"key1": "value1"}, {"key2": "value2"}], "msg_type": "data"}`,
-			expected: map[string]json.RawMessage{"list": []byte(`[{"key1": "value1"}, {"key2": "value2"}]`)},
+			expected: json.RawMessage(`[{"key1": "value1"}, {"key2": "value2"}]`),
 		},
 		{
 			name:     "scalar",
 			jsonData: `{"data": "value", "msg_type": "data"}`,
-			expected: map[string]json.RawMessage{"value": []byte(`"value"`)},
+			expected: json.RawMessage(`"value"`),
 		},
 	}
 

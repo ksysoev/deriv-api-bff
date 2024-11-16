@@ -22,7 +22,7 @@ func makeParser(t *testing.T) func([]byte) (*response.Response, error) {
 			return nil, err
 		}
 
-		return response.New(res, res), nil
+		return response.New(data, res), nil
 	}
 }
 
