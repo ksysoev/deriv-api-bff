@@ -146,6 +146,7 @@ func (p *DerivProc) parse(data []byte) (map[string]json.RawMessage, error) {
 	if !ok {
 		return nil, fmt.Errorf("msg_type not found or not a string")
 	}
+
 	if len(msgTypeRaw) < 3 || msgTypeRaw[0] != '"' || msgTypeRaw[len(msgTypeRaw)-1] != '"' {
 		return nil, fmt.Errorf("msg_type not a valid string")
 	}
@@ -160,8 +161,8 @@ func (p *DerivProc) parse(data []byte) (map[string]json.RawMessage, error) {
 	switch rb[0] {
 	case '{':
 		var respBody map[string]json.RawMessage
-		err := json.Unmarshal(rb, &respBody)
-		if err != nil {
+
+		if err := json.Unmarshal(rb, &respBody); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
 		}
 

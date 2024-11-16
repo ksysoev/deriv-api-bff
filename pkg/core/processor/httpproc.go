@@ -152,8 +152,8 @@ func (p *HTTPProc) parse(data []byte) (map[string]json.RawMessage, error) {
 	switch data[0] {
 	case '{':
 		var respBody map[string]json.RawMessage
-		err := json.Unmarshal(data, &respBody)
-		if err != nil {
+
+		if err := json.Unmarshal(data, &respBody); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
 		}
 
