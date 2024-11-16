@@ -103,8 +103,6 @@ func (p *HTTPProc) Render(ctx context.Context, reqID string, param []byte, deps 
 				return nil, fmt.Errorf("fail to execute header template %s: %w", key, err)
 			}
 
-			fmt.Println("headerValue", headerValue)
-
 			req.AddHeader(key, headerValue)
 		}
 	}

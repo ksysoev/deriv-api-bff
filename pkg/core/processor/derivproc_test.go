@@ -215,7 +215,7 @@ func TestProcessor_parse_UnexpectedFormat(t *testing.T) {
 func TestProcessor_Parse_Success(t *testing.T) {
 	tests := []struct {
 		fieldMap map[string]string
-		expected map[string]any
+		expected map[string]json.RawMessage
 		name     string
 		jsonData string
 		allow    []string
@@ -225,21 +225,21 @@ func TestProcessor_Parse_Success(t *testing.T) {
 			fieldMap: map[string]string{"key1": "mappedKey1"},
 			allow:    []string{"key1", "key2"},
 			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": "data"}`,
-			expected: map[string]any{"mappedKey1": "value1", "key2": "value2"},
+			expected: map[string]json.RawMessage{"mappedKey1": []byte(`"value1"`), "key2": []byte(`"value2"`)},
 		},
 		{
 			name:     "allowed fields without field mapping",
 			fieldMap: nil,
 			allow:    []string{"key1", "key2"},
 			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": "data"}`,
-			expected: map[string]any{"key1": "value1", "key2": "value2"},
+			expected: map[string]json.RawMessage{"key1": []byte(`"value1"`), "key2": []byte(`"value2"`)},
 		},
 		{
 			name:     "missing allowed fields",
 			fieldMap: nil,
 			allow:    []string{"key3"},
 			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": "data"}`,
-			expected: map[string]any{},
+			expected: map[string]json.RawMessage{},
 		},
 	}
 
