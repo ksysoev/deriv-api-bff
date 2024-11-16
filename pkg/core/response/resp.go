@@ -5,7 +5,7 @@ type Response struct {
 	data     map[string]any
 }
 
-func New(data map[string]any, filtered map[string]any) *Response {
+func New(data, filtered map[string]any) *Response {
 	return &Response{
 		data:     data,
 		filtered: filtered,

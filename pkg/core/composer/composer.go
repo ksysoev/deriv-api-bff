@@ -55,7 +55,7 @@ func (c *Composer) Prepare(ctx context.Context, name string, parser handler.Pars
 		case <-ctx.Done():
 			c.setError(name, ctx.Err())
 		case resp := <-respChan:
-			rawResp, data, err := parser(resp)
+			r, err := parser(resp)
 			if err != nil {
 				c.setError(name, fmt.Errorf("fail to parse response: %w", err))
 				return
@@ -64,9 +64,9 @@ func (c *Composer) Prepare(ctx context.Context, name string, parser handler.Pars
 			c.mu.Lock()
 			defer c.mu.Unlock()
 
-			c.rawResps[name] = rawResp
+			c.rawResps[name] = r.Body()
 
-			for key, value := range data {
+			for key, value := range r.Filtered() {
 				if _, ok := c.resp[key]; ok {
 					//TODO: Move fields uniqueness check to the config validation step
 					slog.Warn("duplicate key", slog.String("key", key))
