@@ -13,10 +13,9 @@ type errorData struct {
 	Details json.RawMessage `json:"details,omitempty"`
 }
 
-// NewAPIError creates a new API error from the provided data.
-// It takes a single parameter data of type any, which is expected to be a map with keys "code", "message", and optionally "details".
-// It returns an error which is an instance of core.APIError if the data is in the expected format, or a descriptive error if the data format is incorrect.
-// It returns an error if the data is not a map, if the "code" or "message" fields are missing or not strings, or if the "details" field cannot be marshaled to JSON.
+// NewAPIError creates a new API error from the provided JSON data.
+// It takes a single parameter data of type json.RawMessage.
+// It returns an error if the JSON data cannot be unmarshaled or if the error message is not in the expected format.
 func NewAPIError(data json.RawMessage) error {
 	var errData errorData
 

@@ -88,13 +88,10 @@ func (p *DerivProc) Render(ctx context.Context, reqID string, params []byte, dep
 	return request.NewRequest(ctx, request.TextMessage, req), nil
 }
 
-// Parse processes the input data and filters the response based on allowed keys.
+// Parse processes the input data and returns a parsed and filtered response.
 // It takes data of type []byte.
-// It returns three values: resp which is a map[string]any containing the parsed response,
-// filetered which is a map[string]any containing the filtered response based on allowed keys,
-// and an error if the parsing fails.
-// It returns an error if the input data cannot be parsed.
-// Edge case: If the response does not contain an expected key, a warning is logged and the key is skipped.
+// It returns a pointer to response.Response and an error.
+// It returns an error if parsing or preparing the response fails.
 func (p *DerivProc) Parse(data []byte) (*response.Response, error) {
 	resp, err := p.parse(data)
 	if err != nil {
@@ -111,12 +108,11 @@ func (p *DerivProc) Parse(data []byte) (*response.Response, error) {
 	return response.New(resp, filetered), nil
 }
 
-// parse unmarshals JSON data into a map and processes the response body.
-// It takes data of type []byte and returns a map[string]any and an error.
-// It returns an error if the JSON unmarshalling fails, if the response contains an error,
-// or if the response body is not found or is in an unexpected format.
-// If the response body is a map, it returns it directly. If it is a list, it wraps it in a map with the key "list".
-// If it is any other type, it wraps it in a map with the key "value".
+// parse parses the given JSON data and extracts the relevant message body.
+// It takes data of type []byte which is the JSON data to be parsed.
+// It returns a json.RawMessage containing the extracted message body and an error if any occurs.
+// It returns an error if the JSON data cannot be unmarshaled, if the "error" field is present in the data,
+// if the "msg_type" field is missing or not a valid string, or if the response body corresponding to the msg_type is not found.
 func (p *DerivProc) parse(data []byte) (json.RawMessage, error) {
 	var rdata map[string]json.RawMessage
 

@@ -113,10 +113,10 @@ func (p *HTTPProc) Render(ctx context.Context, reqID string, param []byte, deps 
 	return req, nil
 }
 
-// Parse processes the input data and filters the response based on allowed keys.
-// It takes data of type []byte and returns two maps: resp and filetered, both of type map[string]any, and an error if parsing fails.
-// It returns an error if the input data cannot be parsed.
-// Edge cases include missing expected keys in the response, which are logged as warnings.
+// Parse processes the given byte slice and returns a parsed response.
+// It takes data of type []byte.
+// It returns a pointer to response.Response and an error.
+// It returns an error if parsing or preparing the response fails.
 func (p *HTTPProc) Parse(data []byte) (*response.Response, error) {
 	resp, err := p.parse(data)
 	if err != nil {
@@ -133,12 +133,11 @@ func (p *HTTPProc) Parse(data []byte) (*response.Response, error) {
 	return response.New(resp, filetered), nil
 }
 
-// parse parses the given JSON data and returns it as a map[string]any.
-// It takes a single parameter data of type []byte which is the JSON data to be parsed.
-// It returns a map[string]any representing the parsed JSON data and an error if the parsing fails.
-// It returns an error if the JSON data is malformed or if the response body is in an unexpected format.
-// If the JSON data is an array, it wraps it in a map with the key "list".
-// If the JSON data is a single value, it wraps it in a map with the key "value".
+// parse parses the given byte slice as JSON and returns a json.RawMessage.
+// It takes data of type []byte.
+// It returns a json.RawMessage and an error.
+// It returns an error if the data is empty, if the data cannot be unmarshaled, or if the unmarshaled data contains an error.
+// If the data starts with '{', it attempts to unmarshal it into an errData struct and checks for an error field.
 func (p *HTTPProc) parse(data []byte) (json.RawMessage, error) {
 	if len(data) == 0 {
 		return nil, fmt.Errorf("response body not found")

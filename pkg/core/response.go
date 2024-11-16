@@ -8,6 +8,14 @@ import (
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 )
 
+// createResponse constructs a response based on the provided request, response data, and error.
+// It takes req of type *request.Request, respData of type map[string]any, and err of type error.
+// It returns a byte slice containing the marshaled response and an error if any occurs during processing.
+// It returns an error if the request handling fails or if the response marshaling fails.
+// If err is of type *APIError, it includes the encoded error in the response.
+// If req.ID is not nil, it includes the request ID in the response.
+// If req.PassThrough is not nil, it includes the passthrough data in the response.
+// The response includes an "echo" field containing the raw request data.
 func createResponse(req *request.Request, respData map[string]any, err error) ([]byte, error) {
 	var apiErr *APIError
 
