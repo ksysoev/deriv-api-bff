@@ -2,6 +2,7 @@ package processor
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/tmpl"
@@ -152,24 +153,24 @@ func TestProcessor_Render(t *testing.T) {
 
 func TestProcessor_parse_Success(t *testing.T) {
 	tests := []struct {
-		expected map[string]any
+		expected map[string]json.RawMessage
 		name     string
 		jsonData string
 	}{
 		{
 			name:     "object",
 			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": "data"}`,
-			expected: map[string]any{"key1": "value1", "key2": "value2"},
+			expected: map[string]json.RawMessage{"key1": []byte(`"value1"`), "key2": []byte(`"value2"`)},
 		},
 		{
 			name:     "array",
 			jsonData: `{"data": [{"key1": "value1"}, {"key2": "value2"}], "msg_type": "data"}`,
-			expected: map[string]any{"list": []any{map[string]any{"key1": "value1"}, map[string]any{"key2": "value2"}}},
+			expected: map[string]json.RawMessage{"list": []byte(`[{"key1": "value1"}, {"key2": "value2"}]`)},
 		},
 		{
 			name:     "scalar",
 			jsonData: `{"data": "value", "msg_type": "data"}`,
-			expected: map[string]any{"value": "value"},
+			expected: map[string]json.RawMessage{"value": []byte(`"value"`)},
 		},
 	}
 

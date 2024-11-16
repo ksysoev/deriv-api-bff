@@ -122,7 +122,7 @@ func (p *HTTPProc) Parse(data []byte) (*response.Response, error) {
 		return nil, fmt.Errorf("fail to parse response %s: %w", p.name, err)
 	}
 
-	filetered := make(map[string]any, len(p.allow))
+	filetered := make(map[string]json.RawMessage, len(p.allow))
 
 	for _, key := range p.allow {
 		if _, ok := resp[key]; !ok {
@@ -150,26 +150,23 @@ func (p *HTTPProc) Parse(data []byte) (*response.Response, error) {
 // It returns an error if the JSON data is malformed or if the response body is in an unexpected format.
 // If the JSON data is an array, it wraps it in a map with the key "list".
 // If the JSON data is a single value, it wraps it in a map with the key "value".
-func (p *HTTPProc) parse(data []byte) (map[string]any, error) {
-	var rdata any
+func (p *HTTPProc) parse(data []byte) (map[string]json.RawMessage, error) {
+	switch data[0] {
+	case '{':
+		var respBody map[string]json.RawMessage
+		err := json.Unmarshal(data, &respBody)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
+		}
 
-	err := json.Unmarshal(data, &rdata)
-	if err != nil {
-		return nil, err
-	}
-
-	switch respBody := rdata.(type) {
-	case map[string]any:
 		if errData, ok := respBody["error"]; ok {
 			return nil, NewAPIError(errData)
 		}
 
 		return respBody, nil
-	case []any:
-		return map[string]any{"list": respBody}, nil
-	case any:
-		return map[string]any{"value": respBody}, nil
+	case '[':
+		return map[string]json.RawMessage{"list": data}, nil
 	default:
-		return nil, fmt.Errorf("response body is in unexpected format")
+		return map[string]json.RawMessage{"value": data}, nil
 	}
 }

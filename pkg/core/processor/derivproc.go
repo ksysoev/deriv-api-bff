@@ -102,7 +102,7 @@ func (p *DerivProc) Parse(data []byte) (*response.Response, error) {
 		return nil, fmt.Errorf("fail to parse response %s: %w", p.name, err)
 	}
 
-	filetered := make(map[string]any, len(p.allow))
+	filetered := make(map[string]json.RawMessage, len(p.allow))
 
 	for _, key := range p.allow {
 		if _, ok := resp[key]; !ok {
@@ -130,8 +130,8 @@ func (p *DerivProc) Parse(data []byte) (*response.Response, error) {
 // or if the response body is not found or is in an unexpected format.
 // If the response body is a map, it returns it directly. If it is a list, it wraps it in a map with the key "list".
 // If it is any other type, it wraps it in a map with the key "value".
-func (p *DerivProc) parse(data []byte) (map[string]any, error) {
-	var rdata map[string]any
+func (p *DerivProc) parse(data []byte) (map[string]json.RawMessage, error) {
+	var rdata map[string]json.RawMessage
 
 	err := json.Unmarshal(data, &rdata)
 	if err != nil {
@@ -142,24 +142,33 @@ func (p *DerivProc) parse(data []byte) (map[string]any, error) {
 		return nil, NewAPIError(errData)
 	}
 
-	msgType, ok := rdata["msg_type"].(string)
+	msgTypeRaw, ok := rdata["msg_type"]
 	if !ok {
 		return nil, fmt.Errorf("msg_type not found or not a string")
 	}
+	if len(msgTypeRaw) < 3 || msgTypeRaw[0] != '"' || msgTypeRaw[len(msgTypeRaw)-1] != '"' {
+		return nil, fmt.Errorf("msg_type not a valid string")
+	}
 
-	rb, ok := rdata[msgType]
+	msgType := msgTypeRaw[1 : len(msgTypeRaw)-1]
+
+	rb, ok := rdata[string(msgType)]
 	if !ok {
 		return nil, fmt.Errorf("response body not found")
 	}
 
-	switch respBody := rb.(type) {
-	case map[string]any:
+	switch rb[0] {
+	case '{':
+		var respBody map[string]json.RawMessage
+		err := json.Unmarshal(rb, &respBody)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
+		}
+
 		return respBody, nil
-	case []any:
-		return map[string]any{"list": respBody}, nil
-	case any:
-		return map[string]any{"value": respBody}, nil
+	case '[':
+		return map[string]json.RawMessage{"list": rb}, nil
 	default:
-		return nil, fmt.Errorf("response body is in unexpected format")
+		return map[string]json.RawMessage{"value": rb}, nil
 	}
 }
