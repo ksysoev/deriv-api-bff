@@ -3,6 +3,7 @@ package config
 import (
 	context "context"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -589,6 +590,66 @@ func TestService_onUpdate(t *testing.T) {
 
 			onUpdateFunc := svc.onUpdate(ctx)
 			onUpdateFunc()
+		})
+	}
+}
+func TestService_WriteConfig(t *testing.T) {
+	tmpDir := os.TempDir()
+	defer os.RemoveAll(tmpDir)
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		localCfg []handlerfactory.Config
+		localErr error
+		noRemote bool
+		wantErr  bool
+	}{
+		{
+			name:     "Successful write config",
+			localCfg: validConfig,
+			wantErr:  false,
+			noRemote: false,
+		},
+		{
+			name:     "Remote source missing",
+			wantErr:  true,
+			noRemote: true,
+		},
+		{
+			name:     "Load config error",
+			localErr: fmt.Errorf("error loading config"),
+			wantErr:  true,
+			noRemote: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockBFFService := NewMockBFFService(t)
+			mockRemoteSource := NewMockRemoteSource(t)
+
+			if tt.noRemote {
+				mockRemoteSource = nil
+			}
+
+			svc := &Service{
+				bff:    mockBFFService,
+				remote: mockRemoteSource,
+			}
+
+			if tt.localErr != nil || tt.localCfg != nil {
+				mockRemoteSource.EXPECT().LoadConfig(ctx).Return(tt.localCfg, tt.localErr)
+			}
+
+			filePath := fmt.Sprintf("%s/%s", tmpDir, tt.name)
+
+			err := svc.WriteConfig(ctx, filePath)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

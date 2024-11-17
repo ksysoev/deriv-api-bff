@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"sync"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/handlerfactory"
+	"gopkg.in/yaml.v3"
 )
 
 type BFFService interface {
@@ -193,6 +195,31 @@ func (c *Service) PutConfig(ctx context.Context) error {
 	}
 
 	return c.remote.PutConfig(ctx, c.curCfg)
+}
+
+func (c *Service) WriteConfig(ctx context.Context, path string) error {
+	if c.remote == nil {
+		return fmt.Errorf("remote source is required")
+	}
+
+	cfg, err := c.remote.LoadConfig(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	file, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
+	}
+
+	defer file.Close()
+
+	enc := yaml.NewEncoder(file)
+	if err := enc.Encode(cfg); err != nil {
+		return fmt.Errorf("failed to encode config: %w", err)
+	}
+
+	return nil
 }
 
 // createHandlers initializes a map of handlers based on the provided configuration.
