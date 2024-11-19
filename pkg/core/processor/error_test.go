@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,33 +10,28 @@ import (
 func TestNewAPIError(t *testing.T) {
 	tests := []struct {
 		name   string
-		data   any
 		errMsg string
+		data   json.RawMessage
 	}{
 		{
 			name:   "Valid data",
-			data:   map[string]any{"code": "400", "message": "Bad Request", "details": map[string]any{"field": "value"}},
+			data:   []byte(`{"code": "400", "message": "Bad Request", "details": {"field": "value"}}`),
 			errMsg: "Bad Request",
 		},
 		{
 			name:   "Invalid data format",
-			data:   "invalid data",
-			errMsg: "error data is not in expected format",
+			data:   []byte(`invalid data`),
+			errMsg: "failed to unmarshal APIError data: invalid character 'i' looking for beginning of value",
 		},
 		{
 			name:   "Missing code",
-			data:   map[string]any{"message": "Bad Request"},
-			errMsg: "error code is not in expected format",
-		},
-		{
-			name:   "Missing message",
-			data:   map[string]any{"code": "400"},
+			data:   []byte(`{"message": "Bad Request"}`),
 			errMsg: "error message is not in expected format",
 		},
 		{
-			name:   "Invalid details",
-			data:   map[string]any{"code": "400", "message": "Bad Request", "details": make(chan int)},
-			errMsg: "failed to marshal APIError details: json: unsupported type: chan int",
+			name:   "Missing message",
+			data:   []byte(`{"code": "400"}`),
+			errMsg: "error message is not in expected format",
 		},
 	}
 

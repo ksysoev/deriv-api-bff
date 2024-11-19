@@ -2,6 +2,7 @@ package processor
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/tmpl"
@@ -67,17 +68,17 @@ func TestProcessor_Render(t *testing.T) {
 	tmpl2 := tmpl.MustNewTmpl(`{"params": "${params.key1.key2}}"}`)
 
 	tests := []struct {
-		params   map[string]any
 		deps     map[string]any
 		tmpl     *tmpl.Tmpl
 		name     string
 		expected string
 		reqID    string
+		params   []byte
 		wantErr  bool
 	}{
 		{
 			name:     "with params and deps",
-			params:   map[string]any{"key1": "value1"},
+			params:   []byte(`{"key1": "value1"}`),
 			deps:     map[string]any{"dep1": "value1"},
 			reqID:    "12345",
 			expected: `{"params":{"key1":"value1"},"req_id":"12345","resp": {"dep1":"value1"}}`,
@@ -93,7 +94,7 @@ func TestProcessor_Render(t *testing.T) {
 		},
 		{
 			name:     "with empty params and deps",
-			params:   map[string]any{},
+			params:   []byte(`{}`),
 			deps:     map[string]any{},
 			reqID:    "12345",
 			expected: `{"params":{},"req_id":"12345","resp": {}}`,
@@ -101,7 +102,7 @@ func TestProcessor_Render(t *testing.T) {
 		},
 		{
 			name:     "with only params",
-			params:   map[string]any{"key1": "value1"},
+			params:   []byte(`{"key1": "value1"}`),
 			deps:     nil,
 			reqID:    "12345",
 			expected: `{"params":{"key1":"value1"},"req_id":"12345","resp": {}}`,
@@ -150,26 +151,63 @@ func TestProcessor_Render(t *testing.T) {
 	}
 }
 
-func TestProcessor_parse_Success(t *testing.T) {
+func TestProcessor_parse(t *testing.T) {
 	tests := []struct {
-		expected map[string]any
 		name     string
 		jsonData string
+		expected json.RawMessage
+		wantErr  bool
 	}{
 		{
 			name:     "object",
 			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": "data"}`,
-			expected: map[string]any{"key1": "value1", "key2": "value2"},
+			expected: json.RawMessage(`{"key1": "value1", "key2": "value2"}`),
+			wantErr:  false,
 		},
 		{
 			name:     "array",
 			jsonData: `{"data": [{"key1": "value1"}, {"key2": "value2"}], "msg_type": "data"}`,
-			expected: map[string]any{"list": []any{map[string]any{"key1": "value1"}, map[string]any{"key2": "value2"}}},
+			expected: json.RawMessage(`[{"key1": "value1"}, {"key2": "value2"}]`),
+			wantErr:  false,
 		},
 		{
 			name:     "scalar",
 			jsonData: `{"data": "value", "msg_type": "data"}`,
-			expected: map[string]any{"value": "value"},
+			expected: json.RawMessage(`"value"`),
+			wantErr:  false,
+		},
+		{
+			name:     "Api Error",
+			jsonData: `{"error": "something went wrong"}`,
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "No Message Type",
+			jsonData: `{"data": {"key1": "value1", "key2": "value2"}}`,
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "Empty Message Type",
+			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": ""}`,
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "unexpected format of message type",
+			wantErr:  true,
+			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": 123}`,
+		},
+		{
+			name:     "invalid json",
+			wantErr:  true,
+			jsonData: `{invalid json}`,
+		},
+		{
+			name:     "response body not found",
+			wantErr:  true,
+			jsonData: `{"msg_type": "data"}`,
 		},
 	}
 
@@ -178,43 +216,22 @@ func TestProcessor_parse_Success(t *testing.T) {
 			rp := &DerivProc{}
 
 			result, err := rp.parse([]byte(tt.jsonData))
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, result)
+
+			if !tt.wantErr {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			} else {
+				assert.Error(t, err)
+				assert.Nil(t, result)
+			}
 		})
 	}
 }
 
-func TestProcessor_parse_Error(t *testing.T) {
-	rp := &DerivProc{}
-
-	jsonData := `{"error": "something went wrong"}`
-
-	_, err := rp.parse([]byte(jsonData))
-	assert.Error(t, err)
-}
-
-func TestProcessor_parse_ResponseBodyNotFound(t *testing.T) {
-	rp := &DerivProc{}
-
-	jsonData := `{"key": "value"}`
-
-	_, err := rp.parse([]byte(jsonData))
-	assert.Error(t, err)
-}
-
-func TestProcessor_parse_UnexpectedFormat(t *testing.T) {
-	rp := &DerivProc{}
-
-	jsonData := `{invalid json}`
-
-	result, err := rp.parse([]byte(jsonData))
-	assert.Error(t, err)
-	assert.Nil(t, result)
-}
 func TestProcessor_Parse_Success(t *testing.T) {
 	tests := []struct {
 		fieldMap map[string]string
-		expected map[string]any
+		expected map[string]json.RawMessage
 		name     string
 		jsonData string
 		allow    []string
@@ -224,21 +241,21 @@ func TestProcessor_Parse_Success(t *testing.T) {
 			fieldMap: map[string]string{"key1": "mappedKey1"},
 			allow:    []string{"key1", "key2"},
 			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": "data"}`,
-			expected: map[string]any{"mappedKey1": "value1", "key2": "value2"},
+			expected: map[string]json.RawMessage{"mappedKey1": []byte(`"value1"`), "key2": []byte(`"value2"`)},
 		},
 		{
 			name:     "allowed fields without field mapping",
 			fieldMap: nil,
 			allow:    []string{"key1", "key2"},
 			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": "data"}`,
-			expected: map[string]any{"key1": "value1", "key2": "value2"},
+			expected: map[string]json.RawMessage{"key1": []byte(`"value1"`), "key2": []byte(`"value2"`)},
 		},
 		{
 			name:     "missing allowed fields",
 			fieldMap: nil,
 			allow:    []string{"key3"},
 			jsonData: `{"data": {"key1": "value1", "key2": "value2"}, "msg_type": "data"}`,
-			expected: map[string]any{},
+			expected: map[string]json.RawMessage{},
 		},
 	}
 
@@ -249,9 +266,9 @@ func TestProcessor_Parse_Success(t *testing.T) {
 				allow:    tt.allow,
 			}
 
-			_, result, err := rp.Parse([]byte(tt.jsonData))
+			resp, err := rp.Parse([]byte(tt.jsonData))
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, result)
+			assert.Equal(t, tt.expected, resp.Filtered())
 		})
 	}
 }
@@ -261,7 +278,7 @@ func TestProcessor_Parse_Error(t *testing.T) {
 
 	jsonData := `{"error": "something went wrong"}`
 
-	_, _, err := rp.Parse([]byte(jsonData))
+	_, err := rp.Parse([]byte(jsonData))
 	assert.Error(t, err)
 }
 

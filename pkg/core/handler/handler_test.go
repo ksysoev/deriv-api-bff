@@ -25,21 +25,23 @@ func TestNew(t *testing.T) {
 }
 
 func TestHandle_Success(t *testing.T) {
-	expectedParams := map[string]any{"key": "value"}
+	params := []byte(`{"key": "value"}`)
+
+	expectedResult := map[string]any{"key": "value"}
 	expectedCallName := "test"
 
 	mockReq := core.NewMockRequest(t)
 	mockReq.EXPECT().Data().Return([]byte("data"))
 
 	validator := NewMockValidator(t)
-	validator.EXPECT().Validate(expectedParams).Return(nil)
+	validator.EXPECT().Validate(params).Return(nil)
 
 	renderParser := NewMockRenderParser(t)
 	renderParser.EXPECT().Name().Return(expectedCallName)
-	renderParser.EXPECT().Render(mock.Anything, mock.Anything, expectedParams, make(map[string]any)).Return(mockReq, nil)
+	renderParser.EXPECT().Render(mock.Anything, mock.Anything, params, make(map[string]any)).Return(mockReq, nil)
 
 	waitComposer := NewMockWaitComposer(t)
-	waitComposer.EXPECT().Compose().Return(expectedParams, nil)
+	waitComposer.EXPECT().Compose().Return(expectedResult, nil)
 	waitComposer.EXPECT().Prepare(mock.Anything, expectedCallName, mock.Anything).Return("1", make(map[string]any), nil)
 
 	handler := New(validator, []RenderParser{renderParser}, func(core.Waiter) WaitComposer {
@@ -58,13 +60,13 @@ func TestHandle_Success(t *testing.T) {
 		return nil
 	}
 
-	resp, err := handler.Handle(ctx, expectedParams, waiter, sender)
+	resp, err := handler.Handle(ctx, params, waiter, sender)
 	assert.Nil(t, err)
 	assert.Equal(t, map[string]interface{}{"key": "value"}, resp)
 }
 
 func TestHandle_ValidationError(t *testing.T) {
-	expectedParams := map[string]any{"key": "value"}
+	expectedParams := []byte(`{"key": "value"}`)
 
 	validator := NewMockValidator(t)
 	validator.EXPECT().Validate(expectedParams).Return(assert.AnError)
@@ -94,7 +96,7 @@ func TestHandle_ValidationError(t *testing.T) {
 }
 
 func TestHandle_SendError(t *testing.T) {
-	expectedParams := map[string]any{"key": "value"}
+	expectedParams := []byte(`{"key": "value"}`)
 	expectedCallName := "test"
 
 	validator := NewMockValidator(t)
@@ -130,7 +132,7 @@ func TestHandle_SendError(t *testing.T) {
 }
 
 func TestHandle_CancelledContext(t *testing.T) {
-	expectedParams := map[string]any{"key": "value"}
+	expectedParams := []byte(`{"key": "value"}`)
 
 	validator := NewMockValidator(t)
 	validator.EXPECT().Validate(expectedParams).Return(nil)
@@ -162,7 +164,7 @@ func TestHandle_CancelledContext(t *testing.T) {
 }
 
 func TestHandle_PrepareError(t *testing.T) {
-	expectedParams := map[string]any{"key": "value"}
+	expectedParams := []byte(`{"key": "value"}`)
 	expectedCallName := "test"
 
 	validator := NewMockValidator(t)

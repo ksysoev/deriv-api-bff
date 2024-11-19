@@ -2,22 +2,24 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"iter"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/response"
 )
 
-type Parser func([]byte) (map[string]any, map[string]any, error)
+type Parser func([]byte) (*response.Response, error)
 
 type Validator interface {
-	Validate(data map[string]any) error
+	Validate(data []byte) error
 }
 
 type RenderParser interface {
 	Name() string
-	Render(ctx context.Context, reqID string, params map[string]any, deps map[string]any) (core.Request, error)
-	Parse(data []byte) (map[string]any, map[string]any, error)
+	Render(ctx context.Context, reqID string, params []byte, deps map[string]any) (core.Request, error)
+	Parse(data []byte) (*response.Response, error)
 }
 
 type WaitComposer interface {
@@ -46,7 +48,7 @@ func New(val Validator, proc []RenderParser, composeFactory func(core.Waiter) Wa
 // It takes a context.Context, a map of parameters, a core.Waiter, and a core.Sender.
 // It returns a map containing the composed results and an error if any occurs during validation or sending requests.
 // It returns an error if the validation of parameters fails or if sending a request fails.
-func (h *Handler) Handle(ctx context.Context, params map[string]any, waiter core.Waiter, send core.Sender) (map[string]any, error) {
+func (h *Handler) Handle(ctx context.Context, params json.RawMessage, waiter core.Waiter, send core.Sender) (map[string]any, error) {
 	if err := h.validator.Validate(params); err != nil {
 		return nil, err
 	}
@@ -69,7 +71,7 @@ func (h *Handler) Handle(ctx context.Context, params map[string]any, waiter core
 // It takes a context `ctx` for managing request lifecycle, a map `params` containing parameters for the requests, and a `comp` of type WaitComposer for preparing the requests.
 // It returns an iterator function that yields requests of type `request`.
 // The function handles context cancellation and prepares requests using the provided processors. It panics if template execution fails during request rendering.
-func (h *Handler) requests(ctx context.Context, params map[string]any, comp WaitComposer) iter.Seq[core.Request] {
+func (h *Handler) requests(ctx context.Context, params json.RawMessage, comp WaitComposer) iter.Seq[core.Request] {
 	return func(yield func(core.Request) bool) {
 		for _, proc := range h.processors {
 			if ctx.Err() != nil {

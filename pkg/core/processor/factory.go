@@ -5,12 +5,13 @@ import (
 	"fmt"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/response"
 )
 
 type Processor interface {
 	Name() string
-	Render(ctx context.Context, reqID string, params map[string]any, deps map[string]any) (core.Request, error)
-	Parse(data []byte) (resp, filetered map[string]any, err error)
+	Render(ctx context.Context, reqID string, params []byte, deps map[string]any) (core.Request, error)
+	Parse(data []byte) (*response.Response, error)
 }
 
 type Config struct {

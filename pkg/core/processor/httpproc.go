@@ -4,12 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/response"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/tmpl"
 )
+
+type errData struct {
+	Err json.RawMessage `json:"error,omitempty"`
+}
 
 type HTTPProc struct {
 	urlTemplate *tmpl.URLTmpl
@@ -72,7 +76,7 @@ func (p *HTTPProc) Name() string {
 // Render processes the HTTP request and writes the response.
 // It takes an io.Writer, an int64, and two maps of string to any type as parameters.
 // It returns an error indicating that the HTTP processor is not implemented.
-func (p *HTTPProc) Render(ctx context.Context, reqID string, param, deps map[string]any) (core.Request, error) {
+func (p *HTTPProc) Render(ctx context.Context, reqID string, param []byte, deps map[string]any) (core.Request, error) {
 	data := templateData{
 		Params: param,
 		Resp:   deps,
@@ -102,8 +106,6 @@ func (p *HTTPProc) Render(ctx context.Context, reqID string, param, deps map[str
 				return nil, fmt.Errorf("fail to execute header template %s: %w", key, err)
 			}
 
-			fmt.Println("headerValue", headerValue)
-
 			req.AddHeader(key, headerValue)
 		}
 	}
@@ -111,64 +113,52 @@ func (p *HTTPProc) Render(ctx context.Context, reqID string, param, deps map[str
 	return req, nil
 }
 
-// Parse processes the input data and filters the response based on allowed keys.
-// It takes data of type []byte and returns two maps: resp and filetered, both of type map[string]any, and an error if parsing fails.
-// It returns an error if the input data cannot be parsed.
-// Edge cases include missing expected keys in the response, which are logged as warnings.
-func (p *HTTPProc) Parse(data []byte) (resp, filetered map[string]any, err error) {
-	resp, err = p.parse(data)
+// Parse processes the given byte slice and returns a parsed response.
+// It takes data of type []byte.
+// It returns a pointer to response.Response and an error.
+// It returns an error if parsing or preparing the response fails.
+func (p *HTTPProc) Parse(data []byte) (*response.Response, error) {
+	resp, err := p.parse(data)
 	if err != nil {
-		return nil, nil, fmt.Errorf("fail to parse response %s: %w", p.name, err)
+		return nil, fmt.Errorf("fail to parse response %s: %w", p.name, err)
 	}
 
-	filetered = make(map[string]any, len(p.allow))
-
-	for _, key := range p.allow {
-		if _, ok := resp[key]; !ok {
-			slog.Warn("Response body does not contain expeted key", slog.String("key", key), slog.String("name", p.name))
-			continue
-		}
-
-		destKey := key
-
-		if p.fieldMap != nil {
-			if mappedKey, ok := p.fieldMap[key]; ok {
-				destKey = mappedKey
-			}
-		}
-
-		filetered[destKey] = resp[key]
+	prepared, err := prepareResp(resp)
+	if err != nil {
+		return nil, fmt.Errorf("fail to prepare response %s: %w", p.name, err)
 	}
 
-	return resp, filetered, nil
+	filetered := filterResp(prepared, p.allow, p.fieldMap)
+
+	return response.New(resp, filetered), nil
 }
 
-// parse parses the given JSON data and returns it as a map[string]any.
-// It takes a single parameter data of type []byte which is the JSON data to be parsed.
-// It returns a map[string]any representing the parsed JSON data and an error if the parsing fails.
-// It returns an error if the JSON data is malformed or if the response body is in an unexpected format.
-// If the JSON data is an array, it wraps it in a map with the key "list".
-// If the JSON data is a single value, it wraps it in a map with the key "value".
-func (p *HTTPProc) parse(data []byte) (map[string]any, error) {
-	var rdata any
-
-	err := json.Unmarshal(data, &rdata)
-	if err != nil {
-		return nil, err
+// parse parses the given byte slice as JSON and returns a json.RawMessage.
+// It takes data of type []byte.
+// It returns a json.RawMessage and an error.
+// It returns an error if the data is empty, if the data cannot be unmarshaled, or if the unmarshaled data contains an error.
+// If the data starts with '{', it attempts to unmarshal it into an errData struct and checks for an error field.
+func (p *HTTPProc) parse(data []byte) (json.RawMessage, error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("response body not found")
 	}
 
-	switch respBody := rdata.(type) {
-	case map[string]any:
-		if errData, ok := respBody["error"]; ok {
-			return nil, NewAPIError(errData)
+	var jsonData json.RawMessage
+	if err := json.Unmarshal(data, &jsonData); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
+	}
+
+	if jsonData[0] == '{' {
+		var errRaw errData
+
+		if err := json.Unmarshal(jsonData, &errRaw); err != nil {
+			return nil, fmt.Errorf("fail to parse response: %s", err)
 		}
 
-		return respBody, nil
-	case []any:
-		return map[string]any{"list": respBody}, nil
-	case any:
-		return map[string]any{"value": respBody}, nil
-	default:
-		return nil, fmt.Errorf("response body is in unexpected format")
+		if errRaw.Err != nil {
+			return nil, NewAPIError(errRaw.Err)
+		}
 	}
+
+	return jsonData, nil
 }

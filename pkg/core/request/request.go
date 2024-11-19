@@ -14,10 +14,10 @@ const (
 
 type Request struct {
 	ctx         context.Context
-	Params      map[string]any `json:"params"`
-	ID          *int           `json:"req_id"`
-	Method      string         `json:"method"`
-	PassThrough any            `json:"passthrough"`
+	Params      json.RawMessage `json:"params"`
+	ID          *int            `json:"req_id"`
+	Method      string          `json:"method"`
+	PassThrough any             `json:"passthrough"`
 	data        []byte
 }
 

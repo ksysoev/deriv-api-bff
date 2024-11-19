@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
+	"github.com/ksysoev/deriv-api-bff/pkg/core/response"
 	"github.com/ksysoev/deriv-api-bff/pkg/core/tmpl"
 )
 
@@ -19,9 +19,9 @@ type DerivProc struct {
 }
 
 type templateData struct {
-	Params map[string]any `json:"params"`
-	Resp   map[string]any `json:"resp"`
-	ReqID  string         `json:"req_id"`
+	Resp   map[string]any  `json:"resp"`
+	ReqID  string          `json:"req_id"`
+	Params json.RawMessage `json:"params"`
 }
 
 type passthrough struct {
@@ -65,13 +65,13 @@ func (p *DerivProc) Name() string {
 // and two maps params and deps of type map[string]any.
 // It returns an error if the template execution fails.
 // If deps or params are nil, they are initialized as empty maps before template execution.
-func (p *DerivProc) Render(ctx context.Context, reqID string, params, deps map[string]any) (core.Request, error) {
+func (p *DerivProc) Render(ctx context.Context, reqID string, params []byte, deps map[string]any) (core.Request, error) {
 	if deps == nil {
 		deps = make(map[string]any)
 	}
 
 	if params == nil {
-		params = make(map[string]any)
+		params = []byte("{}")
 	}
 
 	data := templateData{
@@ -88,49 +88,33 @@ func (p *DerivProc) Render(ctx context.Context, reqID string, params, deps map[s
 	return request.NewRequest(ctx, request.TextMessage, req), nil
 }
 
-// Parse processes the input data and filters the response based on allowed keys.
+// Parse processes the input data and returns a parsed and filtered response.
 // It takes data of type []byte.
-// It returns three values: resp which is a map[string]any containing the parsed response,
-// filetered which is a map[string]any containing the filtered response based on allowed keys,
-// and an error if the parsing fails.
-// It returns an error if the input data cannot be parsed.
-// Edge case: If the response does not contain an expected key, a warning is logged and the key is skipped.
-func (p *DerivProc) Parse(data []byte) (resp, filetered map[string]any, err error) {
-	resp, err = p.parse(data)
+// It returns a pointer to response.Response and an error.
+// It returns an error if parsing or preparing the response fails.
+func (p *DerivProc) Parse(data []byte) (*response.Response, error) {
+	resp, err := p.parse(data)
 	if err != nil {
-		return nil, nil, fmt.Errorf("fail to parse response %s: %w", p.name, err)
+		return nil, fmt.Errorf("fail to parse response %s: %w", p.name, err)
 	}
 
-	filetered = make(map[string]any, len(p.allow))
-
-	for _, key := range p.allow {
-		if _, ok := resp[key]; !ok {
-			slog.Warn("Response body does not contain expeted key", slog.String("key", key), slog.String("name", p.name))
-			continue
-		}
-
-		destKey := key
-
-		if p.fieldMap != nil {
-			if mappedKey, ok := p.fieldMap[key]; ok {
-				destKey = mappedKey
-			}
-		}
-
-		filetered[destKey] = resp[key]
+	prepared, err := prepareResp(resp)
+	if err != nil {
+		return nil, fmt.Errorf("fail to prepare response %s: %w", p.name, err)
 	}
 
-	return resp, filetered, nil
+	filetered := filterResp(prepared, p.allow, p.fieldMap)
+
+	return response.New(resp, filetered), nil
 }
 
-// parse unmarshals JSON data into a map and processes the response body.
-// It takes data of type []byte and returns a map[string]any and an error.
-// It returns an error if the JSON unmarshalling fails, if the response contains an error,
-// or if the response body is not found or is in an unexpected format.
-// If the response body is a map, it returns it directly. If it is a list, it wraps it in a map with the key "list".
-// If it is any other type, it wraps it in a map with the key "value".
-func (p *DerivProc) parse(data []byte) (map[string]any, error) {
-	var rdata map[string]any
+// parse parses the given JSON data and extracts the relevant message body.
+// It takes data of type []byte which is the JSON data to be parsed.
+// It returns a json.RawMessage containing the extracted message body and an error if any occurs.
+// It returns an error if the JSON data cannot be unmarshaled, if the "error" field is present in the data,
+// if the "msg_type" field is missing or not a valid string, or if the response body corresponding to the msg_type is not found.
+func (p *DerivProc) parse(data []byte) (json.RawMessage, error) {
+	var rdata map[string]json.RawMessage
 
 	err := json.Unmarshal(data, &rdata)
 	if err != nil {
@@ -141,24 +125,21 @@ func (p *DerivProc) parse(data []byte) (map[string]any, error) {
 		return nil, NewAPIError(errData)
 	}
 
-	msgType, ok := rdata["msg_type"].(string)
+	msgTypeRaw, ok := rdata["msg_type"]
 	if !ok {
 		return nil, fmt.Errorf("msg_type not found or not a string")
 	}
 
-	rb, ok := rdata[msgType]
+	if len(msgTypeRaw) < 3 || msgTypeRaw[0] != '"' || msgTypeRaw[len(msgTypeRaw)-1] != '"' {
+		return nil, fmt.Errorf("msg_type not a valid string")
+	}
+
+	msgType := msgTypeRaw[1 : len(msgTypeRaw)-1]
+
+	rb, ok := rdata[string(msgType)]
 	if !ok {
 		return nil, fmt.Errorf("response body not found")
 	}
 
-	switch respBody := rb.(type) {
-	case map[string]any:
-		return respBody, nil
-	case []any:
-		return map[string]any{"list": respBody}, nil
-	case any:
-		return map[string]any{"value": respBody}, nil
-	default:
-		return nil, fmt.Errorf("response body is in unexpected format")
-	}
+	return rb, nil
 }

@@ -5,7 +5,7 @@ go 1.23.1
 require (
 	github.com/coder/websocket v1.8.12
 	github.com/google/uuid v1.6.0
-	github.com/ksysoev/wasabi v0.5.1
+	github.com/ksysoev/wasabi v0.5.2
 	github.com/prometheus/client_golang v1.20.5
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/spf13/cobra v1.8.1
@@ -15,7 +15,7 @@ require (
 	github.com/testcontainers/testcontainers-go/modules/etcd v0.34.0
 	github.com/valyala/fasttemplate v1.2.2
 	github.com/wolfeidau/jsontemplate v0.4.0
-	go.etcd.io/etcd/client/v3 v3.5.16
+	go.etcd.io/etcd/client/v3 v3.5.17
 	go.opentelemetry.io/otel v1.32.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.54.0
 	go.opentelemetry.io/otel/metric v1.32.0
@@ -90,8 +90,8 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	go.etcd.io/etcd/api/v3 v3.5.16 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.16 // indirect
+	go.etcd.io/etcd/api/v3 v3.5.17 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.17 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
@@ -100,7 +100,7 @@ require (
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.27.0 // indirect
 	golang.org/x/net v0.29.0 // indirect
-	golang.org/x/sync v0.8.0 // indirect
+	golang.org/x/sync v0.9.0 // indirect
 	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240318140521-94a12d6c2237 // indirect
