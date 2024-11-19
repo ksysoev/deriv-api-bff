@@ -22,6 +22,7 @@ const (
 	maxRequestsDefault              = 100
 	maxRequestsPerConnDefault       = 10
 	generalRateLimitIntervalDefault = "1m"
+	generalRateLimitDuration        = 1 * time.Minute
 	generalRateLimitDefault         = 100
 )
 
@@ -38,7 +39,7 @@ type Config struct {
 }
 
 type RateLimits struct {
-	Groups  GroupRateLimits   `mapstructure:"groups"`
+	Groups  []GroupRateLimits `mapstructure:"groups"`
 	General GeneralRateLimits `mapstructure:"general"`
 }
 
@@ -48,12 +49,20 @@ type GeneralRateLimits struct {
 }
 
 type GroupRateLimits struct {
+	Name    string            `mapstructure:"name"`
+	Limits  GeneralRateLimits `mapstructure:"limits"`
+	Methods []string          `mapstructure:"methods"`
 }
 
 type Service struct {
 	cfg     *Config
 	handler BFFService
 	server  *server.Server
+}
+
+type groupRates struct {
+	methods []string
+	limits  GeneralRateLimits
 }
 
 // NewSevice creates a new instance of Service with the provided configuration and handler.
@@ -147,12 +156,47 @@ func (s *Service) Handle(conn wasabi.Connection, r wasabi.Request) error {
 // getRequestLimits is a helper function transform request limits mentioned in server configuration
 // into wasabi request limits, so that we can use the RateLimiter middleware.
 func getRequestLimits(rateLimitCfg RateLimits) (func(wasabi.Request) (string, time.Duration, uint64), error) {
-	duration, err := time.ParseDuration(rateLimitCfg.General.Interval)
+	if len(rateLimitCfg.Groups) == 0 {
+		return getDefaultRequestLimits(rateLimitCfg.General)
+	}
+
+	return getRateLimitForMethods(rateLimitCfg)
+}
+
+func getRateLimitForMethods(rateLimitsCfg RateLimits) (func(wasabi.Request) (string, time.Duration, uint64), error) {
+	groupRatesMap := buildGroupRateMap(rateLimitsCfg.Groups)
+
+	return func(r wasabi.Request) (string, time.Duration, uint64) {
+		ip := getIPFromRequest(r)
+		group := groupRatesMap[r.RoutingKey()]
+
+		if duration, err := time.ParseDuration(group.limits.Interval); err != nil {
+			return ip, duration, uint64(group.limits.Limit)
+		}
+
+		return ip, generalRateLimitDuration, generalRateLimitDefault
+	}, nil
+}
+
+func buildGroupRateMap(groups []GroupRateLimits) map[string]groupRates {
+	groupRatesMap := make(map[string]groupRates)
+
+	for _, group := range groups {
+		groupRatesMap[group.Name] = groupRates{methods: group.Methods, limits: group.Limits}
+	}
+
+	return groupRatesMap
+}
+
+// getDefaultRequestLimits is a helper function transform request limits using the default config
+// into wasabi request limits, so that we can use the RateLimiter middleware.
+func getDefaultRequestLimits(generalRateLimit GeneralRateLimits) (func(wasabi.Request) (string, time.Duration, uint64), error) {
+	duration, err := time.ParseDuration(generalRateLimit.Interval)
 	if err != nil {
 		return nil, err
 	}
 
-	limit := uint64(rateLimitCfg.General.Limit)
+	limit := uint64(generalRateLimit.Limit)
 
 	return func(r wasabi.Request) (string, time.Duration, uint64) {
 		ip := getIPFromRequest(r)
