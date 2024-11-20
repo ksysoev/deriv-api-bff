@@ -595,13 +595,11 @@ func TestService_onUpdate(t *testing.T) {
 }
 func TestService_WriteConfig(t *testing.T) {
 	tmpDir := os.TempDir()
-	defer os.RemoveAll(tmpDir)
 	ctx := context.Background()
-
 	tests := []struct {
+		localErr error
 		name     string
 		localCfg []handlerfactory.Config
-		localErr error
 		noRemote bool
 		wantErr  bool
 	}{
