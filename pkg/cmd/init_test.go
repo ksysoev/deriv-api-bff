@@ -39,8 +39,10 @@ func TestInitCommands(t *testing.T) {
 	assert.ElementsMatchf(t, []string{"server", "config"}, mapToNames(subCommands), "commands should match")
 
 	configCommands := findByName(subCommands, "config").Commands()
-	assert.Equal(t, 2, len(configCommands))
-	assert.Equal(t, "upload", configCommands[0].Use)
+	assert.Equal(t, 3, len(configCommands))
+	assert.Equal(t, "download", configCommands[0].Use)
+	assert.Equal(t, "upload", configCommands[1].Use)
+	assert.Equal(t, "verify", configCommands[2].Use)
 }
 
 func mapToNames(commands []*cobra.Command) []string {

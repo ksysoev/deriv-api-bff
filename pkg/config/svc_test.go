@@ -593,6 +593,7 @@ func TestService_onUpdate(t *testing.T) {
 		})
 	}
 }
+
 func TestService_WriteConfig(t *testing.T) {
 	tmpDir := os.TempDir()
 	ctx := context.Background()
@@ -627,16 +628,16 @@ func TestService_WriteConfig(t *testing.T) {
 			mockBFFService := NewMockBFFService(t)
 			mockRemoteSource := NewMockRemoteSource(t)
 
-			if tt.noRemote {
-				mockRemoteSource = nil
-			}
-
 			svc := &Service{
 				bff:    mockBFFService,
 				remote: mockRemoteSource,
 			}
 
-			if tt.localErr != nil || tt.localCfg != nil {
+			if tt.noRemote {
+				svc.remote = nil
+			}
+
+			if !tt.noRemote && (tt.localErr != nil || tt.localCfg != nil) {
 				mockRemoteSource.EXPECT().LoadConfig(ctx).Return(tt.localCfg, tt.localErr)
 			}
 
