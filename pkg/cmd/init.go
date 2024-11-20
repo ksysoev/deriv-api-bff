@@ -16,6 +16,7 @@ type args struct {
 	apiSourcePath        string
 	apiSourceEtcdServers string
 	apiSourceEtcdPrefix  string
+	downloadOutput       string
 	TextFormat           bool `mapstructure:"logtext"`
 }
 
@@ -39,6 +40,9 @@ func InitCommands(build, version string) (*cobra.Command, error) {
 	configCmd := ConfigCommand(args)
 	configCmd.AddCommand(UploadConfigCommand(args))
 	configCmd.AddCommand(VerifyConfigCommand(args))
+
+	downloadCmd := DownloadConfigCommand(args)
+	configCmd.AddCommand(downloadCmd)
 	cmd.AddCommand(configCmd)
 
 	cmd.PersistentFlags().StringVar(&args.ConfigPath, "config", "", "config file path")
@@ -47,6 +51,7 @@ func InitCommands(build, version string) (*cobra.Command, error) {
 	cmd.PersistentFlags().StringVar(&args.apiSourcePath, "api-source-path", "", "path to the API source file")
 	cmd.PersistentFlags().StringVar(&args.apiSourceEtcdServers, "api-source-etcd-servers", "", "etcd servers for API source")
 	cmd.PersistentFlags().StringVar(&args.apiSourceEtcdPrefix, "api-source-etcd-prefix", "", "etcd prefix for API source")
+	downloadCmd.PersistentFlags().StringVar(&args.downloadOutput, "output", "", "path to the API source file")
 
 	if err := viper.BindPFlags(cmd.PersistentFlags()); err != nil {
 		return nil, fmt.Errorf("failed to parse env args: %w", err)
@@ -156,6 +161,33 @@ func VerifyConfigCommand(arg *args) *cobra.Command {
 			}
 
 			return verifyConfig(cmd.Context(), cfg)
+		},
+	}
+}
+
+func DownloadConfigCommand(arg *args) *cobra.Command {
+	return &cobra.Command{
+		Use:   "download",
+		Short: "Download the config",
+		Long:  "Download the config for correctness",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := initLogger(arg); err != nil {
+				return err
+			}
+
+			if arg.downloadOutput == "" {
+				return fmt.Errorf("output path is required")
+			}
+
+			slog.Info("Downloading config...", slog.String("version", arg.version), slog.String("build", arg.build))
+
+			cfg, err := initConfig(arg)
+
+			if err != nil {
+				return err
+			}
+
+			return downloadConfig(cmd.Context(), cfg, arg.downloadOutput)
 		},
 	}
 }
