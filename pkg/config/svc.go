@@ -197,6 +197,10 @@ func (c *Service) PutConfig(ctx context.Context) error {
 	return c.remote.PutConfig(ctx, c.curCfg)
 }
 
+// WriteConfig writes the configuration to a specified file path.
+// It takes a context.Context and a string representing the file path.
+// It returns an error if the remote source is nil, fails to load the config,
+// fails to create the file, or fails to encode the config.
 func (c *Service) WriteConfig(ctx context.Context, path string) error {
 	if c.remote == nil {
 		return fmt.Errorf("remote source is required")
