@@ -58,6 +58,14 @@ Upload the API call configuration to the remote source (e.g., etcd):
 bff config upload --config=./config.yaml
 ```
 
+### Config Download
+
+Download the API call configurration from remote source to requested file
+
+```sh
+bff config upload --config=./config.yaml --output=./myconfig.yaml
+```
+
 ## Command Line Arguments
 
 Each command supports the following arguments:

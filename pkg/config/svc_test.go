@@ -3,6 +3,7 @@ package config
 import (
 	context "context"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -591,4 +592,115 @@ func TestService_onUpdate(t *testing.T) {
 			onUpdateFunc()
 		})
 	}
+}
+
+func TestService_WriteConfig(t *testing.T) {
+	tmpDir := os.TempDir()
+	ctx := context.Background()
+	tests := []struct {
+		sourceErr error
+		name      string
+		cfg       []handlerfactory.Config
+		noRemote  bool
+		wantErr   bool
+	}{
+		{
+			name:     "Successful write config",
+			cfg:      validConfig,
+			wantErr:  false,
+			noRemote: false,
+		},
+		{
+			name:     "Successful write empty config",
+			cfg:      []handlerfactory.Config{},
+			wantErr:  false,
+			noRemote: false,
+		},
+		{
+			name:     "Remote source missing",
+			wantErr:  true,
+			noRemote: true,
+		},
+		{
+			name:      "Load config error",
+			sourceErr: fmt.Errorf("error loading config"),
+			wantErr:   true,
+			noRemote:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockBFFService := NewMockBFFService(t)
+			mockRemoteSource := NewMockRemoteSource(t)
+
+			svc := &Service{
+				bff:    mockBFFService,
+				remote: mockRemoteSource,
+			}
+
+			if tt.noRemote {
+				svc.remote = nil
+			}
+
+			if !tt.noRemote {
+				mockRemoteSource.EXPECT().LoadConfig(ctx).Return(tt.cfg, tt.sourceErr)
+			}
+
+			filePath := fmt.Sprintf("%s/%s", tmpDir, tt.name)
+
+			err := svc.WriteConfig(ctx, filePath)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestService_WriteConfig_FailToCreateFile(t *testing.T) {
+	tmpDir := os.TempDir()
+
+	ctx := context.Background()
+	mockBFFService := NewMockBFFService(t)
+	mockRemoteSource := NewMockRemoteSource(t)
+
+	svc := &Service{
+		bff:    mockBFFService,
+		remote: mockRemoteSource,
+	}
+
+	filePath := tmpDir + "/invalid/path"
+
+	mockRemoteSource.EXPECT().LoadConfig(ctx).Return([]handlerfactory.Config{}, nil)
+
+	err := svc.WriteConfig(ctx, filePath)
+	assert.Error(t, err)
+}
+
+func TestService_WriteConfig_WriteToReadOnlyFile(t *testing.T) {
+	tmpDir := os.TempDir()
+
+	ctx := context.Background()
+	mockBFFService := NewMockBFFService(t)
+	mockRemoteSource := NewMockRemoteSource(t)
+
+	svc := &Service{
+		bff:    mockBFFService,
+		remote: mockRemoteSource,
+	}
+
+	filePath := tmpDir + "/test_write_config.yaml"
+
+	// Create a read-only file
+	file, err := os.Create(filePath)
+	require.NoError(t, err)
+	require.NoError(t, file.Close())
+	require.NoError(t, os.Chmod(filePath, 0o444))
+
+	mockRemoteSource.EXPECT().LoadConfig(ctx).Return([]handlerfactory.Config{}, nil)
+
+	err = svc.WriteConfig(ctx, filePath)
+	assert.Error(t, err)
 }

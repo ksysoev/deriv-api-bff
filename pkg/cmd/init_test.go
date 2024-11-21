@@ -39,8 +39,10 @@ func TestInitCommands(t *testing.T) {
 	assert.ElementsMatchf(t, []string{"server", "config"}, mapToNames(subCommands), "commands should match")
 
 	configCommands := findByName(subCommands, "config").Commands()
-	assert.Equal(t, 2, len(configCommands))
-	assert.Equal(t, "upload", configCommands[0].Use)
+	assert.Equal(t, 3, len(configCommands))
+	assert.Equal(t, "download", configCommands[0].Use)
+	assert.Equal(t, "upload", configCommands[1].Use)
+	assert.Equal(t, "verify", configCommands[2].Use)
 }
 
 func mapToNames(commands []*cobra.Command) []string {
@@ -240,6 +242,75 @@ func TestVerifyConfigCommand_InvalidConfig(t *testing.T) {
 	assert.Equal(t, "verify", cmd.Use)
 	assert.Equal(t, "Verify the config", cmd.Short)
 	assert.Equal(t, "Verify the config for correctness", cmd.Long)
+
+	err := cmd.ExecuteContext(cmd.Context())
+	assert.Error(t, err)
+}
+func TestDownloadConfigCommand_ValidOutput(t *testing.T) {
+	configPath := createTempConfigFile(t, validConfig)
+
+	arg := &args{
+		build:          "test-build",
+		version:        "test-version",
+		ConfigPath:     configPath,
+		LogLevel:       "debug",
+		TextFormat:     true,
+		downloadOutput: "valid-output-path",
+	}
+
+	cmd := DownloadConfigCommand(arg)
+
+	assert.NotNil(t, cmd)
+	assert.Equal(t, "download", cmd.Use)
+	assert.Equal(t, "Download the config", cmd.Short)
+	assert.Equal(t, "Download the config for correctness", cmd.Long)
+
+	err := cmd.ExecuteContext(cmd.Context())
+
+	assert.Error(t, err)
+}
+
+func TestDownloadConfigCommand_InvalidOutput(t *testing.T) {
+	configPath := createTempConfigFile(t, validConfig)
+
+	arg := &args{
+		build:      "test-build",
+		version:    "test-version",
+		ConfigPath: configPath,
+		LogLevel:   "debug",
+		TextFormat: true,
+	}
+
+	cmd := DownloadConfigCommand(arg)
+
+	assert.NotNil(t, cmd)
+	assert.Equal(t, "download", cmd.Use)
+	assert.Equal(t, "Download the config", cmd.Short)
+	assert.Equal(t, "Download the config for correctness", cmd.Long)
+
+	err := cmd.ExecuteContext(cmd.Context())
+	assert.Error(t, err)
+	assert.Equal(t, "output path is required", err.Error())
+}
+
+func TestDownloadConfigCommand_InvalidConfig(t *testing.T) {
+	configPath := createTempConfigFile(t, "invalid content")
+
+	arg := &args{
+		build:          "test-build",
+		version:        "test-version",
+		ConfigPath:     configPath,
+		LogLevel:       "debug",
+		TextFormat:     true,
+		downloadOutput: "valid-output-path",
+	}
+
+	cmd := DownloadConfigCommand(arg)
+
+	assert.NotNil(t, cmd)
+	assert.Equal(t, "download", cmd.Use)
+	assert.Equal(t, "Download the config", cmd.Short)
+	assert.Equal(t, "Download the config for correctness", cmd.Long)
 
 	err := cmd.ExecuteContext(cmd.Context())
 	assert.Error(t, err)
