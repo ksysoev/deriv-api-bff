@@ -165,6 +165,11 @@ func VerifyConfigCommand(arg *args) *cobra.Command {
 	}
 }
 
+// DownloadConfigCommand creates a new cobra.Command for downloading the config.
+// It takes arg of type *args which contains the necessary parameters for the command.
+// It returns a *cobra.Command that can be executed to download the config.
+// It returns an error if the logger initialization fails, the output path is not provided,
+// or if there is an error during the config initialization or download process.
 func DownloadConfigCommand(arg *args) *cobra.Command {
 	return &cobra.Command{
 		Use:   "download",
