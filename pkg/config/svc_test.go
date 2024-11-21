@@ -697,7 +697,7 @@ func TestService_WriteConfig_WriteToReadOnlyFile(t *testing.T) {
 	file, err := os.Create(filePath)
 	require.NoError(t, err)
 	require.NoError(t, file.Close())
-	require.NoError(t, os.Chmod(filePath, 0444))
+	require.NoError(t, os.Chmod(filePath, 0o444))
 
 	mockRemoteSource.EXPECT().LoadConfig(ctx).Return([]handlerfactory.Config{}, nil)
 
