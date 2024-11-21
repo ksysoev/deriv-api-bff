@@ -104,6 +104,9 @@ func verifyConfig(ctx context.Context, cfg *Config) error {
 	return nil
 }
 
+// downloadConfig downloads the configuration from a specified source and writes it to a given path.
+// It takes a context.Context, a pointer to Config, and a string representing the path to write the configuration.
+// It returns an error if there is a failure in creating the config source, creating the config service, or writing the config.
 func downloadConfig(ctx context.Context, cfg *Config, path string) error {
 	sourceOpts, err := source.CreateOptions(&cfg.APISource)
 	if err != nil {

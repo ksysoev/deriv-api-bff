@@ -300,3 +300,42 @@ func TestApplyArgsToConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestDownloadConfig_FailCreateSource(t *testing.T) {
+	ctx := context.Background()
+
+	cfg := &Config{
+		APISource: source.Config{
+			Etcd: source.EtcdConfig{
+				Servers: "localhost:2379",
+				Prefix:  "",
+			},
+		},
+	}
+
+	tempFilePath := os.TempDir() + "/test_download_config.yaml"
+	defer os.Remove(tempFilePath)
+
+	err := downloadConfig(ctx, cfg, tempFilePath)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to create config source")
+}
+
+func TestDownloadConfig_FailWriteConfig(t *testing.T) {
+	ctx := context.Background()
+
+	path := createTempConfigFile(t, callsConfig)
+
+	cfg := &Config{
+		APISource: source.Config{
+			Path: path,
+		},
+	}
+
+	// Use an invalid path to trigger the write failure
+	invalidFilePath := "/invalid_path/test_download_config.yaml"
+
+	err := downloadConfig(ctx, cfg, invalidFilePath)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to write config")
+}
