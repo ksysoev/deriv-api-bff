@@ -160,17 +160,17 @@ func getRequestLimits(rateLimitCfg RateLimits) (func(wasabi.Request) (string, ti
 		return getDefaultRequestLimits(rateLimitCfg.General)
 	}
 
-	return getRateLimitForMethods(rateLimitCfg)
+	return getRateLimitForMethods(rateLimitCfg.Groups)
 }
 
-func getRateLimitForMethods(rateLimitsCfg RateLimits) (func(wasabi.Request) (string, time.Duration, uint64), error) {
-	groupRatesMap := buildGroupRateMap(rateLimitsCfg.Groups)
+func getRateLimitForMethods(groupRateLimits []GroupRateLimits) (func(wasabi.Request) (string, time.Duration, uint64), error) {
+	groupRatesMap := buildGroupRateMap(groupRateLimits)
 
 	return func(r wasabi.Request) (string, time.Duration, uint64) {
 		ip := getIPFromRequest(r)
 		group := groupRatesMap[r.RoutingKey()]
 
-		if duration, err := time.ParseDuration(group.limits.Interval); err != nil {
+		if duration, err := time.ParseDuration(group.limits.Interval); err == nil {
 			return ip, duration, uint64(group.limits.Limit)
 		}
 

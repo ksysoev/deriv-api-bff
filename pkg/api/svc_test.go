@@ -382,3 +382,63 @@ func TestGetIPFromRequest_OK(t *testing.T) {
 		assert.Equal(t, test.expectedIP, ip)
 	}
 }
+
+var testGroups = []GroupRateLimits{
+	{
+		Name: "group1",
+		Limits: GeneralRateLimits{
+			Interval: "10s",
+			Limit:    1000,
+		},
+		Methods: []string{"aggregate"},
+	},
+	{
+		Name: "group2",
+		Limits: GeneralRateLimits{
+			Interval: "3m",
+			Limit:    10,
+		},
+		Methods: []string{"chain"},
+	},
+}
+
+func Test_buildGroupRateMap(t *testing.T) {
+	groupRatesMap := buildGroupRateMap(testGroups)
+
+	assert.Equal(t, groupRatesMap, map[string]groupRates{
+		"group1": {methods: []string{"aggregate"}, limits: GeneralRateLimits{Interval: "10s", Limit: 1000}},
+		"group2": {methods: []string{"chain"}, limits: GeneralRateLimits{Interval: "3m", Limit: 10}},
+	})
+}
+
+func Test_getRateLimitForMethods(t *testing.T) {
+	requestLimitFunc, err := getRequestLimits(RateLimits{Groups: testGroups})
+	mockRequest := mocks.NewMockRequest(t)
+	ctx := context.WithValue(context.Background(), httpmid.ClientIP, "8.8.8.8")
+
+	mockRequest.EXPECT().Context().Return(ctx)
+	mockRequest.EXPECT().RoutingKey().Return("group1")
+	assert.NoError(t, err)
+
+	key, duration, limit := requestLimitFunc(mockRequest)
+
+	assert.Equal(t, "8.8.8.8", key)
+	assert.Equal(t, 10*time.Second, duration)
+	assert.Equal(t, uint64(1000), limit)
+}
+
+func Test_getRateLimitForMethods_Default(t *testing.T) {
+	requestLimitFunc, err := getRateLimitForMethods(testGroups)
+	mockRequest := mocks.NewMockRequest(t)
+	ctx := context.Background()
+
+	mockRequest.EXPECT().Context().Return(ctx)
+	mockRequest.EXPECT().RoutingKey().Return("group3")
+	assert.NoError(t, err)
+
+	key, duration, limit := requestLimitFunc(mockRequest)
+
+	assert.Equal(t, "nil", key)
+	assert.Equal(t, 1*time.Minute, duration)
+	assert.Equal(t, uint64(100), limit)
+}
