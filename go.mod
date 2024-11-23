@@ -5,7 +5,7 @@ go 1.23.1
 require (
 	github.com/coder/websocket v1.8.12
 	github.com/google/uuid v1.6.0
-	github.com/ksysoev/wasabi v0.5.2
+	github.com/ksysoev/wasabi v0.5.3
 	github.com/prometheus/client_golang v1.20.5
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/spf13/cobra v1.8.1
