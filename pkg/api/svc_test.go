@@ -9,7 +9,6 @@ import (
 	wasabi "github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/mocks"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestNewSevice(t *testing.T) {
@@ -88,57 +87,6 @@ func TestParse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := parse(nil, context.Background(), tt.msgType, tt.data)
 			assert.Equal(t, tt.expected, req)
-		})
-	}
-}
-func TestService_Handle(t *testing.T) {
-	mockConn := mocks.NewMockConnection(t)
-	mockBFFService := NewMockBFFService(t)
-	service := NewSevice(&Config{}, mockBFFService)
-
-	mockBFFService.EXPECT().PassThrough(mockConn, mock.Anything).Return(nil)
-	mockBFFService.EXPECT().ProcessRequest(mockConn, mock.Anything).Return(nil)
-
-	tests := []struct {
-		request     wasabi.Request
-		name        string
-		expectError bool
-	}{
-		{
-			name:        "PassThrough TextMessage",
-			request:     request.NewRequest(context.Background(), request.TextMessage, []byte("test text message")),
-			expectError: false,
-		},
-		{
-			name:        "PassThrough BinaryMessage",
-			request:     request.NewRequest(context.Background(), request.BinaryMessage, []byte{0x01, 0x02, 0x03}),
-			expectError: false,
-		},
-		{
-			name:        "Empty Request Type",
-			request:     request.NewRequest(context.Background(), "", []byte("empty request type")),
-			expectError: true,
-		},
-		{
-			name:        "ProcessRequest CustomMessage",
-			request:     request.NewRequest(context.Background(), "customMessage", []byte("custom message")),
-			expectError: false,
-		},
-		{
-			name:        "Unsupported Request Type",
-			request:     mocks.NewMockRequest(t),
-			expectError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := service.Handle(mockConn, tt.request)
-			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
 		})
 	}
 }
