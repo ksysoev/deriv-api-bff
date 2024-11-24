@@ -29,10 +29,16 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
+          args:
+            - server
           livenessProbe:
-            {{- toYaml .Values.livenessProbe | nindent 12 }}
+            httpGet:
+              path: /livez
+              port: http
           readinessProbe:
-            {{- toYaml .Values.readinessProbe | nindent 12 }}
+            httpGet:
+              path: /livez
+              port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
