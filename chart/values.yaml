@@ -38,3 +38,18 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+config: 
+  server:
+    max_requests: 100
+    max_requests_per_conn: 10
+  deriv:
+    endpoint: "wss://ws.derivws.com/websockets/v3"
+  otel:
+    prometheus:
+      port: 8080
+      path: "/metrics"
+  api_source:
+    etcd:
+      servers: "your-etcd-server:2379"
+      prefix: "api::"
