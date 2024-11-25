@@ -60,15 +60,10 @@ type Service struct {
 	server  *server.Server
 }
 
-type groupRates struct {
-	methods []string
-	limits  GeneralRateLimits
-}
-
 // NewSevice creates a new instance of Service with the provided configuration and handler.
 // It takes cfg of type *Config and handler of type BFFService.
 // It returns a pointer to a Service struct.
-func NewSevice(cfg *Config, handler BFFService) *Service {
+func NewSevice(cfg *Config, handler BFFService) (*Service, error) {
 	s := &Service{
 		cfg:     cfg,
 		handler: handler,
@@ -84,7 +79,7 @@ func NewSevice(cfg *Config, handler BFFService) *Service {
 
 	requestLimitsFunc, err := getRequestLimits(cfg.RateLimits)
 	if err != nil {
-		slog.Warn(err.Error())
+		return nil, err
 	} else {
 		dispatcher.Use(reqmid.NewRateLimiterMiddleware(requestLimitsFunc))
 	}
@@ -101,7 +96,7 @@ func NewSevice(cfg *Config, handler BFFService) *Service {
 	s.server = server.NewServer(cfg.Listen)
 	s.server.AddChannel(endpoint)
 
-	return s
+	return s, nil
 }
 
 // Addr returns the network address the server is listening on.
@@ -164,28 +159,38 @@ func getRequestLimits(rateLimitCfg RateLimits) (func(wasabi.Request) (string, ti
 }
 
 func getRateLimitForMethods(groupRateLimits []GroupRateLimits) (func(wasabi.Request) (string, time.Duration, uint64), error) {
-	groupRatesMap := buildGroupRateMap(groupRateLimits)
+	groupRatesMap, err := buildGroupRateMap(groupRateLimits)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return func(r wasabi.Request) (string, time.Duration, uint64) {
 		ip := getIPFromRequest(r)
 		group := groupRatesMap[r.RoutingKey()]
 
-		if duration, err := time.ParseDuration(group.limits.Interval); err == nil {
-			return ip, duration, uint64(group.limits.Limit)
+		if duration, err := time.ParseDuration(group.Limits.Interval); err == nil {
+			return ip, duration, uint64(group.Limits.Limit)
 		}
 
 		return ip, generalRateLimitDuration, generalRateLimitDefault
 	}, nil
 }
 
-func buildGroupRateMap(groups []GroupRateLimits) map[string]groupRates {
-	groupRatesMap := make(map[string]groupRates)
+func buildGroupRateMap(groups []GroupRateLimits) (map[string]GroupRateLimits, error) {
+	groupRatesMap := make(map[string]GroupRateLimits)
 
 	for _, group := range groups {
-		groupRatesMap[group.Name] = groupRates{methods: group.Methods, limits: group.Limits}
+		for _, method := range group.Methods {
+			if _, exists := groupRatesMap[method]; exists {
+				return nil, fmt.Errorf("method '%s' is repeated in multiple groups", method)
+			} else {
+				groupRatesMap[method] = group
+			}
+		}
 	}
 
-	return groupRatesMap
+	return groupRatesMap, nil
 }
 
 // getDefaultRequestLimits is a helper function transform request limits using the default config

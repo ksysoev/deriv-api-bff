@@ -20,8 +20,9 @@ func TestNewSevice(t *testing.T) {
 
 	mockBFFService := NewMockBFFService(t)
 
-	svc := NewSevice(cfg, mockBFFService)
+	svc, err := NewSevice(cfg, mockBFFService)
 
+	assert.NoError(t, err)
 	assert.NotNil(t, svc)
 	assert.Equal(t, cfg, svc.cfg)
 	assert.Equal(t, mockBFFService, svc.handler)
@@ -32,7 +33,8 @@ func TestSvc_Run(t *testing.T) {
 		Listen: ":0",
 	}
 
-	service := NewSevice(config, nil)
+	service, err := NewSevice(config, nil)
+	assert.NoError(t, err)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
@@ -56,6 +58,21 @@ func TestSvc_Run(t *testing.T) {
 	case <-time.After(1 * time.Second):
 		t.Error("Expected server to stop")
 	}
+}
+
+func TestSvc_Error(t *testing.T) {
+	config := &Config{
+		Listen: ":0",
+		RateLimits: RateLimits{
+			General: GeneralRateLimits{
+				Interval: "invalid",
+			},
+		},
+	}
+
+	service, err := NewSevice(config, nil)
+	assert.Error(t, err)
+	assert.Nil(t, service)
 }
 
 func TestParse(t *testing.T) {
@@ -95,8 +112,9 @@ func TestParse(t *testing.T) {
 func TestService_Handle(t *testing.T) {
 	mockConn := mocks.NewMockConnection(t)
 	mockBFFService := NewMockBFFService(t)
-	service := NewSevice(&Config{}, mockBFFService)
+	service, err := NewSevice(&Config{}, mockBFFService)
 
+	assert.NoError(t, err)
 	mockBFFService.EXPECT().PassThrough(mockConn, mock.Anything).Return(nil)
 	mockBFFService.EXPECT().ProcessRequest(mockConn, mock.Anything).Return(nil)
 
@@ -150,7 +168,9 @@ func TestService_Addr(t *testing.T) {
 	}
 
 	mockBFFService := NewMockBFFService(t)
-	service := NewSevice(cfg, mockBFFService)
+	service, err := NewSevice(cfg, mockBFFService)
+
+	assert.NoError(t, err)
 
 	addr := service.Addr()
 	assert.Nil(t, addr)
@@ -403,12 +423,23 @@ var testGroups = []GroupRateLimits{
 }
 
 func Test_buildGroupRateMap(t *testing.T) {
-	groupRatesMap := buildGroupRateMap(testGroups)
+	groupRatesMap, err := buildGroupRateMap(testGroups)
 
-	assert.Equal(t, groupRatesMap, map[string]groupRates{
-		"group1": {methods: []string{"aggregate"}, limits: GeneralRateLimits{Interval: "10s", Limit: 1000}},
-		"group2": {methods: []string{"chain"}, limits: GeneralRateLimits{Interval: "3m", Limit: 10}},
+	assert.NoError(t, err)
+	assert.Equal(t, groupRatesMap, map[string]GroupRateLimits{
+		"aggregate": {Name: "group1", Methods: []string{"aggregate"}, Limits: GeneralRateLimits{Interval: "10s", Limit: 1000}},
+		"chain":     {Name: "group2", Methods: []string{"chain"}, Limits: GeneralRateLimits{Interval: "3m", Limit: 10}},
 	})
+}
+
+func Test_buildGroupRateMap_Err(t *testing.T) {
+	groupRatesMap, err := buildGroupRateMap(append(testGroups, GroupRateLimits{
+		Name:    "group3",
+		Methods: []string{"chain"},
+	}))
+
+	assert.Error(t, err)
+	assert.Nil(t, groupRatesMap)
 }
 
 func Test_getRateLimitForMethods(t *testing.T) {
