@@ -1,0 +1,7 @@
+apiVersion: v2
+name: deriv-api-bff
+description: Deriv API BFF is a backend for frontend service that serves as a proxy to the Deriv API.
+
+type: application
+version: 0.1.0
+appVersion: "v0.6.0"

@@ -1,0 +1,39 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/ksysoev/deriv-api-bff
+  pullPolicy: IfNotPresent
+  tag: ""
+
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+podLabels: {}
+
+service:
+  type: ClusterIP
+  port: 80
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+config: 
+  server:
+    max_requests: 100
+    max_requests_per_conn: 10
+  deriv:
+    endpoint: "wss://ws.derivws.com/websockets/v3"
+  otel:
+    prometheus:
+      port: 8080
+      path: "/metrics"
+  api_source: 
+    etcd: {}
+
+api_config: []
