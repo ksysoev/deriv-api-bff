@@ -22,4 +22,4 @@ data:
         {{- end }}
         path: "/runtime/api_calls.yaml"
 
-  "api_calls.yaml": "[]"
+  "api_calls.yaml": {{ .Values.api_config | toYaml | toString | quote }}
