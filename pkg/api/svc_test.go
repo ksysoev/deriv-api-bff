@@ -441,6 +441,6 @@ func Test_getRateLimitForMethods_Default(t *testing.T) {
 	key, duration, limit := requestLimitFunc(mockRequest)
 
 	assert.Equal(t, "nil", key)
-	assert.Equal(t, 1*time.Minute, duration)
-	assert.Equal(t, uint64(100), limit)
+	assert.Equal(t, 1*time.Millisecond, duration)
+	assert.Equal(t, uint64(100000), limit)
 }

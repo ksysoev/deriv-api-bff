@@ -23,8 +23,8 @@ const (
 	maxRequestsDefault              = 100
 	maxRequestsPerConnDefault       = 10
 	generalRateLimitIntervalDefault = "1m"
-	generalRateLimitDuration        = 1 * time.Minute
-	generalRateLimitDefault         = 100
+	generalRateLimitDuration        = 1 * time.Millisecond
+	generalRateLimitDefault         = 100000
 )
 
 type BFFService interface {
