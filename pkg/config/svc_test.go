@@ -695,6 +695,8 @@ func TestService_WriteConfig_WriteToReadOnlyFile(t *testing.T) {
 
 	// Create a read-only file
 	file, err := os.Create(filePath)
+	defer os.Remove(filePath)
+
 	require.NoError(t, err)
 	require.NoError(t, file.Close())
 	require.NoError(t, os.Chmod(filePath, 0o444))

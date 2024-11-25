@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config
+data:
+  "config.yaml": |-
+    server:
+      listen: ":{{ .Values.service.port }}"
+      max_requests: {{ .Values.config.server.max_requests }}
+      max_requests_per_conn: {{ .Values.config.server.max_requests_per_conn }}
+    deriv:
+      endpoint: "{{ .Values.config.deriv.endpoint }}"
+    otel:
+      prometheus:
+        listen: ":{{ .Values.config.otel.prometheus.port }}"
+        path: "{{ .Values.config.otel.prometheus.path }}"
+    api_source:
+        {{- with .Values.config.api_source.etcd }}
+        etcd:
+            servers: "{{ .servers }}"
+            prefix: "{{ .prefix }}"
+        {{- end }}
+        path: "/runtime/api_calls.yaml"
+
+  "api_calls.yaml": {{ .Values.api_config | toYaml | toString | quote }}
