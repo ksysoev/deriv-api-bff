@@ -34,8 +34,9 @@ func TestSvc_Run(t *testing.T) {
 	}
 
 	service, err := NewSevice(config, nil)
-	assert.NoError(t, err)
 	ctx, cancel := context.WithCancel(context.Background())
+
+	assert.NoError(t, err)
 	cancel()
 
 	defer cancel()

@@ -80,9 +80,9 @@ func NewSevice(cfg *Config, handler BFFService) (*Service, error) {
 	requestLimitsFunc, err := getRequestLimits(cfg.RateLimits)
 	if err != nil {
 		return nil, err
-	} else {
-		dispatcher.Use(reqmid.NewRateLimiterMiddleware(requestLimitsFunc))
 	}
+
+	dispatcher.Use(reqmid.NewRateLimiterMiddleware(requestLimitsFunc))
 
 	registry := channel.NewConnectionRegistry(
 		channel.WithMaxFrameLimit(maxMessageSize),
@@ -184,9 +184,9 @@ func buildGroupRateMap(groups []GroupRateLimits) (map[string]GroupRateLimits, er
 		for _, method := range group.Methods {
 			if _, exists := groupRatesMap[method]; exists {
 				return nil, fmt.Errorf("method '%s' is repeated in multiple groups", method)
-			} else {
-				groupRatesMap[method] = group
 			}
+
+			groupRatesMap[method] = group
 		}
 	}
 
