@@ -15,6 +15,11 @@ data:
         listen: ":{{ .Values.config.otel.prometheus.port }}"
         path: "{{ .Values.config.otel.prometheus.path }}"
     api_source:
+        {{- with .Values.config.api_source.etcd }}
         etcd:
-            servers: "{{ .Values.config.api_source.etcd.servers }}"
-            prefix: "{{ .Values.config.api_source.etcd.prefix }}"
+            servers: "{{ .servers }}"
+            prefix: "{{ .prefix }}"
+        {{- end }}
+        path: "/runtime/api_calls.yaml"
+
+  "api_calls.yaml": "[]"

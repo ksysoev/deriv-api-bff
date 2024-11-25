@@ -49,7 +49,5 @@ config:
     prometheus:
       port: 8080
       path: "/metrics"
-  api_source:
-    etcd:
-      servers: "your-etcd-server:2379"
-      prefix: "api::"
+  api_source: 
+    etcd: {}
