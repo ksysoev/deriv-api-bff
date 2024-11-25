@@ -391,12 +391,13 @@ func Test_buildGroupRateMap_Err(t *testing.T) {
 }
 
 func Test_getRateLimitForMethods(t *testing.T) {
-	requestLimitFunc, err := getRequestLimits(RateLimits{Groups: testGroups})
+	requestLimitFunc, err := getRequestLimits(RateLimits{Groups: testGroups,
+		General: GeneralRateLimits{Interval: "1s", Limit: 100}})
 	mockRequest := mocks.NewMockRequest(t)
 	ctx := context.WithValue(context.Background(), httpmid.ClientIP, "8.8.8.8")
 
 	mockRequest.EXPECT().Context().Return(ctx)
-	mockRequest.EXPECT().RoutingKey().Return("group1")
+	mockRequest.EXPECT().RoutingKey().Return("aggregate")
 	assert.NoError(t, err)
 
 	key, duration, limit := requestLimitFunc(mockRequest)
@@ -406,13 +407,35 @@ func Test_getRateLimitForMethods(t *testing.T) {
 	assert.Equal(t, uint64(1000), limit)
 }
 
-func Test_getRateLimitForMethods_Default(t *testing.T) {
-	requestLimitFunc, err := getRateLimitForMethods(testGroups)
+func Test_getRateLimitForMethods_FromGeneral(t *testing.T) {
+	requestLimitFunc, err := getRequestLimits(RateLimits{Groups: testGroups,
+		General: GeneralRateLimits{Interval: "1s", Limit: 1000}})
 	mockRequest := mocks.NewMockRequest(t)
 	ctx := context.Background()
 
 	mockRequest.EXPECT().Context().Return(ctx)
-	mockRequest.EXPECT().RoutingKey().Return("group3")
+	mockRequest.EXPECT().RoutingKey().Return("undefined")
+	assert.NoError(t, err)
+
+	key, duration, limit := requestLimitFunc(mockRequest)
+
+	assert.Equal(t, "nil", key)
+	assert.Equal(t, 1*time.Second, duration)
+	assert.Equal(t, uint64(1000), limit)
+}
+
+func Test_getRateLimitForMethods_Default(t *testing.T) {
+	requestLimitFunc, err := getRequestLimits(RateLimits{Groups: append(testGroups,
+		GroupRateLimits{
+			Name:    "group3",
+			Methods: []string{"config"},
+		}),
+		General: GeneralRateLimits{Interval: "1s", Limit: 1000}})
+	mockRequest := mocks.NewMockRequest(t)
+	ctx := context.Background()
+
+	mockRequest.EXPECT().Context().Return(ctx)
+	mockRequest.EXPECT().RoutingKey().Return("config")
 	assert.NoError(t, err)
 
 	key, duration, limit := requestLimitFunc(mockRequest)

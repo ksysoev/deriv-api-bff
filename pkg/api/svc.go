@@ -136,23 +136,36 @@ func getRequestLimits(rateLimitCfg RateLimits) (func(wasabi.Request) (string, ti
 		return getDefaultRequestLimits(rateLimitCfg.General)
 	}
 
-	return getRateLimitForMethods(rateLimitCfg.Groups)
+	return getRateLimitForMethods(rateLimitCfg)
 }
 
-func getRateLimitForMethods(groupRateLimits []GroupRateLimits) (func(wasabi.Request) (string, time.Duration, uint64), error) {
-	groupRatesMap, err := buildGroupRateMap(groupRateLimits)
+func getRateLimitForMethods(rateLimitCfg RateLimits) (func(wasabi.Request) (string, time.Duration, uint64), error) {
+	groupRatesMap, err := buildGroupRateMap(rateLimitCfg.Groups)
+
+	if err != nil {
+		return nil, err
+	}
+
+	generalRateLimitFunc, err := getDefaultRequestLimits(rateLimitCfg.General)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return func(r wasabi.Request) (string, time.Duration, uint64) {
+		group, exists := groupRatesMap[r.RoutingKey()]
+
+		if !exists {
+			return generalRateLimitFunc(r)
+		}
+
 		ip := getIPFromRequest(r)
-		group := groupRatesMap[r.RoutingKey()]
 
 		if duration, err := time.ParseDuration(group.Limits.Interval); err == nil {
 			return ip, duration, uint64(group.Limits.Limit)
 		}
+
+		slog.Warn(fmt.Sprintf("%v - Using defaults", err))
 
 		return ip, generalRateLimitDuration, generalRateLimitDefault
 	}, nil
