@@ -63,9 +63,9 @@ type Service struct {
 
 type groupRatesMapType map[string]struct {
 	Name     string
+	Methods  []string
 	Interval time.Duration
 	Limit    uint
-	Methods  []string
 }
 
 // NewSevice creates a new instance of Service with the provided configuration and handler.
@@ -189,9 +189,9 @@ func buildGroupRateMap(groups []GroupRateLimits) (groupRatesMapType, error) {
 
 			groupRatesMap[method] = struct {
 				Name     string
+				Methods  []string
 				Interval time.Duration
 				Limit    uint
-				Methods  []string
 			}{
 				Name:     group.Name,
 				Interval: duration,
