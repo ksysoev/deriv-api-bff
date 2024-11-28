@@ -55,10 +55,18 @@ func TestRunServer_FailToCreateService(t *testing.T) {
 					{
 						Name:    "group1",
 						Methods: []string{"chain"},
+						Limits: api.GeneralRateLimits{
+							Interval: "1s",
+							Limit:    10,
+						},
 					},
 					{
 						Name:    "group2",
 						Methods: []string{"chain"},
+						Limits: api.GeneralRateLimits{
+							Interval: "2s",
+							Limit:    20,
+						},
 					},
 				},
 			},
