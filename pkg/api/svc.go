@@ -61,6 +61,13 @@ type Service struct {
 	server  *server.Server
 }
 
+type groupRatesMapType map[string]struct {
+	Name     string
+	Interval time.Duration
+	Limit    uint
+	Methods  []string
+}
+
 // NewSevice creates a new instance of Service with the provided configuration and handler.
 // It takes cfg of type *Config and handler of type BFFService.
 // It returns a pointer to a Service struct.
@@ -153,7 +160,7 @@ func getRateLimitForMethods(rateLimitCfg RateLimits) (func(wasabi.Request) (stri
 	}
 
 	return func(r wasabi.Request) (string, time.Duration, uint64) {
-		group, exists := groupRatesMap[r.RoutingKey()]
+		groupRate, exists := groupRatesMap[r.RoutingKey()]
 
 		if !exists {
 			return generalRateLimitFunc(r)
@@ -161,18 +168,12 @@ func getRateLimitForMethods(rateLimitCfg RateLimits) (func(wasabi.Request) (stri
 
 		ip := getIPFromRequest(r)
 
-		if duration, err := time.ParseDuration(group.Limits.Interval); err == nil {
-			return ip, duration, uint64(group.Limits.Limit)
-		}
-
-		slog.Warn(fmt.Sprintf("%v - Using defaults", err))
-
-		return ip, generalRateLimitDuration, generalRateLimitDefault
+		return groupRate.Name + ip, groupRate.Interval, uint64(groupRate.Limit)
 	}, nil
 }
 
-func buildGroupRateMap(groups []GroupRateLimits) (map[string]GroupRateLimits, error) {
-	groupRatesMap := make(map[string]GroupRateLimits)
+func buildGroupRateMap(groups []GroupRateLimits) (groupRatesMapType, error) {
+	groupRatesMap := make(groupRatesMapType)
 
 	for _, group := range groups {
 		for _, method := range group.Methods {
@@ -180,7 +181,23 @@ func buildGroupRateMap(groups []GroupRateLimits) (map[string]GroupRateLimits, er
 				return nil, fmt.Errorf("method '%s' is repeated in multiple groups", method)
 			}
 
-			groupRatesMap[method] = group
+			duration, err := time.ParseDuration(group.Limits.Interval)
+
+			if err != nil {
+				return nil, err
+			}
+
+			groupRatesMap[method] = struct {
+				Name     string
+				Interval time.Duration
+				Limit    uint
+				Methods  []string
+			}{
+				Name:     group.Name,
+				Interval: duration,
+				Limit:    group.Limits.Limit,
+				Methods:  group.Methods,
+			}
 		}
 	}
 

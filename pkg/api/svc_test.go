@@ -374,9 +374,9 @@ func Test_buildGroupRateMap(t *testing.T) {
 	groupRatesMap, err := buildGroupRateMap(testGroups)
 
 	assert.NoError(t, err)
-	assert.Equal(t, groupRatesMap, map[string]GroupRateLimits{
-		"aggregate": {Name: "group1", Methods: []string{"aggregate"}, Limits: GeneralRateLimits{Interval: "10s", Limit: 1000}},
-		"chain":     {Name: "group2", Methods: []string{"chain"}, Limits: GeneralRateLimits{Interval: "3m", Limit: 10}},
+	assert.Equal(t, groupRatesMap, groupRatesMapType{
+		"aggregate": {Name: "group1", Methods: []string{"aggregate"}, Interval: 10 * time.Second, Limit: 1000},
+		"chain":     {Name: "group2", Methods: []string{"chain"}, Interval: 3 * time.Minute, Limit: 10},
 	})
 }
 
@@ -402,7 +402,7 @@ func Test_getRateLimitForMethods(t *testing.T) {
 
 	key, duration, limit := requestLimitFunc(mockRequest)
 
-	assert.Equal(t, "8.8.8.8", key)
+	assert.Equal(t, "group18.8.8.8", key)
 	assert.Equal(t, 10*time.Second, duration)
 	assert.Equal(t, uint64(1000), limit)
 }
@@ -431,16 +431,8 @@ func Test_getRateLimitForMethods_Default(t *testing.T) {
 			Methods: []string{"config"},
 		}),
 		General: GeneralRateLimits{Interval: "1s", Limit: 1000}})
-	mockRequest := mocks.NewMockRequest(t)
-	ctx := context.Background()
 
-	mockRequest.EXPECT().Context().Return(ctx)
-	mockRequest.EXPECT().RoutingKey().Return("config")
-	assert.NoError(t, err)
-
-	key, duration, limit := requestLimitFunc(mockRequest)
-
-	assert.Equal(t, "nil", key)
-	assert.Equal(t, 1*time.Millisecond, duration)
-	assert.Equal(t, uint64(100000), limit)
+	assert.Error(t, err)
+	assert.Equal(t, err.Error(), "time: invalid duration \"\"")
+	assert.Nil(t, requestLimitFunc)
 }
