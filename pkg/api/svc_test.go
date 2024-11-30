@@ -7,6 +7,7 @@ import (
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	wasabi "github.com/ksysoev/wasabi"
+	httpmid "github.com/ksysoev/wasabi/middleware/http"
 	"github.com/ksysoev/wasabi/mocks"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,8 +19,9 @@ func TestNewSevice(t *testing.T) {
 
 	mockBFFService := NewMockBFFService(t)
 
-	svc := NewSevice(cfg, mockBFFService)
+	svc, err := NewSevice(cfg, mockBFFService)
 
+	assert.NoError(t, err)
 	assert.NotNil(t, svc)
 	assert.Equal(t, cfg, svc.cfg)
 	assert.Equal(t, mockBFFService, svc.handler)
@@ -30,8 +32,10 @@ func TestSvc_Run(t *testing.T) {
 		Listen: ":0",
 	}
 
-	service := NewSevice(config, nil)
+	service, err := NewSevice(config, nil)
 	ctx, cancel := context.WithCancel(context.Background())
+
+	assert.NoError(t, err)
 	cancel()
 
 	defer cancel()
@@ -54,6 +58,21 @@ func TestSvc_Run(t *testing.T) {
 	case <-time.After(1 * time.Second):
 		t.Error("Expected server to stop")
 	}
+}
+
+func TestSvc_Error(t *testing.T) {
+	config := &Config{
+		Listen: ":0",
+		RateLimits: RateLimits{
+			General: GeneralRateLimits{
+				Interval: "invalid",
+			},
+		},
+	}
+
+	service, err := NewSevice(config, nil)
+	assert.Error(t, err)
+	assert.Nil(t, service)
 }
 
 func TestParse(t *testing.T) {
@@ -97,7 +116,9 @@ func TestService_Addr(t *testing.T) {
 	}
 
 	mockBFFService := NewMockBFFService(t)
-	service := NewSevice(cfg, mockBFFService)
+	service, err := NewSevice(cfg, mockBFFService)
+
+	assert.NoError(t, err)
 
 	addr := service.Addr()
 	assert.Nil(t, addr)
@@ -143,6 +164,12 @@ func TestPopulateDefaults(t *testing.T) {
 				Listen:             "localhost:8080",
 				MaxRequests:        maxRequestsDefault,
 				MaxRequestsPerConn: maxRequestsPerConnDefault,
+				RateLimits: RateLimits{
+					General: GeneralRateLimits{
+						Interval: generalRateLimitIntervalDefault,
+						Limit:    generalRateLimitDefault,
+					},
+				},
 			},
 		},
 		{
@@ -155,6 +182,12 @@ func TestPopulateDefaults(t *testing.T) {
 				Listen:             "localhost:8080",
 				MaxRequests:        200,
 				MaxRequestsPerConn: maxRequestsPerConnDefault,
+				RateLimits: RateLimits{
+					General: GeneralRateLimits{
+						Interval: generalRateLimitIntervalDefault,
+						Limit:    generalRateLimitDefault,
+					},
+				},
 			},
 		},
 		{
@@ -167,6 +200,36 @@ func TestPopulateDefaults(t *testing.T) {
 				Listen:             "localhost:8080",
 				MaxRequests:        maxRequestsDefault,
 				MaxRequestsPerConn: 20,
+				RateLimits: RateLimits{
+					General: GeneralRateLimits{
+						Interval: generalRateLimitIntervalDefault,
+						Limit:    generalRateLimitDefault,
+					},
+				},
+			},
+		},
+		{
+			name: "General Rate Limit Set",
+			input: &Config{
+				Listen:             "localhost:8080",
+				MaxRequestsPerConn: 20,
+				RateLimits: RateLimits{
+					General: GeneralRateLimits{
+						Interval: "1h",
+						Limit:    1000,
+					},
+				},
+			},
+			expected: &Config{
+				Listen:             "localhost:8080",
+				MaxRequests:        maxRequestsDefault,
+				MaxRequestsPerConn: 20,
+				RateLimits: RateLimits{
+					General: GeneralRateLimits{
+						Interval: "1h",
+						Limit:    1000,
+					},
+				},
 			},
 		},
 		{
@@ -180,6 +243,12 @@ func TestPopulateDefaults(t *testing.T) {
 				Listen:             "localhost:8080",
 				MaxRequests:        200,
 				MaxRequestsPerConn: 20,
+				RateLimits: RateLimits{
+					General: GeneralRateLimits{
+						Interval: generalRateLimitIntervalDefault,
+						Limit:    generalRateLimitDefault,
+					},
+				},
 			},
 		},
 	}
@@ -187,7 +256,7 @@ func TestPopulateDefaults(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			populateDefaults(tt.input)
-			assert.Equal(t, tt.expected, tt.input)
+			assert.Equalf(t, tt.expected, tt.input, tt.name)
 		})
 	}
 }
@@ -224,4 +293,146 @@ func TestSkipMetrics(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestGetRequestLimits_Success(t *testing.T) {
+	validRateLimits := RateLimits{
+		General: GeneralRateLimits{
+			Interval: "10s",
+			Limit:    200,
+		},
+	}
+	requestLimitFunc, err := getRequestLimits(validRateLimits)
+	mockRequest := mocks.NewMockRequest(t)
+	ctx := context.Background()
+
+	mockRequest.EXPECT().Context().Return(ctx)
+
+	key, duration, limit := requestLimitFunc(mockRequest)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "nil", key)
+	assert.Equal(t, 10*time.Second, duration)
+	assert.Equal(t, uint64(200), limit)
+}
+
+func TestGetRequestLimits_Failure(t *testing.T) {
+	validRateLimits := RateLimits{
+		General: GeneralRateLimits{
+			Interval: "invalid",
+		},
+	}
+	requestLimitFunc, err := getRequestLimits(validRateLimits)
+
+	assert.Error(t, err)
+	assert.Nil(t, requestLimitFunc)
+}
+
+func TestGetIPFromRequest_OK(t *testing.T) {
+	tests := []struct {
+		inputCtx   context.Context
+		expectedIP string
+	}{
+		{
+			inputCtx:   context.WithValue(context.Background(), httpmid.ClientIP, "8.8.8.8"),
+			expectedIP: "8.8.8.8",
+		},
+		{
+			inputCtx:   context.Background(),
+			expectedIP: "nil",
+		},
+	}
+
+	for _, test := range tests {
+		mockRequest := mocks.NewMockRequest(t)
+		mockRequest.EXPECT().Context().Return(test.inputCtx)
+		ip := getIPFromRequest(mockRequest)
+		assert.Equal(t, test.expectedIP, ip)
+	}
+}
+
+var testGroups = []GroupRateLimits{
+	{
+		Name: "group1",
+		Limits: GeneralRateLimits{
+			Interval: "10s",
+			Limit:    1000,
+		},
+		Methods: []string{"aggregate"},
+	},
+	{
+		Name: "group2",
+		Limits: GeneralRateLimits{
+			Interval: "3m",
+			Limit:    10,
+		},
+		Methods: []string{"chain"},
+	},
+}
+
+func Test_buildGroupRateMap(t *testing.T) {
+	groupRatesMap, err := buildGroupRateMap(testGroups)
+
+	assert.NoError(t, err)
+	assert.Equal(t, groupRatesMap, groupRatesMapType{
+		"aggregate": {Name: "group1", Methods: []string{"aggregate"}, Interval: 10 * time.Second, Limit: 1000},
+		"chain":     {Name: "group2", Methods: []string{"chain"}, Interval: 3 * time.Minute, Limit: 10},
+	})
+}
+
+func Test_buildGroupRateMap_Err(t *testing.T) {
+	groupRatesMap, err := buildGroupRateMap(append(testGroups, GroupRateLimits{
+		Name:    "group3",
+		Methods: []string{"chain"},
+	}))
+
+	assert.Error(t, err)
+	assert.Nil(t, groupRatesMap)
+}
+
+func Test_getRateLimitForMethods(t *testing.T) {
+	requestLimitFunc, err := getRequestLimits(RateLimits{Groups: testGroups,
+		General: GeneralRateLimits{Interval: "1s", Limit: 100}})
+	mockRequest := mocks.NewMockRequest(t)
+	ctx := context.WithValue(context.Background(), httpmid.ClientIP, "8.8.8.8")
+
+	mockRequest.EXPECT().Context().Return(ctx)
+	mockRequest.EXPECT().RoutingKey().Return("aggregate")
+	assert.NoError(t, err)
+
+	key, duration, limit := requestLimitFunc(mockRequest)
+
+	assert.Equal(t, "group18.8.8.8", key)
+	assert.Equal(t, 10*time.Second, duration)
+	assert.Equal(t, uint64(1000), limit)
+}
+
+func Test_getRateLimitForMethods_FromGeneral(t *testing.T) {
+	requestLimitFunc, err := getRequestLimits(RateLimits{Groups: testGroups,
+		General: GeneralRateLimits{Interval: "1s", Limit: 1000}})
+	mockRequest := mocks.NewMockRequest(t)
+	ctx := context.Background()
+
+	mockRequest.EXPECT().Context().Return(ctx)
+	mockRequest.EXPECT().RoutingKey().Return("undefined")
+	assert.NoError(t, err)
+
+	key, duration, limit := requestLimitFunc(mockRequest)
+
+	assert.Equal(t, "nil", key)
+	assert.Equal(t, 1*time.Second, duration)
+	assert.Equal(t, uint64(1000), limit)
+}
+
+func Test_getRateLimitForMethods_Default(t *testing.T) {
+	requestLimitFunc, err := getRequestLimits(RateLimits{Groups: append(testGroups,
+		GroupRateLimits{
+			Name:    "group3",
+			Methods: []string{"config"},
+		}),
+		General: GeneralRateLimits{Interval: "1s", Limit: 1000}})
+
+	assert.Error(t, err)
+	assert.Equal(t, err.Error(), "time: invalid duration \"\"")
+	assert.Nil(t, requestLimitFunc)
 }

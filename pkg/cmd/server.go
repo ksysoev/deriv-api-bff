@@ -38,7 +38,11 @@ func runServer(ctx context.Context, cfg *Config) error {
 		return fmt.Errorf("failed to start config service: %w", err)
 	}
 
-	server := api.NewSevice(&cfg.Server, requestHandler)
+	server, err := api.NewSevice(&cfg.Server, requestHandler)
+
+	if err != nil {
+		return err
+	}
 
 	return server.Run(ctx)
 }

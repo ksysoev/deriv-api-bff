@@ -6,20 +6,25 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/ksysoev/deriv-api-bff/pkg/core/request"
 	"github.com/ksysoev/deriv-api-bff/pkg/middleware"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/channel"
 	"github.com/ksysoev/wasabi/dispatch"
+	httpmid "github.com/ksysoev/wasabi/middleware/http"
 	reqmid "github.com/ksysoev/wasabi/middleware/request"
 	"github.com/ksysoev/wasabi/server"
 )
 
 const (
-	maxMessageSize            = 600 * 1024
-	maxRequestsDefault        = 100
-	maxRequestsPerConnDefault = 10
+	maxMessageSize                  = 600 * 1024
+	maxRequestsDefault              = 100
+	maxRequestsPerConnDefault       = 10
+	generalRateLimitIntervalDefault = "1m"
+	generalRateLimitDuration        = 1 * time.Millisecond
+	generalRateLimitDefault         = 100000
 )
 
 type BFFService interface {
@@ -28,9 +33,26 @@ type BFFService interface {
 }
 
 type Config struct {
-	Listen             string `mapstructure:"listen"`
-	MaxRequests        uint   `mapstructure:"max_requests"`
-	MaxRequestsPerConn uint   `mapstructure:"max_requests_per_conn"`
+	Listen             string     `mapstructure:"listen"`
+	RateLimits         RateLimits `mapstructure:"rate_limits"`
+	MaxRequests        uint       `mapstructure:"max_requests"`
+	MaxRequestsPerConn uint       `mapstructure:"max_requests_per_conn"`
+}
+
+type RateLimits struct {
+	Groups  []GroupRateLimits `mapstructure:"groups"`
+	General GeneralRateLimits `mapstructure:"general"`
+}
+
+type GeneralRateLimits struct {
+	Interval string `mapstructure:"interval"`
+	Limit    uint   `mapstructure:"limit"`
+}
+
+type GroupRateLimits struct {
+	Name    string            `mapstructure:"name"`
+	Limits  GeneralRateLimits `mapstructure:"limits"`
+	Methods []string          `mapstructure:"methods"`
 }
 
 type Service struct {
@@ -39,10 +61,17 @@ type Service struct {
 	server  *server.Server
 }
 
+type groupRatesMapType map[string]struct {
+	Name     string
+	Methods  []string
+	Interval time.Duration
+	Limit    uint
+}
+
 // NewSevice creates a new instance of Service with the provided configuration and handler.
 // It takes cfg of type *Config and handler of type BFFService.
 // It returns a pointer to a Service struct.
-func NewSevice(cfg *Config, handler BFFService) *Service {
+func NewSevice(cfg *Config, handler BFFService) (*Service, error) {
 	s := &Service{
 		cfg:     cfg,
 		handler: handler,
@@ -51,9 +80,17 @@ func NewSevice(cfg *Config, handler BFFService) *Service {
 	populateDefaults(cfg)
 
 	dispatcher := dispatch.NewRouterDispatcher(s, parse)
+
 	dispatcher.Use(middleware.NewErrorHandlingMiddleware())
 	dispatcher.Use(middleware.NewMetricsMiddleware("bff-deriv", skipMetrics))
 	dispatcher.Use(reqmid.NewTrottlerMiddleware(cfg.MaxRequests))
+
+	requestLimitsFunc, err := getRequestLimits(cfg.RateLimits)
+	if err != nil {
+		return nil, err
+	}
+
+	dispatcher.Use(reqmid.NewRateLimiterMiddleware(requestLimitsFunc))
 
 	registry := channel.NewConnectionRegistry(
 		channel.WithMaxFrameLimit(maxMessageSize),
@@ -62,12 +99,13 @@ func NewSevice(cfg *Config, handler BFFService) *Service {
 	endpoint := channel.NewChannel("/", dispatcher, registry, channel.WithOriginPatterns("*"))
 	endpoint.Use(middleware.NewQueryParamsMiddleware())
 	endpoint.Use(middleware.NewHeadersMiddleware())
+	endpoint.Use(httpmid.NewClientIPMiddleware(httpmid.CloudFront))
 
 	s.server = server.NewServer(cfg.Listen)
 	s.server.AddChannel(endpoint)
 	s.server.AddHandler("/livez", http.HandlerFunc(s.HealthCheck))
 
-	return s
+	return s, nil
 }
 
 // Addr returns the network address the server is listening on.
@@ -96,6 +134,98 @@ func (s *Service) Run(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// getRequestLimits is a helper function transform request limits mentioned in server configuration
+// into wasabi request limits, so that we can use the RateLimiter middleware.
+func getRequestLimits(rateLimitCfg RateLimits) (func(wasabi.Request) (string, time.Duration, uint64), error) {
+	if len(rateLimitCfg.Groups) == 0 {
+		return getDefaultRequestLimits(rateLimitCfg.General)
+	}
+
+	return getRateLimitForMethods(rateLimitCfg)
+}
+
+func getRateLimitForMethods(rateLimitCfg RateLimits) (func(wasabi.Request) (string, time.Duration, uint64), error) {
+	groupRatesMap, err := buildGroupRateMap(rateLimitCfg.Groups)
+
+	if err != nil {
+		return nil, err
+	}
+
+	generalRateLimitFunc, err := getDefaultRequestLimits(rateLimitCfg.General)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return func(r wasabi.Request) (string, time.Duration, uint64) {
+		groupRate, exists := groupRatesMap[r.RoutingKey()]
+
+		if !exists {
+			return generalRateLimitFunc(r)
+		}
+
+		ip := getIPFromRequest(r)
+
+		return groupRate.Name + ip, groupRate.Interval, uint64(groupRate.Limit)
+	}, nil
+}
+
+func buildGroupRateMap(groups []GroupRateLimits) (groupRatesMapType, error) {
+	groupRatesMap := make(groupRatesMapType)
+
+	for _, group := range groups {
+		for _, method := range group.Methods {
+			if _, exists := groupRatesMap[method]; exists {
+				return nil, fmt.Errorf("method '%s' is repeated in multiple groups", method)
+			}
+
+			duration, err := time.ParseDuration(group.Limits.Interval)
+
+			if err != nil {
+				return nil, err
+			}
+
+			groupRatesMap[method] = struct {
+				Name     string
+				Methods  []string
+				Interval time.Duration
+				Limit    uint
+			}{
+				Name:     group.Name,
+				Interval: duration,
+				Limit:    group.Limits.Limit,
+				Methods:  group.Methods,
+			}
+		}
+	}
+
+	return groupRatesMap, nil
+}
+
+// getDefaultRequestLimits is a helper function transform request limits using the default config
+// into wasabi request limits, so that we can use the RateLimiter middleware.
+func getDefaultRequestLimits(generalRateLimit GeneralRateLimits) (func(wasabi.Request) (string, time.Duration, uint64), error) {
+	duration, err := time.ParseDuration(generalRateLimit.Interval)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := uint64(generalRateLimit.Limit)
+
+	return func(r wasabi.Request) (string, time.Duration, uint64) {
+		ip := getIPFromRequest(r)
+		return ip, duration, limit
+	}, nil
+}
+
+func getIPFromRequest(r wasabi.Request) string {
+	if ip, ok := r.Context().Value(httpmid.ClientIP).(string); ok {
+		return ip
+	}
+
+	return "nil"
 }
 
 // parse processes a message received over a Wasabi connection and converts it into a core request.
@@ -128,6 +258,14 @@ func populateDefaults(cfg *Config) {
 
 	if cfg.MaxRequestsPerConn == 0 {
 		cfg.MaxRequestsPerConn = maxRequestsPerConnDefault
+	}
+
+	if cfg.RateLimits.General.Interval == "" {
+		cfg.RateLimits.General.Interval = generalRateLimitIntervalDefault
+	}
+
+	if cfg.RateLimits.General.Limit == 0 {
+		cfg.RateLimits.General.Limit = generalRateLimitDefault
 	}
 }
 

@@ -131,7 +131,16 @@ func (s *testSuite) startAppWithConfig(cfgYAML string) (url string, err error) {
 
 	requestHandler.UpdateHandlers(handlers)
 
-	server := api.NewSevice(&api.Config{Listen: ":0"}, requestHandler)
+	server, err := api.NewSevice(&api.Config{Listen: ":0",
+		RateLimits: api.RateLimits{
+			General: api.GeneralRateLimits{
+				Interval: "1s",
+				Limit:    10000, // high rate limit for testing and benchmarking
+			},
+		},
+	}, requestHandler)
+
+	assert.NoError(s.T(), err)
 
 	ctx, cancel := context.WithCancel(context.Background())
 

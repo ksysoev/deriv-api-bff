@@ -16,7 +16,9 @@ import (
 func TestService_Handle(t *testing.T) {
 	mockConn := mocks.NewMockConnection(t)
 	mockBFFService := NewMockBFFService(t)
-	service := NewSevice(&Config{}, mockBFFService)
+	service, err := NewSevice(&Config{}, mockBFFService)
+
+	assert.NoError(t, err)
 
 	mockBFFService.EXPECT().PassThrough(mockConn, mock.Anything).Return(nil)
 	mockBFFService.EXPECT().ProcessRequest(mockConn, mock.Anything).Return(nil)
