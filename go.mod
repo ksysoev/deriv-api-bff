@@ -6,7 +6,7 @@ require (
 	github.com/coder/websocket v1.8.12
 	github.com/google/uuid v1.6.0
 	github.com/ksysoev/wasabi v0.5.3
-	github.com/prometheus/client_golang v1.20.5
+	github.com/prometheus/client_golang v1.21.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.0-alpha.6.0.20241015061040-76d3bebef588
@@ -73,7 +73,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.61.0 // indirect
+	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/sagikazarmark/locafero v0.6.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.12 // indirect
