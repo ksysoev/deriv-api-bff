@@ -1,6 +1,6 @@
 module github.com/ksysoev/deriv-api-bff
 
-go 1.23.1
+go 1.24.1
 
 require (
 	github.com/coder/websocket v1.8.12

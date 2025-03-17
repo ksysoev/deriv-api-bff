@@ -51,7 +51,7 @@ func (s *Service) Handle(conn *core.Conn, req *request.Request) error {
 // createMessage constructs a wasabi.MessageType and its corresponding byte data from a wasabi.Request.
 // It takes a single parameter r of type wasabi.Request.
 // It returns a wasabi.MessageType, a byte slice containing the message data, and an error if the request type is unsupported.
-func (s *Service) createMessage(r wasabi.Request) (wasabi.MessageType, []byte, error) {
+func (s *Service) createMessage(r wasabi.Request) (msgType wasabi.MessageType, data []byte, err error) {
 	switch r.RoutingKey() {
 	case request.TextMessage:
 		return wasabi.MsgTypeText, r.Data(), nil
