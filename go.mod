@@ -3,7 +3,7 @@ module github.com/ksysoev/deriv-api-bff
 go 1.24.1
 
 require (
-	github.com/coder/websocket v1.8.12
+	github.com/coder/websocket v1.8.13
 	github.com/google/uuid v1.6.0
 	github.com/ksysoev/wasabi v0.5.3
 	github.com/prometheus/client_golang v1.21.1
