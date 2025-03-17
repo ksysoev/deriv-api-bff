@@ -28,3 +28,4 @@ go.work.sum
 
 # IDE spaces
 .vscode/
+.idea/
