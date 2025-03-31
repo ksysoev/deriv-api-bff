@@ -1,7 +1,6 @@
 module github.com/ksysoev/deriv-api-bff
 
 go 1.24.1
-
 require (
 	github.com/coder/websocket v1.8.13
 	github.com/google/uuid v1.6.0
@@ -9,7 +8,7 @@ require (
 	github.com/prometheus/client_golang v1.21.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/spf13/cobra v1.9.1
-	github.com/spf13/viper v1.20.0
+	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.35.0
 	github.com/testcontainers/testcontainers-go/modules/etcd v0.35.0
