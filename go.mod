@@ -12,7 +12,7 @@ require (
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.37.0
-	github.com/testcontainers/testcontainers-go/modules/etcd v0.36.0
+	github.com/testcontainers/testcontainers-go/modules/etcd v0.37.0
 	github.com/valyala/fasttemplate v1.2.2
 	github.com/wolfeidau/jsontemplate v0.4.0
 	go.etcd.io/etcd/client/v3 v3.5.21
