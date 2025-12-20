@@ -51,6 +51,7 @@ func (c *Composer) Prepare(ctx context.Context, name string, parser handler.Pars
 
 	go func() {
 		defer c.wg.Done()
+
 		select {
 		case <-ctx.Done():
 			c.setError(name, ctx.Err())
@@ -123,6 +124,7 @@ func (c *Composer) composeDependencies(ctx context.Context, name string) (map[st
 			}
 		}()
 	}
+
 	c.mu.Unlock()
 
 	wg.Wait()
@@ -143,6 +145,7 @@ func (c *Composer) composeDependencies(ctx context.Context, name string) (map[st
 // It returns an error if there was an issue during the composition process.
 func (c *Composer) Compose() (map[string]any, error) {
 	c.wg.Wait()
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

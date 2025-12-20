@@ -84,7 +84,6 @@ func (h *Handler) requests(ctx context.Context, params json.RawMessage, comp Wai
 			}
 
 			req, err := proc.Render(ctx, reqID, params, depResuls)
-
 			if err != nil {
 				// TODO: add prevalidating template on startup to avoid this error in runtime
 				panic(fmt.Sprintf("template execution failed: %v", err))

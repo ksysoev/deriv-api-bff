@@ -110,6 +110,7 @@ func (c *Service) Start(ctx context.Context) error {
 
 	go func() {
 		defer c.wg.Done()
+
 		slog.Info("Starting config watcher")
 		c.remote.Watch(ctx, c.onUpdate(ctx))
 	}()

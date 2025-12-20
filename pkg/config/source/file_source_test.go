@@ -98,6 +98,7 @@ func TestReadFile(t *testing.T) {
 			// Create a temporary file
 			tmpFile, err := os.CreateTemp("", "testfile*.yaml")
 			assert.NoError(t, err)
+
 			defer os.Remove(tmpFile.Name())
 
 			// Write the test content to the temporary file
@@ -248,8 +249,10 @@ func TestLoadConfig(t *testing.T) {
 			name: "Load config from valid YAML file",
 			setup: func(t *testing.T) string {
 				t.Helper()
+
 				tmpFile, err := os.CreateTemp("", "testfile*.yaml")
 				assert.NoError(t, err)
+
 				defer tmpFile.Close()
 
 				content := `
@@ -291,6 +294,7 @@ func TestLoadConfig(t *testing.T) {
 			name: "Load config from directory with valid YAML files",
 			setup: func(t *testing.T) string {
 				t.Helper()
+
 				tmpDir, err := os.MkdirTemp("", "testdir")
 				assert.NoError(t, err)
 
@@ -340,8 +344,10 @@ func TestLoadConfig(t *testing.T) {
 			name: "Load config from invalid YAML file",
 			setup: func(t *testing.T) string {
 				t.Helper()
+
 				tmpFile, err := os.CreateTemp("", "testfile*.yaml")
 				assert.NoError(t, err)
+
 				defer tmpFile.Close()
 
 				content := `invalid yaml content`
@@ -357,8 +363,10 @@ func TestLoadConfig(t *testing.T) {
 			name: "Load config from unsupported file type",
 			setup: func(t *testing.T) string {
 				t.Helper()
+
 				tmpFile, err := os.CreateTemp("", "testfile*.txt")
 				assert.NoError(t, err)
+
 				defer tmpFile.Close()
 
 				content := `some text content`
@@ -374,8 +382,10 @@ func TestLoadConfig(t *testing.T) {
 			name: "Load config from empty directory",
 			setup: func(t *testing.T) string {
 				t.Helper()
+
 				tmpDir, err := os.MkdirTemp("", "testdir")
 				assert.NoError(t, err)
+
 				return tmpDir
 			},
 			expected:    nil,
@@ -385,8 +395,10 @@ func TestLoadConfig(t *testing.T) {
 			name: "Invalid Path",
 			setup: func(t *testing.T) string {
 				t.Helper()
+
 				tmpDir, err := os.MkdirTemp("", "testdir")
 				assert.NoError(t, err)
+
 				return tmpDir + "/nonexistent"
 			},
 			expected:    nil,
@@ -396,6 +408,7 @@ func TestLoadConfig(t *testing.T) {
 			name: "Skip directories",
 			setup: func(t *testing.T) string {
 				t.Helper()
+
 				tmpDir, err := os.MkdirTemp("", "testdir")
 				assert.NoError(t, err)
 

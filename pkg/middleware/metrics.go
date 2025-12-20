@@ -16,12 +16,12 @@ import (
 // It panics if there is an error initializing the metric.
 func NewMetricsMiddleware(scope string, skip func(wasabi.Request) bool) func(next wasabi.RequestHandler) wasabi.RequestHandler {
 	meter := otel.GetMeterProvider().Meter(scope)
+
 	timing, err := meter.Float64Histogram(
 		"request_duration",
 		metric.WithDescription("Request duration"),
 		metric.WithUnit("milliseconds"),
 	)
-
 	if err != nil {
 		panic("failed to initialize metric" + err.Error())
 	}

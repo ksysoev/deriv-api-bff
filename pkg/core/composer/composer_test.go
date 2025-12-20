@@ -57,6 +57,7 @@ func TestComposer_Success(t *testing.T) {
 func TestComposer_Compose_ParseError(t *testing.T) {
 	respChan, waiter := makeWaiter(t)
 	composer := New(make(map[string][]string), waiter)
+
 	respChan <- []byte("invalid json")
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -159,6 +160,7 @@ func TestComposer_DoneRequest_NewRequest(t *testing.T) {
 
 	ch, ok := composer.req[name]
 	assert.True(t, ok)
+
 	select {
 	case <-ch:
 		// Channel should be closed
@@ -178,6 +180,7 @@ func TestComposer_DoneRequest_ExistingRequest(t *testing.T) {
 
 	ch, ok := composer.req[name]
 	assert.True(t, ok)
+
 	select {
 	case <-ch:
 		// Channel should be closed
@@ -196,6 +199,7 @@ func TestComposer_SetError_FirstError(t *testing.T) {
 	assert.Equal(t, err, composer.err)
 	ch, ok := composer.req[name]
 	assert.True(t, ok)
+
 	select {
 	case <-ch:
 		// Channel should be closed
@@ -216,6 +220,7 @@ func TestComposer_SetError_SubsequentError(t *testing.T) {
 	assert.Equal(t, firstErr, composer.err)
 	ch, ok := composer.req[name]
 	assert.True(t, ok)
+
 	select {
 	case <-ch:
 		// Channel should be closed

@@ -33,8 +33,8 @@ func Benchmark_HTTP_Params(b *testing.B) {
 
 	httpURL := suite.httpURL()
 	cfg := strings.ReplaceAll(testHTTRequestParamsConfig, "{{host}}", httpURL)
-	url, err := suite.startAppWithConfig(cfg)
 
+	url, err := suite.startAppWithConfig(cfg)
 	if err != nil {
 		b.Errorf("Error starting server: %v", err)
 	}

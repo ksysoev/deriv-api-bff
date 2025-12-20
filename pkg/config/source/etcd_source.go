@@ -43,7 +43,6 @@ func NewEtcdSource(cfg EtcdConfig) (*EtcdSource, error) {
 		Endpoints:   serves,
 		DialTimeout: defaultTimeoutSeconds * time.Second,
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to create etcd client: %w", err)
 	}
@@ -64,7 +63,6 @@ func (es *EtcdSource) LoadConfig(ctx context.Context) ([]handlerfactory.Config, 
 	defer cancel()
 
 	data, err := es.cli.Get(ctx, es.prefix, clientv3.WithPrefix())
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config from etcd: %w", err)
 	}
@@ -73,8 +71,8 @@ func (es *EtcdSource) LoadConfig(ctx context.Context) ([]handlerfactory.Config, 
 
 	for _, kv := range data.Kvs {
 		var c handlerfactory.Config
-		err := json.Unmarshal(kv.Value, &c)
 
+		err := json.Unmarshal(kv.Value, &c)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 		}
@@ -95,7 +93,6 @@ func (es *EtcdSource) PutConfig(ctx context.Context, cfg []handlerfactory.Config
 
 	for _, c := range cfg {
 		data, err := json.Marshal(c)
-
 		if err != nil {
 			return fmt.Errorf("failed to marshal config: %w", err)
 		}

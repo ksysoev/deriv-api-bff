@@ -46,7 +46,6 @@ func New(cfg Config) (string, core.Handler, error) {
 
 	for _, procCfg := range backends {
 		p, err := processor.New(procCfg)
-
 		if err != nil {
 			return "", nil, fmt.Errorf("failed to create processor: %w", err)
 		}

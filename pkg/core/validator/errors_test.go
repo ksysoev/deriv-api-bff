@@ -10,7 +10,6 @@ import (
 
 func TestNewValidationError(t *testing.T) {
 	err := NewValidationError()
-
 	if err == nil {
 		t.Fatal("Expected a new ValidationError instance, got nil")
 	}
