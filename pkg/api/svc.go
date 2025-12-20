@@ -148,13 +148,11 @@ func getRequestLimits(rateLimitCfg RateLimits) (func(wasabi.Request) (string, ti
 
 func getRateLimitForMethods(rateLimitCfg RateLimits) (func(wasabi.Request) (string, time.Duration, uint64), error) {
 	groupRatesMap, err := buildGroupRateMap(rateLimitCfg.Groups)
-
 	if err != nil {
 		return nil, err
 	}
 
 	generalRateLimitFunc, err := getDefaultRequestLimits(rateLimitCfg.General)
-
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +180,6 @@ func buildGroupRateMap(groups []GroupRateLimits) (groupRatesMapType, error) {
 			}
 
 			duration, err := time.ParseDuration(group.Limits.Interval)
-
 			if err != nil {
 				return nil, err
 			}

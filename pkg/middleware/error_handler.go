@@ -25,7 +25,6 @@ func NewErrorHandlingMiddleware() func(next wasabi.RequestHandler) wasabi.Reques
 			}()
 
 			err := next.Handle(conn, req)
-
 			if err != nil {
 				slog.Error(
 					"failed to handle request",

@@ -128,7 +128,6 @@ func UploadConfigCommand(arg *args) *cobra.Command {
 			slog.Info("Trying to load config...", slog.String("version", arg.version), slog.String("build", arg.build))
 
 			cfg, err := initConfig(arg)
-
 			if err != nil {
 				return err
 			}
@@ -155,7 +154,6 @@ func VerifyConfigCommand(arg *args) *cobra.Command {
 			slog.Info("Verifying config...", slog.String("version", arg.version), slog.String("build", arg.build))
 
 			cfg, err := initConfig(arg)
-
 			if err != nil {
 				return err
 			}
@@ -187,7 +185,6 @@ func DownloadConfigCommand(arg *args) *cobra.Command {
 			slog.Info("Downloading config...", slog.String("version", arg.version), slog.String("build", arg.build))
 
 			cfg, err := initConfig(arg)
-
 			if err != nil {
 				return err
 			}

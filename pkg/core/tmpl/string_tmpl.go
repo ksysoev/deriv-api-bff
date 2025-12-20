@@ -64,7 +64,6 @@ func (t *StrTmpl) Execute(params any) (string, error) {
 
 		return 0, fmt.Errorf("expected string, got %T", v)
 	})
-
 	if err != nil {
 		return "", fmt.Errorf("failed to execute template: %w", err)
 	}

@@ -224,6 +224,7 @@ func TestEtcdSource_Integration(t *testing.T) {
 		done := make(chan struct{}, 1)
 		onUpdate := func() {
 			counter++
+
 			done <- struct{}{}
 		}
 
@@ -301,6 +302,7 @@ func TestMakeReducer_OnlyOneEventPerInterval(t *testing.T) {
 	counter := 0
 	onUpdate := func() {
 		counter++
+
 		triggered <- struct{}{}
 	}
 

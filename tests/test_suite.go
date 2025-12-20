@@ -172,6 +172,7 @@ func (s *testSuite) startAppWithConfig(cfgYAML string) (url string, err error) {
 
 	s.T().Cleanup(func() {
 		cancel()
+
 		select {
 		case <-done:
 		case <-time.After(10 * time.Millisecond):

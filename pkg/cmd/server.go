@@ -39,7 +39,6 @@ func runServer(ctx context.Context, cfg *Config) error {
 	}
 
 	server, err := api.NewSevice(&cfg.Server, requestHandler)
-
 	if err != nil {
 		return err
 	}

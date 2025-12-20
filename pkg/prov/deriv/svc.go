@@ -96,7 +96,6 @@ func (s *Service) dial(ctx context.Context, baseURL string, urlParams url.Values
 	c, resp, err := websocket.Dial(ctx, baseURL, &websocket.DialOptions{
 		HTTPHeader: headers,
 	})
-
 	if err != nil {
 		return nil, err
 	}
