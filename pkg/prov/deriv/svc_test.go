@@ -31,6 +31,7 @@ var wsHandlerEcho = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request
 			if err == io.EOF {
 				return
 			}
+
 			return
 		}
 
