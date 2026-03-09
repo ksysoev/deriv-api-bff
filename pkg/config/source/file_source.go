@@ -98,7 +98,7 @@ func readDir(path string) ([]handlerfactory.Config, error) {
 // It returns a slice of handlerfactory.Config and an error.
 // It returns an error if the file cannot be opened or if the content cannot be decoded.
 func readFile(path string) ([]handlerfactory.Config, error) {
-	file, err := os.Open(filepath.Clean(path)) //nolint:gosec // path is operator-provided configuration, not user request input
+	file, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
