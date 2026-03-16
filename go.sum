@@ -215,8 +215,8 @@ github.com/subosito/gotenv v1.6.0 h1:9NlTDc1FTs4qu0DDq7AEtTPNw6SVm7uBMsUCUjABIf8
 github.com/subosito/gotenv v1.6.0/go.mod h1:Dk4QP5c2W3ibzajGcXpNraDfq2IrhjMIvMSWPKKo0FU=
 github.com/testcontainers/testcontainers-go v0.41.0 h1:mfpsD0D36YgkxGj2LrIyxuwQ9i2wCKAD+ESsYM1wais=
 github.com/testcontainers/testcontainers-go v0.41.0/go.mod h1:pdFrEIfaPl24zmBjerWTTYaY0M6UHsqA1YSvsoU40MI=
-github.com/testcontainers/testcontainers-go/modules/etcd v0.40.0 h1:9uZrotowD6Z9qgpd8w46UXi1x5bkhOcpveK5rvWy5u0=
-github.com/testcontainers/testcontainers-go/modules/etcd v0.40.0/go.mod h1:z5saei5a/cpuXYz3MJqJ91RMBYOqw7OXDueN8XKoALA=
+github.com/testcontainers/testcontainers-go/modules/etcd v0.41.0 h1:HDEpWRH7JTCSUeJkcwkbRCUClZ8qyT6Z4RgfjR3JMr4=
+github.com/testcontainers/testcontainers-go/modules/etcd v0.41.0/go.mod h1:PpbzL8aLFNc8VFd6yAqleklm60cvN+s8BiQh8VsNDfg=
 github.com/tklauser/go-sysconf v0.3.16 h1:frioLaCQSsF5Cy1jgRBrzr6t502KIIwQ0MArYICU0nA=
 github.com/tklauser/go-sysconf v0.3.16/go.mod h1:/qNL9xxDhc7tx3HSRsLWNnuzbVfh3e7gh/BmM179nYI=
 github.com/tklauser/numcpus v0.11.0 h1:nSTwhKH5e1dMNsCdVBukSZrURJRoHbSEQjdEbY+9RXw=

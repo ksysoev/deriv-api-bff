@@ -12,7 +12,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.41.0
-	github.com/testcontainers/testcontainers-go/modules/etcd v0.40.0
+	github.com/testcontainers/testcontainers-go/modules/etcd v0.41.0
 	github.com/valyala/fasttemplate v1.2.2
 	github.com/wolfeidau/jsontemplate v0.4.0
 	go.etcd.io/etcd/client/v3 v3.6.8
@@ -30,7 +30,6 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
-	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
